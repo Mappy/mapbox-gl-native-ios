@@ -103,6 +103,35 @@ TEST(Transform, InvalidBearing) {
     ASSERT_DOUBLE_EQ(2, transform.getAngle());
 }
 
+TEST(Transform, IntegerZoom) {
+    Transform transform;
+
+    auto checkIntegerZoom = [&transform](uint8_t zoomInt, double zoom) {
+        double scale = transform.getState().zoomScale(zoom);
+        transform.setScale(scale);
+#if __ANDROID__
+        // Android uses log(x) / M_LN2 instead of log2(x) because the latter
+        // is _broken in ARMv5 - that approach being less precise than log2(x).
+        ASSERT_NEAR(transform.getScale(), scale, 0.0001);
+#else
+        ASSERT_DOUBLE_EQ(transform.getScale(), scale);
+#endif
+        ASSERT_NEAR(transform.getZoom(), zoom, 0.0001);
+        ASSERT_EQ(transform.getState().getIntegerZoom(), zoomInt);
+        ASSERT_NEAR(transform.getState().getZoomFraction(), zoom - zoomInt, 0.0001);
+    };
+
+    for (uint8_t zoomInt = 0; zoomInt < 20; ++zoomInt) {
+        for (uint32_t percent = 0; percent < 100; ++percent) {
+            double zoom = zoomInt + (0.01 * percent);
+            checkIntegerZoom(zoomInt, zoom);
+        }
+    }
+
+    // Special case zoom 20.
+    checkIntegerZoom(20, 20.0);
+}
+
 TEST(Transform, PerspectiveProjection) {
     LatLng loc;
 
@@ -314,12 +343,12 @@ TEST(Transform, Padding) {
     ASSERT_DOUBLE_EQ(10, trueCenter.latitude);
     ASSERT_DOUBLE_EQ(-100, trueCenter.longitude);
     ASSERT_DOUBLE_EQ(10, transform.getZoom());
-    
+
     const LatLng manualShiftedCenter = transform.getState().screenCoordinateToLatLng({
         1000.0 / 2.0,
         1000.0 / 4.0,
     });
-    
+
     EdgeInsets padding;
 
     padding.top = 0;
@@ -330,10 +359,10 @@ TEST(Transform, Padding) {
 
     padding.top = 1000.0 / 2.0;
     ASSERT_TRUE(bool(padding));
-    
+
     const LatLng shiftedCenter = transform.getLatLng(padding);
     ASSERT_NE(trueCenter.latitude, shiftedCenter.latitude);
-    ASSERT_DOUBLE_EQ(trueCenter.longitude, shiftedCenter.longitude);
+    ASSERT_NEAR(trueCenter.longitude, shiftedCenter.longitude, 1e-9);
     ASSERT_DOUBLE_EQ(manualShiftedCenter.latitude, shiftedCenter.latitude);
     ASSERT_DOUBLE_EQ(manualShiftedCenter.longitude, shiftedCenter.longitude);
 }
@@ -372,12 +401,12 @@ TEST(Transform, Antimeridian) {
 
     const LatLng coordinateSanFrancisco { 37.7833, -122.4167 };
     ScreenCoordinate pixelSF = transform.latLngToScreenCoordinate(coordinateSanFrancisco);
-    ASSERT_DOUBLE_EQ(151.79409149185352, pixelSF.x);
-    ASSERT_DOUBLE_EQ(383.76774094913071, pixelSF.y);
+    ASSERT_NEAR(151.79409149185352, pixelSF.x, 1e-2);
+    ASSERT_NEAR(383.76774094913071, pixelSF.y, 1e-2);
 
     transform.setLatLng({ 0, -181 });
     ScreenCoordinate pixelSFBackwards = transform.latLngToScreenCoordinate(coordinateSanFrancisco);
-    ASSERT_DOUBLE_EQ(666.63617954008976, pixelSFBackwards.x);
+    ASSERT_NEAR(666.63617954008976, pixelSFBackwards.x, 1e-2);
     ASSERT_DOUBLE_EQ(pixelSF.y, pixelSFBackwards.y);
 
     transform.setLatLng({ 0, 179 });
@@ -388,12 +417,12 @@ TEST(Transform, Antimeridian) {
     const LatLng coordinateWaikiri{ -16.9310, 179.9787 };
     transform.setLatLngZoom(coordinateWaikiri, 10);
     ScreenCoordinate pixelWaikiri = transform.latLngToScreenCoordinate(coordinateWaikiri);
-    ASSERT_DOUBLE_EQ(500.00000000007759, pixelWaikiri.x);
-    ASSERT_DOUBLE_EQ(500, pixelWaikiri.y);
+    ASSERT_NEAR(500, pixelWaikiri.x, 1e-2);
+    ASSERT_NEAR(500, pixelWaikiri.y, 1e-2);
 
     transform.setLatLng({ coordinateWaikiri.latitude, 180.0213 });
     ScreenCoordinate pixelWaikiriForwards = transform.latLngToScreenCoordinate(coordinateWaikiri);
-    ASSERT_DOUBLE_EQ(437.95953728819512, pixelWaikiriForwards.x);
+    ASSERT_NEAR(437.95953728819512, pixelWaikiriForwards.x, 1e-2);
     ASSERT_DOUBLE_EQ(pixelWaikiri.y, pixelWaikiriForwards.y);
     LatLng coordinateFromPixel = transform.screenCoordinateToLatLng(pixelWaikiriForwards);
     ASSERT_NEAR(coordinateWaikiri.latitude, coordinateFromPixel.latitude, 0.000001);

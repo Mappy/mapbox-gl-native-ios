@@ -28,6 +28,8 @@ class GlyphAtlas;
 class SpriteAtlas;
 class LineAtlas;
 class RenderData;
+class TransformState;
+class RenderedQueryOptions;
 
 namespace style {
 
@@ -64,11 +66,14 @@ public:
         return lastError;
     }
 
+    std::vector<const Source*> getSources() const;
+    std::vector<Source*> getSources();
     Source* getSource(const std::string& id) const;
     void addSource(std::unique_ptr<Source>);
     std::unique_ptr<Source> removeSource(const std::string& sourceID);
 
     std::vector<const Layer*> getLayers() const;
+    std::vector<Layer*> getLayers();
     Layer* getLayer(const std::string& id) const;
     Layer* addLayer(std::unique_ptr<Layer>,
                     optional<std::string> beforeLayerID = {});
@@ -90,9 +95,11 @@ public:
     bool hasClass(const std::string&) const;
     std::vector<std::string> getClasses() const;
 
-    RenderData getRenderData(MapDebugOptions) const;
+    RenderData getRenderData(MapDebugOptions, float angle) const;
 
-    std::vector<Feature> queryRenderedFeatures(const QueryParameters&) const;
+    std::vector<Feature> queryRenderedFeatures(const ScreenLineString& geometry,
+                                               const TransformState& transformState,
+                                               const RenderedQueryOptions& options) const;
 
     float getQueryRadius() const;
 
@@ -115,9 +122,9 @@ private:
     // Defaults
     std::string name;
     LatLng defaultLatLng;
-    double defaultZoom;
-    double defaultBearing;
-    double defaultPitch;
+    double defaultZoom = 0;
+    double defaultBearing = 0;
+    double defaultPitch = 0;
 
     std::vector<std::unique_ptr<Layer>>::const_iterator findLayer(const std::string& layerID) const;
     void reloadLayerSource(Layer&);
@@ -143,6 +150,7 @@ private:
     void onLayerFilterChanged(Layer&) override;
     void onLayerVisibilityChanged(Layer&) override;
     void onLayerPaintPropertyChanged(Layer&) override;
+    void onLayerDataDrivenPaintPropertyChanged(Layer&) override;
     void onLayerLayoutPropertyChanged(Layer&, const char *) override;
 
     Observer nullObserver;

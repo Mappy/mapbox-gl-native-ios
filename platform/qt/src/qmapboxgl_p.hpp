@@ -5,7 +5,7 @@
 #include <mbgl/map/map.hpp>
 #include <mbgl/map/backend.hpp>
 #include <mbgl/map/view.hpp>
-#include <mbgl/platform/default/thread_pool.hpp>
+#include <mbgl/util/default_thread_pool.hpp>
 #include <mbgl/storage/default_file_source.hpp>
 #include <mbgl/util/geo.hpp>
 
@@ -42,7 +42,7 @@ public:
     QMapboxGL *q_ptr { nullptr };
 
     std::unique_ptr<mbgl::DefaultFileSource> fileSourceObj;
-    mbgl::ThreadPool threadPool;
+    std::shared_ptr<mbgl::ThreadPool> threadPool;
     std::unique_ptr<mbgl::Map> mapObj;
 
     bool dirty { false };
@@ -54,5 +54,6 @@ public slots:
 
 signals:
     void needsRendering();
-    void mapChanged(QMapbox::MapChange);
+    void mapChanged(QMapboxGL::MapChange);
+    void copyrightsChanged(const QString &copyrightsHtml);
 };
