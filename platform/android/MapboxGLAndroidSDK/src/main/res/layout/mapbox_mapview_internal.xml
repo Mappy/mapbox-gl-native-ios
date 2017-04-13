@@ -21,6 +21,12 @@
         android:layout_height="match_parent"
         android:contentDescription="@string/mapbox_myLocationViewContentDescription"/>
 
+    <!--TODO com.mapbox.mapboxsdk.maps.widgets.MarkerViewLayout
+        android:id="@+id/markerViewLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/transparent" /-->
+
     <com.mapbox.mapboxsdk.maps.widgets.CompassView
         android:id="@+id/compassView"
         android:layout_width="wrap_content"

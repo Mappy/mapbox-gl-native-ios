@@ -1,10 +1,12 @@
 package com.mapbox.mapboxsdk.offline;
 
 import android.content.Context;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 
+import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.net.ConnectivityReceiver;
 import com.mapbox.mapboxsdk.storage.FileSource;
 
@@ -68,6 +70,7 @@ public class OfflineManager {
    * {@link OfflineRegion} in the database, or an error message otherwise.
    */
   public interface CreateOfflineRegionCallback {
+
     /**
      * Receives the newly created offline region.
      *
@@ -212,6 +215,10 @@ public class OfflineManager {
     });
   }
 
+    public void cleanAmbientCache() {
+        //TODO Mappy cleanAmbientCache(mDefaultFileSourcePtr);
+    }
+
   /*
   * Changing or bypassing this limit without permission from Mapbox is prohibited
   * by the Mapbox Terms of Service.
@@ -227,5 +234,8 @@ public class OfflineManager {
 
   private native void createOfflineRegion(FileSource fileSource, OfflineRegionDefinition definition,
                                           byte[] metadata, CreateOfflineRegionCallback callback);
+
+    private native void cleanAmbientCache(
+            long defaultFileSourcePtr);
 
 }

@@ -8,11 +8,14 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import com.mapbox.mapboxsdk.telemetry.MapboxEventManager;
 import com.mapbox.mapboxsdk.telemetry.TelemetryLocationReceiver;
+import com.mapzen.android.lost.api.LocationListener;
 import com.mapzen.android.lost.api.LocationRequest;
 import com.mapzen.android.lost.api.LostApiClient;
 
@@ -34,22 +37,22 @@ public class LocationServices implements com.mapzen.android.lost.api.LocationLis
 
     private static final String TAG = "LocationServices";
 
-    private static LocationServices instance;
+    protected static LocationServices instance;
 
-    private Context context;
+    protected Context context;
     private LostApiClient locationClient;
     private Location lastLocation;
 
     private CopyOnWriteArrayList<LocationListener> locationListeners;
 
-    private boolean isGPSEnabled;
+    protected boolean isGPSEnabled;
 
     /**
      * Private constructor for singleton LocationServices
      */
-    private LocationServices(Context context) {
+    protected LocationServices(Context context) {
         super();
-        this.context = context;
+        this.context = context.getApplicationContext();
         // Setup location services
         locationClient = new LostApiClient.Builder(context).build();
         locationListeners = new CopyOnWriteArrayList<>();
@@ -63,7 +66,7 @@ public class LocationServices implements com.mapzen.android.lost.api.LocationLis
      */
     public static LocationServices getLocationServices(@NonNull final Context context) {
         if (instance == null) {
-            instance = new LocationServices(context.getApplicationContext());
+            instance = new LocationServices(context);
         }
         return instance;
     }
@@ -82,13 +85,23 @@ public class LocationServices implements com.mapzen.android.lost.api.LocationLis
         // Disconnect
         if (locationClient.isConnected()) {
             // Disconnect first to ensure that the new requests are GPS
-            com.mapzen.android.lost.api.LocationServices.FusedLocationApi.removeLocationUpdates(this);
+            com.mapzen.android.lost.api.LocationServices.FusedLocationApi.removeLocationUpdates(locationClient, this);
             locationClient.disconnect();
         }
 
         // Setup Fresh
         locationClient.connect();
-        Location lastLocation = com.mapzen.android.lost.api.LocationServices.FusedLocationApi.getLastLocation();
+        if (ActivityCompat.checkSelfPermission(this.context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this.context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        Location lastLocation = com.mapzen.android.lost.api.LocationServices.FusedLocationApi.getLastLocation(locationClient);
         if (lastLocation != null) {
             this.lastLocation = lastLocation;
         }
@@ -102,7 +115,7 @@ public class LocationServices implements com.mapzen.android.lost.api.LocationLis
                     .setSmallestDisplacement(3.0f)
                     .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
-            com.mapzen.android.lost.api.LocationServices.FusedLocationApi.requestLocationUpdates(locationRequest, this);
+            com.mapzen.android.lost.api.LocationServices.FusedLocationApi.requestLocationUpdates(locationClient, locationRequest, this);
         } else {
             // LocationRequest Tuned for PASSIVE
             locationRequest = LocationRequest.create()
@@ -110,10 +123,18 @@ public class LocationServices implements com.mapzen.android.lost.api.LocationLis
                     .setSmallestDisplacement(3.0f)
                     .setPriority(LocationRequest.PRIORITY_NO_POWER);
 
-            com.mapzen.android.lost.api.LocationServices.FusedLocationApi.requestLocationUpdates(locationRequest, this);
+            com.mapzen.android.lost.api.LocationServices.FusedLocationApi.requestLocationUpdates(locationClient, locationRequest, this);
         }
 
         isGPSEnabled = enableGPS;
+    }
+
+
+    public void release() {
+        if (locationClient.isConnected()) {
+            com.mapzen.android.lost.api.LocationServices.FusedLocationApi.removeLocationUpdates(locationClient, this);
+            locationClient.disconnect();
+        }
     }
 
     /**
@@ -140,9 +161,22 @@ public class LocationServices implements com.mapzen.android.lost.api.LocationLis
             listener.onLocationChanged(location);
         }
 
-        Intent locIntent = new Intent(TelemetryLocationReceiver.INTENT_STRING);
-        locIntent.putExtra(LocationManager.KEY_LOCATION_CHANGED, location);
-        LocalBroadcastManager.getInstance(context.getApplicationContext()).sendBroadcast(locIntent);
+        // Update the Telemetry Receiver
+        if(MapboxEventManager.ENABLE_METRICS_ON_MAPPY) {
+            Intent locIntent = new Intent(TelemetryLocationReceiver.INTENT_STRING);
+            locIntent.putExtra(LocationManager.KEY_LOCATION_CHANGED, location);
+            LocalBroadcastManager.getInstance(context.getApplicationContext()).sendBroadcast(locIntent);
+        }
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+
     }
 
     /**

@@ -2,6 +2,7 @@ package com.mapbox.mapboxsdk.annotations;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.View;
 
 import com.mapbox.mapboxsdk.R;
@@ -34,6 +35,9 @@ public class Marker extends Annotation {
   private String iconId;
   private String title;
 
+    //Mappy modif
+    private int zOrder;
+
   private InfoWindow infoWindow;
   private boolean infoWindowShown;
 
@@ -58,14 +62,19 @@ public class Marker extends Annotation {
 
   Marker(BaseMarkerViewOptions baseMarkerViewOptions) {
     this(baseMarkerViewOptions.position, baseMarkerViewOptions.icon,
-      baseMarkerViewOptions.title, baseMarkerViewOptions.snippet);
+      baseMarkerViewOptions.title, baseMarkerViewOptions.snippet, baseMarkerViewOptions.zOrder);
   }
 
   Marker(LatLng position, Icon icon, String title, String snippet) {
+    this(position, icon, title, snippet, 0);
+  }
+
+  Marker(LatLng position, Icon icon, String title, String snippet, int zOrder) {
     this.position = position;
     this.title = title;
     this.snippet = snippet;
     setIcon(icon);
+    this.zOrder = zOrder;
   }
 
   /**
@@ -104,6 +113,10 @@ public class Marker extends Annotation {
     }
     infoWindowShown = false;
   }
+
+    public int getZOrder() {
+        return zOrder;
+    }
 
   /**
    * Do not use this method, used internally by the SDK.
@@ -161,6 +174,17 @@ public class Marker extends Annotation {
   public Icon getIcon() {
     return icon;
   }
+
+    public void setZOrder(int zOrder) {
+        if (this.zOrder == zOrder) {
+            return;
+        }
+        this.zOrder = zOrder;
+        MapboxMap map = getMapboxMap();
+        if (map != null) {
+            //TODO Mappy map.forceUpdateMarkers();
+        }
+    }
 
   /**
    * Sets the title of the marker.

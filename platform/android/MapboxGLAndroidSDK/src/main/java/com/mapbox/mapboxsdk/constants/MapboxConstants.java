@@ -134,4 +134,23 @@ public class MapboxConstants {
   public static final String STATE_ATTRIBUTION_MARGIN_BOTTOM = "mapbox_atrrMarginBottom";
   public static final String STATE_ATTRIBUTION_ENABLED = "mapbox_atrrEnabled";
 
+  //FIXME: Mappy to be removed
+  public static final String TAG = "MapboxMap";
+
+  public static final String MAPBOX_SHARED_PREFERENCES_FILE = "MapboxSharedPreferences";
+  public static final String MAPBOX_SHARED_PREFERENCE_KEY_VENDORID = "mapboxVendorId";
+  public static final String MAPBOX_SHARED_PREFERENCE_KEY_TELEMETRY_ENABLED = "mapboxTelemetryEnabled";
+  public static final String MAPBOX_SHARED_PREFERENCE_KEY_TELEMETRY_STAGING_URL = "mapboxTelemetryStagingUrl";
+  public static final String MAPBOX_SHARED_PREFERENCE_KEY_TELEMETRY_STAGING_ACCESS_TOKEN = "mapboxTelemetryStagingAccessToken";
+
+  /**
+   * Key used to store staging data server url in AndroidManifest.xml
+   */
+  public static final String KEY_META_DATA_STAGING_SERVER = "com.mapbox.TestEventsServer";
+
+  /**
+   * Key used to store staging data server access token in AndroidManifest.xml
+   */
+  public static final String KEY_META_DATA_STAGING_ACCESS_TOKEN = "com.mapbox.TestEventsAccessToken";
+
 }

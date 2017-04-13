@@ -84,7 +84,6 @@ void detach_jni_thread(JavaVM* vm, JNIEnv** env, bool detach) {
 
 void registerNatives(JavaVM *vm) {
     theJVM = vm;
-
     jni::JNIEnv& env = jni::GetEnv(*vm, jni::jni_version_1_6);
 
     // For the DefaultFileSource

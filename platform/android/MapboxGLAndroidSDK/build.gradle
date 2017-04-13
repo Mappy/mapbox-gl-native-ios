@@ -56,6 +56,10 @@ android {
 
         release {
             // aar proguard configuration
+            shrinkResources false
+            jniDebuggable false
+            minifyEnabled false
+            buildConfigField "String", "MAPBOX_EVENTS_USER_AGENT_BASE", new StringBuilder().append("\"").append("MapboxEventsAndroid/").append(project.VERSION_NAME).append("\"").toString()
             consumerProguardFiles 'proguard-rules.pro'
             jniDebuggable false
         }

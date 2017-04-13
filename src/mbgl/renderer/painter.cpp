@@ -179,6 +179,29 @@ void Painter::render(const Style& style, const FrameData& frame_, View& view, Sp
                         : renderData.backgroundColor,
                       1.0f,
                       0);
+/* Mappy TODO
+        context.stencilFunc = { gl::StencilTestFunction::Always, 0, ~0u };
+        context.stencilTest = true;
+        context.stencilMask = 0xFF;
+        context.depthTest = false;
+        context.depthMask = true;
+        context.colorMask = { true, true, true, true };
+
+        if (paintMode() == PaintMode::Overdraw) {
+            context.blend = true;
+            context.blendFunc = { gl::BlendSourceFactor::ConstantColor,
+                                  gl::BlendDestinationFactor::One };
+            const float overdraw = 1.0f / 8.0f;
+            context.blendColor = { overdraw, overdraw, overdraw, 0.0f };
+            context.clearColor =  {0.9921f, 0.9686f, 0.9215f, 1.0f};//fix mappy
+        } else {
+            context.clearColor = {0.9921f, 0.9686f, 0.9215f, 1.0f};//background;
+        }
+        context.clearStencil = 0;
+        context.clearDepth = 1;
+        MBGL_CHECK_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+>>>>>>> mappy_android_develop_alpha
+ */
     }
 
     // - CLIPPING MASKS ----------------------------------------------------------------------------

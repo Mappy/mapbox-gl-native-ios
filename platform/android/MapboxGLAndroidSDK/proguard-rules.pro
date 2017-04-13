@@ -48,6 +48,10 @@
 # We include these rules since libjava is a Jar file not AAR
 #
 
+# Gesture package
+-keep class almeros.android.multitouch.gesturedetectors.** { *; }
+-dontshrink
+
 # Retrofit 2
 # Platform calls Class.forName on types which do not exist on Android to determine platform.
 -dontnote retrofit2.Platform
@@ -88,3 +92,18 @@
 
 -keep class com.google.** { *; }
 -dontwarn com.google.**
+
+# Keep - Library. Keep all public and protected classes, fields, and methods.
+-keep public class * {
+    public protected <fields>;
+    public protected <methods>;
+}
+-keep public interface * {
+    public protected <methods>;
+}
+
+-keepattributes *Annotation*
+-keepattributes InnerClasses
+
+-keep class com.mapzen.** { *; }
+-keep class com.squareup.** { *; }

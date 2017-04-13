@@ -292,6 +292,8 @@ public class MapView extends FrameLayout {
   public boolean onTouchEvent(MotionEvent event) {
     if (event.getAction() == MotionEvent.ACTION_DOWN) {
       mapZoomButtonController.setVisible(true);
+        /* Mappy : on touch down, stop map inertia */
+        cancelTransitions();
     }
     return mapGestureDetector.onTouchEvent(event) || super.onTouchEvent(event);
   }
@@ -1048,4 +1050,15 @@ public class MapView extends FrameLayout {
       onMapReadyCallbackList.add(callback);
     }
   }
+
+    private void cancelTransitions(){
+        /*
+        if (cameraCancelableCallback != null) {
+            cameraCancelableCallback.onCancel();
+            cameraCancelableCallback = null;
+        }
+        */
+        nativeMapView.cancelTransitions();
+    }
+
 }

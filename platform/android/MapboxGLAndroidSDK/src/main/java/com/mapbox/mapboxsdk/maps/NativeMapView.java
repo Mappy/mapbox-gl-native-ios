@@ -572,6 +572,17 @@ final class NativeMapView {
     removeAnnotations(ids);
   }
 
+  //Mappy modif
+  public long addPolyline(Polyline polyline, boolean withWhiteStroke) {
+    Polyline[] polylines = {polyline};
+    return nativeAddPolylinesWithStroke(polylines, withWhiteStroke)[0];
+  }
+
+  //Mappy modif
+  public long[] addPolylines(List<Polyline> polylines, boolean withWhiteStroke) {
+    return nativeAddPolylinesWithStroke(polylines.toArray(new Polyline[polylines.size()]), withWhiteStroke);
+  }
+
   public void removeAnnotations(long[] ids) {
     if (isDestroyedOn("removeAnnotations")) {
       return;
@@ -1067,6 +1078,9 @@ final class NativeMapView {
   private native void nativeCycleDebugOptions();
 
   private native boolean nativeGetDebug();
+
+    //Mappy modif
+    private native long[] nativeAddPolylinesWithStroke(Polyline[] polylines, boolean withWhiteStroke);
 
   private native void nativeSetEnableFps(boolean enable);
 

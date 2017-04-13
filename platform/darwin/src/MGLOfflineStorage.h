@@ -287,6 +287,8 @@ MGL_EXPORT
  */
 @property (nonatomic, readonly) unsigned long long countOfBytesCompleted;
 
+- (void)cleanAmbientCache;
+
 @end
 
 /**

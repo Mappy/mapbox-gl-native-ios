@@ -14,15 +14,28 @@ import android.widget.ImageView;
 
 import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
+import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
+
 import com.mapbox.mapboxsdk.utils.AnimatorUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
+
+import com.mapbox.mapboxsdk.maps.Projection;
+import com.mapbox.mapboxsdk.maps.widgets.MarkerViewLayout;
+import com.mapbox.mapboxsdk.utils.AnimatorUtils;
+
+import java.util.ArrayList;
+
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * Interface for interacting with ViewMarkers objects inside of a MapView.
@@ -638,6 +651,8 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
       }
       viewHolder.imageView.setImageBitmap(marker.getIcon().getBitmap());
       viewHolder.imageView.setContentDescription(marker.getTitle());
+      convertView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+      convertView.clearAnimation();
       return convertView;
     }
 
@@ -662,4 +677,14 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
      */
     void onViewAdded(@NonNull MarkerView markerView);
   }
+
+    //MAPPY: needed to
+    public interface OnMarkerViewAddedListenerWithControl extends OnMarkerViewAddedListener{
+
+        /**
+         * to verify if the listener is still valid or not
+         *
+         */
+        boolean isMarkerExist();
+    }
 }
