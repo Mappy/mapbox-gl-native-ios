@@ -517,7 +517,7 @@ class AnnotationManager {
     return polyline;
   }
 
-  List<Polyline> addPolylines(@NonNull List<PolylineOptions> polylineOptionsList, @NonNull MapboxMap mapboxMap) {
+  List<Polyline> addPolylines(@NonNull List<PolylineOptions> polylineOptionsList, @NonNull MapboxMap mapboxMap, boolean withWhiteStroke) {
     int count = polylineOptionsList.size();
     Polyline polyline;
     List<Polyline> polylines = new ArrayList<>(count);
@@ -532,7 +532,7 @@ class AnnotationManager {
 
       long[] ids = null;
       if (nativeMapView != null) {
-        ids = nativeMapView.addPolylines(polylines);
+        ids = nativeMapView.addPolylines(polylines, withWhiteStroke);
       }
 
       long id = 0;

@@ -625,22 +625,9 @@ jni::Array<jni::jlong> NativeMapView::addPolylinesWithStroke(JNIEnv& env, jni::A
 
     for (std::size_t i = 0; i < len; i++) {
         auto polyline = polylines.Get(env, i);
-        if (withWhiteStroke) {
-            //TODO
-        }
-        /*TODO
-        jni::jobject* points = jni::GetField<jni::jobject*>(*env, polyline, *polylinePointsId);
 
-        mbgl::LineAnnotation annotation { toGeometry<mbgl::LineString<double>>(env, points) };
-        annotation.opacity = { jni::GetField<jfloat>(*env, polyline, *polylineAlphaId) };
-        annotation.color = { toColor(jni::GetField<jint>(*env, polyline, *polylineColorId)) };
-        annotation.width = { jni::GetField<jfloat>(*env, polyline, *polylineWidthId) };
-        annotation.isMappyPath = withWhiteStroke;
-        ids.push_back(nativeMapView->getMap().addAnnotation(annotation));
-
-        jni::DeleteLocalRef(*env, polyline);
-        */
         mbgl::LineAnnotation annotation = Polyline::toAnnotation(env, polyline);
+        annotation.isMappyPath = withWhiteStroke;
         ids.push_back(map->addAnnotation(annotation));
 
         jni::DeleteLocalRef(env, polyline);

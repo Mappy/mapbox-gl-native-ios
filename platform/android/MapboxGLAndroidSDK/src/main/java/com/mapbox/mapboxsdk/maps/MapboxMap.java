@@ -1202,7 +1202,20 @@ public final class MapboxMap {
   @UiThread
   @NonNull
   public List<Polyline> addPolylines(@NonNull List<PolylineOptions> polylineOptionsList) {
-    return annotationManager.addPolylines(polylineOptionsList, this);
+    return annotationManager.addPolylines(polylineOptionsList, this, false);
+  }
+
+  /**
+   * Adds multiple polylines to this map.
+   *
+   * @param polylineOptionsList A list of polyline options objects that defines how to render the polylines.
+   * @param withWhiteStroke     add the polylines with the white stroke or not
+   * @return A list of the {@code Polyline}s that were added to the map.
+   */
+  @UiThread
+  @NonNull
+  public List<Polyline> addPolylines(@NonNull List<PolylineOptions> polylineOptionsList, boolean withWhiteStroke) {
+    return annotationManager.addPolylines(polylineOptionsList, this, withWhiteStroke);
   }
 
   /**

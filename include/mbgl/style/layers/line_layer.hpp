@@ -60,9 +60,6 @@ public:
     void setLineColor(DataDrivenPropertyValue<Color>, const optional<std::string>& klass = {});
     void setLineColorTransition(const TransitionOptions&, const optional<std::string>& klass = {});
     TransitionOptions getLineColorTransition(const optional<std::string>& klass = {}) const;
-    
-	PropertyValue<bool> getLineIsMappyPath (const optional<std::string>& klass = {}) const;
-	void setLineIsMappyPath(PropertyValue<bool>, const optional<std::string>& klass = {});
 
     static PropertyValue<std::array<float, 2>> getDefaultLineTranslate();
     PropertyValue<std::array<float, 2>> getLineTranslate(const optional<std::string>& klass = {}) const;
@@ -111,6 +108,10 @@ public:
     void setLinePattern(PropertyValue<std::string>, const optional<std::string>& klass = {});
     void setLinePatternTransition(const TransitionOptions&, const optional<std::string>& klass = {});
     TransitionOptions getLinePatternTransition(const optional<std::string>& klass = {}) const;
+
+    // Mappy path
+    bool getLineIsMappyPath () const;
+    void setLineIsMappyPath(bool);
 
     // Private implementation
 
