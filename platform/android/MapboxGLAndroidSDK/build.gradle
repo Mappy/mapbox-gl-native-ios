@@ -1,31 +1,44 @@
 apply plugin: 'com.android.library'
 
+//apply from: '../dependencies.gradle'
+
+//supportLibVersion = '25.2.0'
+//dep.timber = 'com.jakewharton.timber:timber:4.5.1'
+//dep.okhttp3 = 'com.squareup.okhttp3:okhttp:3.6.0'
+//dep.lost = 'com.mapzen.android:lost:2.1.2'
+//dep.mapboxJavaGeoJSON='com.mapbox.mapboxsdk:mapbox-java-geojson:2.0.0@jar'
+//dep.mapboxAndroidTelemetry ='com.mapbox.mapboxsdk:mapbox-android-telemetry:2.0.0@aar'
+
+//print "toto supportLibVersion ${supportLibVersion}\n"
+//print "buildToolsVersion ${buildToolsVersion}\n"
+//print "dep.timber ${dep.timber}\n"
+
 dependencies {
-    compile "com.android.support:support-annotations:${supportLibVersion}"
-    compile "com.android.support:support-v4:${supportLibVersion}"
-    compile "com.android.support:design:${supportLibVersion}"
-    compile rootProject.ext.dep.timber
-    compile rootProject.ext.dep.okhttp3
-    compile rootProject.ext.dep.lost
+    compile "com.android.support:support-annotations:25.2.0"
+    compile "com.android.support:support-v4:25.2.0"
+    compile "com.android.support:design:25.2.0"
+    compile "com.jakewharton.timber:timber:4.5.1"
+    compile "com.squareup.okhttp3:okhttp:3.6.0"
+    compile "com.mapzen.android:lost:2.1.2"
 
     // Mapbox Android Services (GeoJSON support)
-    compile(rootProject.ext.dep.mapboxJavaGeoJSON) {
+    compile("com.mapbox.mapboxsdk:mapbox-java-geojson:2.0.0@jar") {
         transitive = true
     }
 
     // Mapbox Android Services (Telemetry support)
-    compile(rootProject.ext.dep.mapboxAndroidTelemetry) {
+    compile("com.mapbox.mapboxsdk:mapbox-android-telemetry:2.0.0@aar") {
         transitive = true
     }
 }
 
 android {
-    compileSdkVersion rootProject.ext.compileSdkVersion
-    buildToolsVersion rootProject.ext.buildToolsVersion
+    compileSdkVersion 25
+    buildToolsVersion "25.0.2"
 
     defaultConfig {
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdkVersion 15
+        targetSdkVersion 25
         buildConfigField "String", "GIT_REVISION_SHORT", String.format("\"%s\"", getGitRevision())
         buildConfigField "String", "MAPBOX_VERSION_STRING", String.format("\"Mapbox/%s\"", project.VERSION_NAME)
         buildConfigField "String", "MAPBOX_EVENTS_USER_AGENT", String.format("\"MapboxEventsAndroid/%s\"", project.VERSION_NAME)
@@ -81,3 +94,4 @@ configurations {
 apply from: 'gradle-javadoc.gradle'
 apply from: 'gradle-publish.gradle'
 apply from: 'gradle-checkstyle.gradle'
+

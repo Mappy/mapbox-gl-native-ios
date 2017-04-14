@@ -26,7 +26,7 @@ void LineAnnotationImpl::updateStyle(Style& style) const {
     lineLayer->setLineOpacity(annotation.opacity);
     lineLayer->setLineWidth(annotation.width);
     lineLayer->setLineColor(annotation.color);
-    lineLayer->setLineIsMappyPath(annotation.isMappyPath);
+    //FIXME Mappy lineLayer->setLineIsMappyPath(annotation.isMappyPath);
 }
 
 const ShapeAnnotationGeometry& LineAnnotationImpl::geometry() const {
