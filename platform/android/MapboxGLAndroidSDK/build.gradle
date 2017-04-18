@@ -1,58 +1,53 @@
 apply plugin: 'com.android.library'
-apply plugin: 'checkstyle'
-apply plugin: 'maven'
-apply plugin: 'signing'
 
-allprojects {
-    group project.GROUP
-    version project.VERSION_NAME
+apply from: '../dependencies.gradle'
 
-    repositories {
-        mavenCentral()
-    }
-}
+print "project.ext.dep.timber "+ project.ext.dep.timber+"\n"
+print "project.ext.dep.okhttp3 "+ project.ext.dep.okhttp3+"\n"
+print "project.ext.dep.lost "+ project.ext.dep.lost+"\n"
 
-repositories {
-    mavenCentral()
-}
+print "compileSdkVersion ${compileSdkVersion} / "+project.ext.compileSdkVersion+"\n"
+print "buildToolsVersion ${buildToolsVersion} / "+project.ext.buildToolsVersion+"\n"
+print "minSdkVersion "+project.ext.minSdkVersion.toInteger()+"\n"
+print "targetSdkVersion "+project.ext.targetSdkVersion.toInteger()+"\n"
 
 dependencies {
-    compile "com.android.support:support-annotations:25.2.0"
-    compile "com.android.support:support-v4:25.2.0"
-    compile "com.android.support:design:25.2.0"
-    compile "com.jakewharton.timber:timber:4.5.1"
-    compile "com.squareup.okhttp3:okhttp:3.6.0"
-    compile "com.mapzen.android:lost:2.1.2"
+    compile "com.android.support:support-annotations:${supportLibVersion}"
+    compile "com.android.support:support-v4:${supportLibVersion}"
+    compile "com.android.support:design:${supportLibVersion}"
+    compile project.ext.dep.timber
+    compile project.ext.dep.okhttp3
+    compile project.ext.dep.lost
 
     // Mapbox Android Services (GeoJSON support)
-    compile("com.mapbox.mapboxsdk:mapbox-java-geojson:2.0.0@jar") {
+    compile(project.ext.dep.mapboxJavaGeoJSON) {
         transitive = true
     }
 
     // Mapbox Android Services (Telemetry support)
-    compile("com.mapbox.mapboxsdk:mapbox-android-telemetry:2.0.0@aar") {
+    compile(project.ext.dep.mapboxAndroidTelemetry) {
         transitive = true
     }
 }
 
 android {
-    compileSdkVersion Integer.parseInt(project.ANDROID_BUILD_SDK_VERSION)
-    buildToolsVersion project.ANDROID_BUILD_TOOLS_VERSION
+    compileSdkVersion project.ext.compileSdkVersion
+    buildToolsVersion project.ext.buildToolsVersion
 
     defaultConfig {
-        minSdkVersion Integer.parseInt(project.ANDROID_MIN_SDK)
-        targetSdkVersion Integer.parseInt(project.ANDROID_BUILD_TARGET_SDK_VERSION)
-        buildConfigField "String", "MAPBOX_EVENTS_USER_AGENT_BASE", String.format("\"MapboxEventsAndroid/%s\"", project.VERSION_NAME)
-        buildConfigField "String", "MAPBOX_VERSION_STRING", String.format("\"Mapbox/%s\"", project.VERSION_NAME)
+        minSdkVersion project.ext.minSdkVersion
+        targetSdkVersion project.ext.targetSdkVersion
         buildConfigField "String", "GIT_REVISION_SHORT", String.format("\"%s\"", getGitRevision())
+        buildConfigField "String", "MAPBOX_VERSION_STRING", String.format("\"Mapbox/%s\"", project.VERSION_NAME)
+        buildConfigField "String", "MAPBOX_EVENTS_USER_AGENT", String.format("\"MapboxEventsAndroid/%s\"", project.VERSION_NAME)
     }
+
+    // avoid naming conflicts, force usage of prefix
+    resourcePrefix 'mapbox_'
 
     sourceSets {
+        // limit amount of exposed library resources
         main.res.srcDirs += 'src/main/res-public'
-    }
-
-    repositories {
-        mavenCentral()
     }
 
     compileOptions {
@@ -71,94 +66,15 @@ android {
         }
 
         release {
+            // aar proguard configuration
             shrinkResources false
             jniDebuggable false
             minifyEnabled false
             buildConfigField "String", "MAPBOX_EVENTS_USER_AGENT_BASE", new StringBuilder().append("\"").append("MapboxEventsAndroid/").append(project.VERSION_NAME).append("\"").toString()
             consumerProguardFiles 'proguard-rules.pro'
+            jniDebuggable false
         }
     }
-}
-
-configurations {
-    all*.exclude group: 'commons-logging', module: 'commons-logging'
-    all*.exclude group: 'commons-collections', module: 'commons-collections'
-}
-
-android.libraryVariants.all { variant ->
-    def name = variant.name
-    //noinspection GroovyAssignabilityCheck
-    task "javadoc$name"(type: Javadoc) {
-        description = "Generates javadoc for build $name"
-        failOnError = false
-        destinationDir = new File(destinationDir, variant.baseName)
-        source = files(variant.javaCompile.source)
-        classpath = files(variant.javaCompile.classpath.files) + files(android.bootClasspath)
-        options.windowTitle("Mapbox Android SDK $VERSION_NAME Reference")
-        options.docTitle("Mapbox Android SDK $VERSION_NAME")
-        options.header("Mapbox Android SDK $VERSION_NAME Reference")
-        options.bottom("&copy; 2015&ndash;2016 Mapbox. All rights reserved.")
-        options.links("http://docs.oracle.com/javase/7/docs/api/")
-        options.linksOffline("http://d.android.com/reference/", "$System.env.ANDROID_HOME/docs/reference")
-        options.overview("src/main/java/overview.html")
-        options.group("Mapbox Android SDK", "com.mapbox.*")
-        options.group("Third Party Libraries", "com.almeros.*")
-        exclude '**/R.java', '**/BuildConfig.java', 'com/almeros/**'
-    }
-}
-
-/*
-task cleanJNIBuilds {
-    def jniLibsDir = new File("MapboxGLAndroidSDK/src/main/jniLibs")
-    delete jniLibsDir.absolutePath
-}
-*/
-
-android.libraryVariants.all { variant ->
-    def name = variant.buildType.name
-    def checkstyle = project.tasks.create "checkstyle${name.capitalize()}", Checkstyle
-    checkstyle.dependsOn variant.javaCompile
-    checkstyle.source variant.javaCompile.source
-    checkstyle.classpath = project.fileTree(variant.javaCompile.destinationDir)
-    checkstyle.exclude('**/BuildConfig.java')
-    checkstyle.exclude('**/R.java')
-    checkstyle.exclude('**/com/almeros/android/multitouch/**')
-    project.tasks.getByName("check").dependsOn checkstyle
-}
-
-// From https://raw.github.com/mcxiaoke/gradle-mvn-push/master/jar.gradle
-android.libraryVariants.all { variant ->
-    def jarTask = project.tasks.create(name: "jar${variant.name.capitalize()}", type: Jar) {
-        from variant.javaCompile.destinationDir
-        exclude "**/R.class"
-        exclude "**/BuildConfig.class"
-    }
-    jarTask.dependsOn variant.javaCompile
-}
-
-// From https://raw.github.com/mcxiaoke/gradle-mvn-push/master/gradle-mvn-push.gradle
-def isReleaseBuild() {
-    return VERSION_NAME.contains("SNAPSHOT") == false
-}
-
-def getReleaseRepositoryUrl() {
-    return hasProperty('RELEASE_REPOSITORY_URL') ? RELEASE_REPOSITORY_URL :
-            "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
-}
-
-def getSnapshotRepositoryUrl() {
-    return hasProperty('SNAPSHOT_REPOSITORY_URL') ? SNAPSHOT_REPOSITORY_URL :
-            "https://oss.sonatype.org/content/repositories/snapshots/"
-}
-
-def getRepositoryUsername() {
-    return hasProperty('USERNAME') ? USERNAME :
-            (hasProperty('NEXUS_USERNAME') ? NEXUS_USERNAME : "")
-}
-
-def getRepositoryPassword() {
-    return hasProperty('PASSWORD') ? PASSWORD :
-            (hasProperty('NEXUS_PASSWORD') ? NEXUS_PASSWORD : "")
 }
 
 def getGitRevision() {
@@ -168,39 +84,11 @@ def getGitRevision() {
     return ref
 }
 
-task apklib(type: Zip) {
-    appendix = extension = 'apklib'
-
-    from 'AndroidManifest.xml'
-    into('res') {
-        from 'res'
-    }
-    into('src') {
-        from 'src'
-    }
+configurations {
+    all*.exclude group: 'commons-logging', module: 'commons-logging'
+    all*.exclude group: 'commons-collections', module: 'commons-collections'
 }
 
-
-uploadArchives() {
-    repositories {
-        mavenDeployer {
-            repository(url: "file://${System.env.MAVEN}")
-        }
-    }
-}
-
-
-task makeClean(type: Exec) {
-    workingDir '../../'
-    commandLine 'make', 'clean'
-}
-
-task makeAndroid(type: Exec) {
-    workingDir '../../'
-    commandLine 'make', 'android'
-}
-
-task makeAndroidAll(type: Exec) {
-    workingDir '../../'
-    commandLine 'make', 'apackage'
-}
+apply from: 'gradle-javadoc.gradle'
+apply from: 'gradle-publish.gradle'
+apply from: 'gradle-checkstyle.gradle'
