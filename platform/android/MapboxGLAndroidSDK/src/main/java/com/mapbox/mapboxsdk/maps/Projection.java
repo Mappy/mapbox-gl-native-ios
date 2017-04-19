@@ -78,6 +78,7 @@ public class Projection {
    * @return The projection of the viewing frustum in its current state.
    */
   public VisibleRegion getVisibleRegion() {
+    /*Mappy modif
     LatLngBounds.Builder builder = new LatLngBounds.Builder();
 
     float left = contentPadding[0];
@@ -96,7 +97,41 @@ public class Projection {
       .include(bottomLeft);
 
     return new VisibleRegion(topLeft, topRight, bottomLeft, bottomRight, builder.build());
+    */
+    return getVisibleRegion(0, 0, 0, 0);
   }
+
+  /**
+   * Gets a projection of the viewing frustum for converting between screen coordinates and
+   * geo-latitude/longitude coordinates.
+   *
+   * @return The projection of the viewing frustum in its current state.
+   */
+  public VisibleRegion getVisibleRegion(int additionalPaddingLeft, int additionalPaddingTop, int additionalPaddingRight, int additionalPaddingBottom) {
+    LatLngBounds.Builder builder = new LatLngBounds.Builder();
+
+    float left = contentPadding[0] + additionalPaddingLeft;
+    float right = nativeMapView.getWidth() - contentPadding[2] - additionalPaddingRight;
+    float top = contentPadding[1] + additionalPaddingTop;
+    float bottom = nativeMapView.getHeight() - contentPadding[3] - additionalPaddingBottom;
+
+    final PointF pixels = new PointF(left, top);
+    LatLng topLeft = fromScreenLocation(pixels);
+    pixels.set(right, top);
+    LatLng topRight = fromScreenLocation(pixels);
+    pixels.set(right, bottom);
+    LatLng bottomRight = fromScreenLocation(pixels);
+    pixels.set(left, bottom);
+    LatLng bottomLeft = fromScreenLocation(pixels);
+
+    builder.include(topLeft)
+            .include(topRight)
+            .include(bottomRight)
+            .include(bottomLeft);
+
+    return new VisibleRegion(topLeft, topRight, bottomLeft, bottomRight, builder.build());
+  }
+
 
   /**
    * Returns a screen location that corresponds to a geographical coordinate (LatLng).

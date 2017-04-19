@@ -38,7 +38,7 @@ public final class Mapbox {
       LocationEngine locationEngine = new LocationSource(appContext);
       locationEngine.setPriority(LocationEnginePriority.NO_POWER);
       MapboxTelemetry.getInstance().initialize(
-        appContext, accessToken, BuildConfig.MAPBOX_EVENTS_USER_AGENT_BASE, locationEngine);
+        appContext, accessToken, BuildConfig.MAPBOX_EVENTS_USER_AGENT, locationEngine);
       ConnectivityReceiver.instance(appContext);
     }
     return INSTANCE;

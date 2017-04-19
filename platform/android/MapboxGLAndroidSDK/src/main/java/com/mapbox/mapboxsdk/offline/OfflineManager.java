@@ -125,6 +125,10 @@ public class OfflineManager {
     return instance;
   }
 
+  public static synchronized boolean isAvailable() {
+    return instance != null || Mapbox.isConnected();//TODO to reverify
+  }
+
   private Handler getHandler() {
     if (handler == null) {
       handler = new Handler(Looper.getMainLooper());
@@ -216,7 +220,7 @@ public class OfflineManager {
   }
 
     public void cleanAmbientCache() {
-        //TODO Mappy cleanAmbientCache(mDefaultFileSourcePtr);
+        //TODO Mappy V5 cleanAmbientCache(mDefaultFileSourcePtr);
     }
 
   /*

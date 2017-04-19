@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Camera;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PointF;
@@ -27,6 +28,7 @@ import android.support.annotation.IntRange;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
@@ -186,11 +188,13 @@ public class MyLocationView extends View {
     }
 
     public final void setForegroundDrawableTint(@ColorInt int color) {
-        if (foregroundDrawable != null) {
-            foregroundDrawable.mutate().setColorFilter(color, PorterDuff.Mode.SRC_IN);
-        }
-        if (foregroundBearingDrawable != null) {
-            foregroundBearingDrawable.mutate().setColorFilter(color, PorterDuff.Mode.SRC_IN);
+        if (color != Color.TRANSPARENT) {
+            if (foregroundDrawable != null) {
+                foregroundDrawable.mutate().setColorFilter(color, PorterDuff.Mode.SRC_IN);
+            }
+            if (foregroundBearingDrawable != null) {
+                foregroundBearingDrawable.mutate().setColorFilter(color, PorterDuff.Mode.SRC_IN);
+            }
         }
         invalidate();
     }
@@ -213,10 +217,12 @@ public class MyLocationView extends View {
     }
 
     public final void setShadowDrawableTint(@ColorInt int color) {
-        if (backgroundDrawable == null) {
-            return;
+        if (color != Color.TRANSPARENT) {
+            if (backgroundDrawable == null) {
+                return;
+            }
+            backgroundDrawable.mutate().setColorFilter(color, PorterDuff.Mode.SRC_IN);
         }
-        backgroundDrawable.mutate().setColorFilter(color, PorterDuff.Mode.SRC_IN);
         invalidate();
     }
 
@@ -251,20 +257,8 @@ public class MyLocationView extends View {
         foregroundBounds = new Rect(-foregroundWidth / 2, -foregroundHeight / 2, foregroundWidth / 2, foregroundHeight / 2);
         foregroundDrawable.setBounds(foregroundBounds);
         foregroundBearingDrawable.setBounds(foregroundBounds);
-
         // invoke a new draw
         invalidate();
-    }
-
-    //Mappy modif
-    public RectF getDrawRect() {
-        if (myBearingTrackingMode == MyBearingTracking.NONE || !compassListener.isSensorAvailable()) {
-            drawRect.set(foregroundDrawable.getBounds());
-        } else {
-            drawRect.set(foregroundBearingDrawable.getBounds());
-        }
-        drawRect.offset(screenLocation.x, screenLocation.y); //TODO manage orientation when map rotation will be activated
-        return drawRect;
     }
 
     @Override
