@@ -43,6 +43,7 @@ import com.mapbox.mapboxsdk.maps.widgets.CompassView;
 import com.mapbox.mapboxsdk.maps.widgets.MyLocationView;
 import com.mapbox.mapboxsdk.maps.widgets.MyLocationViewSettings;
 import com.mapbox.mapboxsdk.net.ConnectivityReceiver;
+import com.mapbox.mapboxsdk.telemetry.MapboxEventManager;
 import com.mapbox.services.android.telemetry.MapboxEvent;
 import com.mapbox.services.android.telemetry.MapboxTelemetry;
 
@@ -204,7 +205,9 @@ public class MapView extends FrameLayout {
   @UiThread
   public void onCreate(@Nullable Bundle savedInstanceState) {
     if (savedInstanceState == null) {
-      MapboxTelemetry.getInstance().pushEvent(MapboxEvent.buildMapLoadEvent());
+      if (MapboxEventManager.ENABLE_METRICS_ON_MAPPY) {
+        MapboxTelemetry.getInstance().pushEvent(MapboxEvent.buildMapLoadEvent());
+      }
     } else if (savedInstanceState.getBoolean(MapboxConstants.STATE_HAS_SAVED_STATE)) {
       mapboxMap.onRestoreInstanceState(savedInstanceState);
     }
@@ -628,7 +631,10 @@ public class MapView extends FrameLayout {
         builder.setPositiveButton(R.string.mapbox_attributionTelemetryPositive, new DialogInterface.OnClickListener() {
           @Override
           public void onClick(DialogInterface dialog, int which) {
-            MapboxTelemetry.getInstance().setTelemetryEnabled(true);
+            //Mappy modif
+            if(MapboxEventManager.ENABLE_METRICS_ON_MAPPY) {
+              MapboxTelemetry.getInstance().setTelemetryEnabled(true);
+            }
             dialog.cancel();
           }
         });
@@ -645,7 +651,10 @@ public class MapView extends FrameLayout {
         builder.setNegativeButton(R.string.mapbox_attributionTelemetryNegative, new DialogInterface.OnClickListener() {
           @Override
           public void onClick(DialogInterface dialog, int which) {
-            MapboxTelemetry.getInstance().setTelemetryEnabled(false);
+            //Mappy modif
+            if(MapboxEventManager.ENABLE_METRICS_ON_MAPPY) {
+              MapboxTelemetry.getInstance().setTelemetryEnabled(false);
+            }
             dialog.cancel();
           }
         });

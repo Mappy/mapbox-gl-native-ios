@@ -35,9 +35,9 @@ public class LocationSource extends LocationEngine implements
 
   private static final String LOG_TAG = LocationSource.class.getSimpleName();
 
-  private static LocationEngine instance;
+  protected static LocationEngine instance;
 
-  private WeakReference<Context> context;
+  protected WeakReference<Context> context;
   private LostApiClient lostApiClient;
 
   public LocationSource(Context context) {
@@ -144,5 +144,12 @@ public class LocationSource extends LocationEngine implements
   @Override
   public void onProviderEnabled(String provider) {
     Log.d(LOG_TAG, "Provider enabled: " + provider);
+  }
+
+  public void release() {
+    if (lostApiClient.isConnected()) {
+      removeLocationUpdates();
+      lostApiClient.disconnect();
+    }
   }
 }

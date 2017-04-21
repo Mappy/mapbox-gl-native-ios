@@ -214,6 +214,8 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
         if (marker.isVisible() && convertView.getVisibility() == View.GONE) {
           animateVisible(marker, true);
         }
+
+        marker.onViewPositionUpdated();
       }
     }
   }

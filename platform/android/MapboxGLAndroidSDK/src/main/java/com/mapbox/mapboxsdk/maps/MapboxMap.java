@@ -1733,6 +1733,18 @@ public final class MapboxMap {
   }
 
   /**
+   * Sets a callback that's invoked when the the My Location view
+   * (which signifies the user's location) is clicked.
+   *
+   * @param listener The callback that's invoked when the user clicks on user location marker.
+   *                 To unset the callback, use null.
+   */
+  @UiThread
+  public void setOnMyLocationViewClickListener(@Nullable final MapboxMap.OnMyLocationViewClickListener listener) {
+    trackingSettings.getMyLocationView().setOnMyLocationViewClickListener(listener);
+  }
+
+  /**
    * Sets a callback that's invoked when the location tracking mode changes.
    *
    * @param listener The callback that's invoked when the location tracking mode changes.
@@ -2150,6 +2162,20 @@ public final class MapboxMap {
      * @param location The current location of the My Location view The type of map change event.
      */
     void onMyLocationChange(@Nullable Location location);
+  }
+
+  /**
+   * Interface definition for a callback to be invoked when the the My Location view is clicked.
+   *
+   * @see MapboxMap#setOnMyLocationViewClickListener(OnMyLocationViewClickListener)
+   */
+  public interface OnMyLocationViewClickListener {
+    /**
+     * Called when the My Location view is clicked.
+     *
+     * @param location The current location of the My Location view.
+     */
+    boolean onMyLocationViewClicked(@Nullable Location location);
   }
 
   /**

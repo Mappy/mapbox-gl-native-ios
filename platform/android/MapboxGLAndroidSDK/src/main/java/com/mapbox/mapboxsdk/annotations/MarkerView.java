@@ -403,6 +403,18 @@ public class MarkerView extends Marker {
     markerViewManager.invalidateViewMarkersInVisibleRegion();
   }
 
+  //Mappy modif
+  private final RectF drawRect = new RectF();
+  public void onViewPositionUpdated() {
+    drawRect.set(0, 0, width, height);
+    View view = markerViewManager.getView(this);
+    drawRect.offset(view.getX(), view.getY());
+  }
+  public RectF getDrawRect() {
+    onViewPositionUpdated();
+    return drawRect;
+  }
+  
   /**
    * Get the String representation of a MarkerView.
    *
@@ -412,4 +424,5 @@ public class MarkerView extends Marker {
   public String toString() {
     return "MarkerView [position[" + getPosition() + "]]";
   }
+
 }

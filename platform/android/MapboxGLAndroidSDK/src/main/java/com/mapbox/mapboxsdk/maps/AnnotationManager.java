@@ -307,17 +307,25 @@ class AnnotationManager {
       deselectMarkers();
     }
 
-    if (marker instanceof MarkerView) {
-      markerViewManager.select((MarkerView) marker, false);
-      markerViewManager.ensureInfoWindowOffset((MarkerView) marker);
+    boolean handledDefaultClick = false;
+    if (onMarkerClickListener != null) {
+      // end developer has provided a custom click listener
+      handledDefaultClick = onMarkerClickListener.onMarkerClick(marker);
     }
 
-    if (infoWindowManager.isInfoWindowValidForMarker(marker) || infoWindowManager.getInfoWindowAdapter() != null) {
-      infoWindowManager.add(marker.showInfoWindow(mapboxMap, mapView));
-    }
+    if (!handledDefaultClick) {
+      if (marker instanceof MarkerView) {
+        markerViewManager.select((MarkerView) marker, false);
+        markerViewManager.ensureInfoWindowOffset((MarkerView) marker);
+      }
 
-    // only add to selected markers if user didn't handle the click event themselves #3176
-    selectedMarkers.add(marker);
+      if (infoWindowManager.isInfoWindowValidForMarker(marker) || infoWindowManager.getInfoWindowAdapter() != null) {
+        infoWindowManager.add(marker.showInfoWindow(mapboxMap, mapView));
+      }
+
+      // only add to selected markers if user didn't handle the click event themselves #3176
+      selectedMarkers.add(marker);
+    }
   }
 
   void deselectMarkers() {
@@ -621,6 +629,31 @@ class AnnotationManager {
   //
 
   boolean onTap(PointF tapPoint, float screenDensity) {
+    List<MarkerView> markerViews = new ArrayList<>();
+    final List<Marker> markers = mapboxMap.getMarkers();
+    for (Marker marker : markers) {
+      if (marker.getClass().equals(MarkerView.class)) {
+        final MarkerView markerView = (MarkerView) marker;
+        if (markerView.isVisible()) {
+          RectF drawRect = markerView.getDrawRect();
+          if (drawRect.contains(tapPoint.x, tapPoint.y)) {
+            markerViews.add(markerView);
+          }
+        }
+      }
+    }
+
+    boolean hasSelectedMarkerView = !markerViews.isEmpty();
+    if (hasSelectedMarkerView) {
+      Collections.sort(markerViews);
+      final MarkerView selectedMarker = markerViews.get(markerViews.size() - 1);
+      mapboxMap.getMarkerViewManager().onClickMarkerView(selectedMarker);
+    }
+
+    return hasSelectedMarkerView;
+
+    //dead code since we do not use MarkerGL
+    /*
     float toleranceSides = 4 * screenDensity;
     float toleranceTopBottom = 10 * screenDensity;
     boolean handledDefaultClick = false;
@@ -700,5 +733,6 @@ class AnnotationManager {
       }
     }
     return false;
+    */
   }
 }

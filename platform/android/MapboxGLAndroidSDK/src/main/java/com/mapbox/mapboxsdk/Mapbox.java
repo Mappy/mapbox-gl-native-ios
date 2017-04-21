@@ -10,6 +10,7 @@ import com.mapbox.mapboxsdk.constants.MapboxConstants;
 import com.mapbox.mapboxsdk.exceptions.InvalidAccessTokenException;
 import com.mapbox.mapboxsdk.location.LocationSource;
 import com.mapbox.mapboxsdk.net.ConnectivityReceiver;
+import com.mapbox.mapboxsdk.telemetry.MapboxEventManager;
 import com.mapbox.services.android.telemetry.MapboxTelemetry;
 import com.mapbox.services.android.telemetry.location.LocationEngine;
 import com.mapbox.services.android.telemetry.location.LocationEnginePriority;
@@ -37,8 +38,10 @@ public final class Mapbox {
       INSTANCE = new Mapbox(appContext, accessToken);
       LocationEngine locationEngine = new LocationSource(appContext);
       locationEngine.setPriority(LocationEnginePriority.NO_POWER);
-      MapboxTelemetry.getInstance().initialize(
-        appContext, accessToken, BuildConfig.MAPBOX_EVENTS_USER_AGENT, locationEngine);
+      if(MapboxEventManager.ENABLE_METRICS_ON_MAPPY) {
+        MapboxTelemetry.getInstance().initialize(
+                appContext, accessToken, BuildConfig.MAPBOX_EVENTS_USER_AGENT, locationEngine);
+      }
       ConnectivityReceiver.instance(appContext);
     }
     return INSTANCE;

@@ -120,6 +120,7 @@ public class MyLocationView extends View {
     //Mappy modif
     private WindowManager mWindowManager;
     private final RectF drawRect = new RectF();
+    public MapboxMap.OnMyLocationViewClickListener myLocationViewClickListener;
 
     public MyLocationView(Context context) {
         super(context);
@@ -261,6 +262,21 @@ public class MyLocationView extends View {
         invalidate();
     }
 
+    //Mappy modif
+    public RectF getDrawRect() {
+        if (myBearingTrackingMode == MyBearingTracking.NONE || !compassListener.isSensorAvailable()) {
+            drawRect.set(foregroundDrawable.getBounds());
+        } else {
+            drawRect.set(foregroundBearingDrawable.getBounds());
+        }
+        drawRect.offset(screenLocation.x, screenLocation.y); //TODO manage orientation when map rotation will be activated
+        return drawRect;
+    }
+
+    public void setOnMyLocationViewClickListener(MapboxMap.OnMyLocationViewClickListener listener) {
+        myLocationViewClickListener = listener;
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
@@ -306,17 +322,19 @@ public class MyLocationView extends View {
         // draw circle
         canvas.drawCircle(0, 0, accuracyPixels, accuracyPaint);
 
-        // draw shadow
-        if (backgroundDrawable != null) {
-            backgroundDrawable.draw(canvas);
-        }
-
         // draw foreground
         if (myBearingTrackingMode == MyBearingTracking.NONE || !compassListener.isSensorAvailable()) {
             if (foregroundDrawable != null) {
                 foregroundDrawable.draw(canvas);
             }
         } else if (foregroundBearingDrawable != null && foregroundBounds != null) {
+            //Mappy: move to here because of the bug that allow only specify
+            // the foregroundBearingDrawable shadow
+            // draw shadow
+            if (backgroundDrawable != null) {
+                backgroundDrawable.draw(canvas);
+            }
+
             foregroundBearingDrawable.draw(canvas);
         }
     }
@@ -462,17 +480,7 @@ public class MyLocationView extends View {
     private void toggleGps(boolean enableGps) {
         LocationEngine locationEngine = LocationSource.getLocationEngine(getContext());
         if (enableGps) {
-            // Set an initial location if one available
-            if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
-                return;
-            }
+            //noinspection MissingPermission
             Location lastLocation = locationEngine.getLastLocation();
 
             if (lastLocation != null) {
