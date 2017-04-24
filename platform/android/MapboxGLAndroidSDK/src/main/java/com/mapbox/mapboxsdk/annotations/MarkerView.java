@@ -408,10 +408,11 @@ public class MarkerView extends Marker {
   public void onViewPositionUpdated() {
     drawRect.set(0, 0, width, height);
     View view = markerViewManager.getView(this);
-    drawRect.offset(view.getX(), view.getY());
+    if(view != null) {
+      drawRect.offset(view.getX(), view.getY());
+    }
   }
   public RectF getDrawRect() {
-    onViewPositionUpdated();
     return drawRect;
   }
   
