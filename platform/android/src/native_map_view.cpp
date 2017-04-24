@@ -633,7 +633,6 @@ jni::Array<jni::jlong> NativeMapView::addPolylinesWithStroke(JNIEnv& env, jni::A
         jni::DeleteLocalRef(env, polyline);
     }
 
-    //return std_vector_uint_to_jobject(env, ids);
     auto result = jni::Array<jni::jlong>::New(env, len);
     result.SetRegion<std::vector<jni::jlong>>(env, 0, ids);
 

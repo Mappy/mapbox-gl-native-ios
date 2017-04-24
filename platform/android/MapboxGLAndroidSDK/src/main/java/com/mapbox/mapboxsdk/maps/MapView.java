@@ -43,7 +43,6 @@ import com.mapbox.mapboxsdk.maps.widgets.CompassView;
 import com.mapbox.mapboxsdk.maps.widgets.MyLocationView;
 import com.mapbox.mapboxsdk.maps.widgets.MyLocationViewSettings;
 import com.mapbox.mapboxsdk.net.ConnectivityReceiver;
-import com.mapbox.mapboxsdk.telemetry.MapboxEventManager;
 import com.mapbox.services.android.telemetry.MapboxEvent;
 import com.mapbox.services.android.telemetry.MapboxTelemetry;
 
@@ -205,7 +204,7 @@ public class MapView extends FrameLayout {
   @UiThread
   public void onCreate(@Nullable Bundle savedInstanceState) {
     if (savedInstanceState == null) {
-      if (MapboxEventManager.ENABLE_METRICS_ON_MAPPY) {
+      if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
         MapboxTelemetry.getInstance().pushEvent(MapboxEvent.buildMapLoadEvent());
       }
     } else if (savedInstanceState.getBoolean(MapboxConstants.STATE_HAS_SAVED_STATE)) {
@@ -632,7 +631,7 @@ public class MapView extends FrameLayout {
           @Override
           public void onClick(DialogInterface dialog, int which) {
             //Mappy modif
-            if(MapboxEventManager.ENABLE_METRICS_ON_MAPPY) {
+            if(Mapbox.ENABLE_METRICS_ON_MAPPY) {
               MapboxTelemetry.getInstance().setTelemetryEnabled(true);
             }
             dialog.cancel();
@@ -652,7 +651,7 @@ public class MapView extends FrameLayout {
           @Override
           public void onClick(DialogInterface dialog, int which) {
             //Mappy modif
-            if(MapboxEventManager.ENABLE_METRICS_ON_MAPPY) {
+            if(Mapbox.ENABLE_METRICS_ON_MAPPY) {
               MapboxTelemetry.getInstance().setTelemetryEnabled(false);
             }
             dialog.cancel();

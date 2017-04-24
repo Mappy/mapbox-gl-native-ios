@@ -16,10 +16,10 @@ import android.view.ViewConfiguration;
 import com.almeros.android.multitouch.gesturedetectors.RotateGestureDetector;
 import com.almeros.android.multitouch.gesturedetectors.ShoveGestureDetector;
 import com.almeros.android.multitouch.gesturedetectors.TwoFingerGestureDetector;
+import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.maps.widgets.MyLocationView;
-import com.mapbox.mapboxsdk.telemetry.MapboxEventManager;
 import com.mapbox.services.android.telemetry.MapboxEvent;
 import com.mapbox.services.android.telemetry.MapboxTelemetry;
 import com.mapbox.services.android.telemetry.utils.MathUtils;
@@ -156,7 +156,7 @@ final class MapGestureDetector {
           && uiSettings.isZoomGesturesEnabled();
         if (twoTap) {
           // Confirmed 2nd Finger Down
-          if (MapboxEventManager.ENABLE_METRICS_ON_MAPPY) {
+          if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
             MapboxTelemetry.getInstance().pushEvent(MapboxEvent.buildMapClickEvent(
                     getLocationFromGesture(event.getX(), event.getY()),
                     MapboxEvent.GESTURE_TWO_FINGER_SINGLETAP, transform.getZoom()));
@@ -189,7 +189,7 @@ final class MapGestureDetector {
 
         // Scroll / Pan Has Stopped
         if (scrollInProgress) {
-          if (MapboxEventManager.ENABLE_METRICS_ON_MAPPY) {
+          if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
             MapboxTelemetry.getInstance().pushEvent(MapboxEvent.buildMapDragEndEvent(
                     getLocationFromGesture(event.getX(), event.getY()), transform.getZoom()));
           }
@@ -291,7 +291,7 @@ final class MapGestureDetector {
           break;
       }
 
-      if (MapboxEventManager.ENABLE_METRICS_ON_MAPPY) {
+      if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
         MapboxTelemetry.getInstance().pushEvent(MapboxEvent.buildMapClickEvent(
                 getLocationFromGesture(e.getX(), e.getY()),
                 MapboxEvent.GESTURE_DOUBLETAP, transform.getZoom()));
@@ -337,7 +337,7 @@ final class MapGestureDetector {
           onMapClickListener.onMapClick(projection.fromScreenLocation(tapPoint));
         }
       }
-      if (MapboxEventManager.ENABLE_METRICS_ON_MAPPY) {
+      if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
         MapboxTelemetry.getInstance().pushEvent(MapboxEvent.buildMapClickEvent(
                 getLocationFromGesture(motionEvent.getX(), motionEvent.getY()),
                 MapboxEvent.GESTURE_SINGLETAP, transform.getZoom()));
@@ -401,7 +401,7 @@ final class MapGestureDetector {
     public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
       if (!scrollInProgress) {
         scrollInProgress = true;
-        if (MapboxEventManager.ENABLE_METRICS_ON_MAPPY) {
+        if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
           MapboxTelemetry.getInstance().pushEvent(MapboxEvent.buildMapClickEvent(
                   getLocationFromGesture(e1.getX(), e1.getY()),
                   MapboxEvent.GESTURE_PAN_START, transform.getZoom()));
@@ -447,7 +447,7 @@ final class MapGestureDetector {
 
       scaleGestureOccurred = true;
       beginTime = detector.getEventTime();
-      if (MapboxEventManager.ENABLE_METRICS_ON_MAPPY) {
+      if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
         MapboxTelemetry.getInstance().pushEvent(MapboxEvent.buildMapClickEvent(
                 getLocationFromGesture(detector.getFocusX(), detector.getFocusY()),
                 MapboxEvent.GESTURE_PINCH_START, transform.getZoom()));
@@ -541,7 +541,7 @@ final class MapGestureDetector {
       }
 
       beginTime = detector.getEventTime();
-      if (MapboxEventManager.ENABLE_METRICS_ON_MAPPY) {
+      if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
         MapboxTelemetry.getInstance().pushEvent(MapboxEvent.buildMapClickEvent(
                 getLocationFromGesture(detector.getFocusX(), detector.getFocusY()),
                 MapboxEvent.GESTURE_ROTATION_START, transform.getZoom()));
@@ -624,7 +624,7 @@ final class MapGestureDetector {
       }
 
       beginTime = detector.getEventTime();
-      if (MapboxEventManager.ENABLE_METRICS_ON_MAPPY) {
+      if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
         MapboxTelemetry.getInstance().pushEvent(MapboxEvent.buildMapClickEvent(
                 getLocationFromGesture(detector.getFocusX(), detector.getFocusY()),
                 MapboxEvent.GESTURE_PITCH_START, transform.getZoom()));
