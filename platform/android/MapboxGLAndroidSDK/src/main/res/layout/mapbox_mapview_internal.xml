@@ -22,7 +22,7 @@
         android:background="@android:color/transparent"
         android:contentDescription="@null"/>
 
-    <!--TODO Mappy modif com.mapbox.mapboxsdk.maps.widgets.MarkerViewLayout
+    <!---FIXME or REMOVE ME @see ANMA-4395 com.mapbox.mapboxsdk.maps.widgets.MarkerViewLayout
         android:id="@+id/markerViewLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

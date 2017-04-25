@@ -53,7 +53,7 @@ public class MarkerViewLayout extends FrameLayout {
     @Override
     protected int getChildDrawingOrder(int childCount, int drawOrder) {
 
-        /*FIXME Mappy todo
+        /*FIXME or REMOVE ME Mappy
         if (drawOrder > markerViewManager.getMarkers().size()) {
             return 0;
         }

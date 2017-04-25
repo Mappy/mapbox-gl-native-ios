@@ -6,7 +6,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 
-import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.net.ConnectivityReceiver;
 import com.mapbox.mapboxsdk.storage.FileSource;
 
@@ -126,7 +125,8 @@ public class OfflineManager {
   }
 
   public static synchronized boolean isAvailable() {
-    return instance != null || Mapbox.isConnected();//TODO to reverify
+    //Log.d("OffLineManager"," isAvailable="+(instance != null || FileSource.isAvailable()));
+    return instance != null || FileSource.isAvailable();
   }
 
   private Handler getHandler() {
@@ -220,7 +220,7 @@ public class OfflineManager {
   }
 
     public void cleanAmbientCache() {
-        //TODO Mappy V5 cleanAmbientCache(mDefaultFileSourcePtr);
+        cleanAmbientCache(fileSource);
     }
 
   /*
@@ -239,7 +239,6 @@ public class OfflineManager {
   private native void createOfflineRegion(FileSource fileSource, OfflineRegionDefinition definition,
                                           byte[] metadata, CreateOfflineRegionCallback callback);
 
-    private native void cleanAmbientCache(
-            long defaultFileSourcePtr);
+    private native void cleanAmbientCache(FileSource fileSource);
 
 }
