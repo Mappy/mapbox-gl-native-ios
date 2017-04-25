@@ -87,9 +87,12 @@ public class MyLocationView extends View {
     private Drawable foregroundDrawable;
     private Drawable foregroundBearingDrawable;
     private Drawable backgroundDrawable;
+    private Drawable backgroundBearingDrawable;
 
-    private Rect foregroundBounds;
-    private Rect backgroundBounds;
+    private final Rect foregroundBounds = new Rect();
+    private final Rect foregroundBearingBounds = new Rect();
+    private final Rect backgroundBounds = new Rect();
+    private final Rect backgroundBearingBounds = new Rect();
 
     private int backgroundOffsetLeft;
     private int backgroundOffsetTop;
@@ -177,6 +180,12 @@ public class MyLocationView extends View {
             backgroundDrawable = defaultDrawable.getConstantState().newDrawable();
         }
 
+        if (backgroundBearingDrawable == null) {
+            // if the user didn't provide a background resource for bearing drawable we will use the bearingDrawable resource instead,
+            // we need to create a new drawable to handle tinting correctly
+            backgroundBearingDrawable = backgroundDrawable.getConstantState().newDrawable();
+        }
+
         if (defaultDrawable.getIntrinsicWidth() != bearingDrawable.getIntrinsicWidth()
                 || defaultDrawable.getIntrinsicHeight() != bearingDrawable.getIntrinsicHeight()) {
             throw new RuntimeException("The dimensions from location and bearing drawables should be match");
@@ -200,14 +209,13 @@ public class MyLocationView extends View {
         invalidate();
     }
 
-    public final void setShadowDrawable(Drawable drawable) {
-        setShadowDrawable(drawable, 0, 0, 0, 0);
+    public final void setShadowDrawable(Drawable defaultDrawable, Drawable bearingDrawable) {
+        setShadowDrawable(defaultDrawable, bearingDrawable, 0, 0, 0, 0);
     }
 
-    public final void setShadowDrawable(Drawable drawable, int left, int top, int right, int bottom) {
-        if (drawable != null) {
-            backgroundDrawable = drawable;
-        }
+    public final void setShadowDrawable(Drawable defaultDrawable, Drawable bearingDrawable, int left, int top, int right, int bottom) {
+        backgroundDrawable = defaultDrawable;
+        backgroundBearingDrawable = bearingDrawable;
 
         backgroundOffsetLeft = left;
         backgroundOffsetTop = top;
@@ -219,10 +227,12 @@ public class MyLocationView extends View {
 
     public final void setShadowDrawableTint(@ColorInt int color) {
         if (color != Color.TRANSPARENT) {
-            if (backgroundDrawable == null) {
-                return;
+            if (backgroundDrawable != null) {
+                backgroundDrawable.mutate().setColorFilter(color, PorterDuff.Mode.SRC_IN);
             }
-            backgroundDrawable.mutate().setColorFilter(color, PorterDuff.Mode.SRC_IN);
+            if (backgroundBearingDrawable != null) {
+                backgroundBearingDrawable.mutate().setColorFilter(color, PorterDuff.Mode.SRC_IN);
+            }
         }
         invalidate();
     }
@@ -240,26 +250,29 @@ public class MyLocationView extends View {
     }
 
     private void invalidateBounds() {
-        if (backgroundDrawable == null || foregroundDrawable == null || foregroundBearingDrawable == null) {
-            return;
-        }
-
-        int backgroundWidth = backgroundDrawable.getIntrinsicWidth();
-        int backgroundHeight = backgroundDrawable.getIntrinsicHeight();
         int horizontalOffset = backgroundOffsetLeft - backgroundOffsetRight;
         int verticalOffset = backgroundOffsetTop - backgroundOffsetBottom;
-        backgroundBounds = new Rect(-backgroundWidth / 2 + horizontalOffset,
-                -backgroundHeight / 2 + verticalOffset, backgroundWidth / 2 + horizontalOffset, backgroundHeight / 2
-                + verticalOffset);
-        backgroundDrawable.setBounds(backgroundBounds);
 
-        int foregroundWidth = foregroundDrawable.getIntrinsicWidth();
-        int foregroundHeight = foregroundDrawable.getIntrinsicHeight();
-        foregroundBounds = new Rect(-foregroundWidth / 2, -foregroundHeight / 2, foregroundWidth / 2, foregroundHeight / 2);
-        foregroundDrawable.setBounds(foregroundBounds);
-        foregroundBearingDrawable.setBounds(foregroundBounds);
+        computeBounds(backgroundDrawable, backgroundBounds, horizontalOffset, verticalOffset);
+        computeBounds(backgroundBearingDrawable, backgroundBearingBounds, horizontalOffset, verticalOffset);
+        computeBounds(foregroundDrawable, foregroundBounds);
+        computeBounds(foregroundBearingDrawable, foregroundBearingBounds);
+
         // invoke a new draw
         invalidate();
+    }
+
+    private void computeBounds(Drawable drawable, Rect bounds) {
+        computeBounds(drawable, bounds, 0, 0);
+    }
+
+    private void computeBounds(Drawable drawable, Rect bounds, int horizontalOffset, int verticalOffset) {
+        if (drawable != null) {
+            int halfWidth = drawable.getIntrinsicWidth() / 2;
+            int halfHeight = drawable.getIntrinsicHeight() / 2;
+            bounds.set(-halfWidth + horizontalOffset, -halfHeight + verticalOffset, halfWidth + horizontalOffset, halfHeight + verticalOffset);
+            drawable.setBounds(bounds);
+        }
     }
 
     //Mappy modif
@@ -324,18 +337,18 @@ public class MyLocationView extends View {
 
         // draw foreground
         if (myBearingTrackingMode == MyBearingTracking.NONE || !compassListener.isSensorAvailable()) {
-            if (foregroundDrawable != null) {
-                foregroundDrawable.draw(canvas);
-            }
+            draw(canvas, foregroundDrawable, backgroundDrawable);
         } else if (foregroundBearingDrawable != null && foregroundBounds != null) {
-            //Mappy: move to here because of the bug that allow only specify
-            // the foregroundBearingDrawable shadow
-            // draw shadow
-            if (backgroundDrawable != null) {
-                backgroundDrawable.draw(canvas);
-            }
+            draw(canvas, foregroundBearingDrawable, backgroundBearingDrawable);
+        }
+    }
 
-            foregroundBearingDrawable.draw(canvas);
+    private void draw(Canvas canvas, Drawable foreground, Drawable background) {
+        if (background != null) {
+            background.draw(canvas);
+        }
+        if (foreground != null) {
+            foreground.draw(canvas);
         }
     }
 
@@ -811,9 +824,16 @@ public class MyLocationView extends View {
     }
 
     void updateAccuracy(@NonNull Location location) {
-      if (accuracyAnimator != null && accuracyAnimator.isRunning()) {
-        // use current accuracy as a starting point
-        accuracy = (Float) accuracyAnimator.getAnimatedValue();
+      if (location.getAccuracy() == accuracy) {
+        // nothing change for accuracy
+        return;
+      }
+
+      if (accuracyAnimator != null) {
+        if (accuracyAnimator.isRunning()) {
+            // use current accuracy as a starting point
+            accuracy = (Float) accuracyAnimator.getAnimatedValue();
+        }
         accuracyAnimator.end();
       }
 

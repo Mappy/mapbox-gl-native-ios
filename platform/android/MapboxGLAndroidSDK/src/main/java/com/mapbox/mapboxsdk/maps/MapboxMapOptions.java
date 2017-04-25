@@ -72,6 +72,7 @@ public class MapboxMapOptions implements Parcelable {
   private Drawable myLocationForegroundDrawable;
   private Drawable myLocationForegroundBearingDrawable;
   private Drawable myLocationBackgroundDrawable;
+  private Drawable myLocationBackgroundBearingDrawable;
   private int myLocationForegroundTintColor;
   private int myLocationBackgroundTintColor;
   private int[] myLocationBackgroundPadding;
@@ -569,6 +570,21 @@ public class MapboxMapOptions implements Parcelable {
   }
 
   /**
+   * Set the background drawable of MyLocationView.
+   * <p>
+   * Padding can be added to provide an offset to the background.
+   * </p>
+   *
+   * @param myLocationBackgroundDrawable the drawable to show as background
+   * @return This
+   */
+  public MapboxMapOptions myLocationBackgroundDrawable(Drawable myLocationBackgroundDrawable, Drawable myLocationBackgroundBearingDrawable) {
+    this.myLocationBackgroundDrawable = myLocationBackgroundDrawable;
+    this.myLocationBackgroundBearingDrawable = myLocationBackgroundBearingDrawable;
+    return this;
+  }
+
+  /**
    * Set the foreground drawable of the MyLocationView.
    * <p>
    * The same drawable will be used for both bearing as non bearing modes.
@@ -903,6 +919,15 @@ public class MapboxMapOptions implements Parcelable {
    */
   public Drawable getMyLocationBackgroundDrawable() {
     return myLocationBackgroundDrawable;
+  }
+
+  /**
+   * Get the current configured MyLocationView background bearing drawable.
+   *
+   * @return the drawable used as background when bearing is enabled
+   */
+  public Drawable getMyLocationBackgroundBearingDrawable() {
+    return myLocationBackgroundBearingDrawable;
   }
 
   /**

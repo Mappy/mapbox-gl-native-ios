@@ -42,6 +42,7 @@ public class MyLocationViewSettings {
   //
 
   private Drawable backgroundDrawable;
+  private Drawable backgroundBearingDrawable;
   private int[] backgroundOffset = new int[4];
 
   @ColorInt
@@ -85,7 +86,7 @@ public class MyLocationViewSettings {
     }
     setForegroundDrawable(options.getMyLocationForegroundDrawable(), options.getMyLocationForegroundBearingDrawable());
     setForegroundTintColor(options.getMyLocationForegroundTintColor());
-    setBackgroundDrawable(options.getMyLocationBackgroundDrawable(), options.getMyLocationBackgroundPadding());
+    setBackgroundDrawable(options.getMyLocationBackgroundDrawable(), options.getMyLocationBackgroundBearingDrawable(), options.getMyLocationBackgroundPadding());
     setBackgroundTintColor(options.getMyLocationBackgroundTintColor());
     setAccuracyAlpha(options.getMyLocationAccuracyAlpha());
     setAccuracyTintColor(options.getMyLocationAccuracyTintColor());
@@ -174,13 +175,14 @@ public class MyLocationViewSettings {
    * @param backgroundDrawable the drawable to show as background
    * @param padding            the padding added to the background
    */
-  public void setBackgroundDrawable(Drawable backgroundDrawable, int[] padding) {
+  public void setBackgroundDrawable(@Nullable Drawable backgroundDrawable, @Nullable Drawable backgroundBearingDrawable, @Nullable int[] padding) {
     this.backgroundDrawable = backgroundDrawable;
+    this.backgroundBearingDrawable = backgroundBearingDrawable;
     this.backgroundOffset = padding;
     if (padding != null && padding.length == 4) {
-      myLocationView.setShadowDrawable(backgroundDrawable, padding[0], padding[1], padding[2], padding[3]);
+      myLocationView.setShadowDrawable(backgroundDrawable, backgroundBearingDrawable, padding[0], padding[1], padding[2], padding[3]);
     } else {
-      myLocationView.setShadowDrawable(backgroundDrawable);
+      myLocationView.setShadowDrawable(backgroundDrawable, backgroundBearingDrawable);
     }
   }
 
@@ -191,6 +193,15 @@ public class MyLocationViewSettings {
    */
   public Drawable getBackgroundDrawable() {
     return backgroundDrawable;
+  }
+
+  /**
+   * Get the bearing background drawable of MyLocationView.
+   *
+   * @return the drawable used as background when bearing mode enabled
+   */
+  public Drawable getBackgroundBearingDrawable() {
+    return backgroundBearingDrawable;
   }
 
   /**
