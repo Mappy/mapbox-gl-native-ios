@@ -110,6 +110,10 @@ public class MarkerView extends Marker {
     this.anchorU = u;
     this.anchorV = v;
     setOffset(-1, -1);
+    if (markerViewManager != null) {
+      markerViewManager.setWaitingForRenderInvoke(true);
+      markerViewManager.update();
+    }
   }
 
   /**
@@ -400,7 +404,7 @@ public class MarkerView extends Marker {
   void invalidate() {
     width = height = 0;
     offsetX = offsetY = MapboxConstants.UNMEASURED;
-    markerViewManager.invalidateViewMarkersInVisibleRegion();
+    //markerViewManager.invalidateViewMarkersInVisibleRegion();
   }
 
   //Mappy modif

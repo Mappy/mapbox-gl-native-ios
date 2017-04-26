@@ -5,6 +5,7 @@ import android.graphics.RectF;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.util.LongSparseArray;
+import android.util.Log;
 
 import com.mapbox.mapboxsdk.annotations.Annotation;
 import com.mapbox.mapboxsdk.annotations.BaseMarkerOptions;
@@ -215,6 +216,7 @@ class AnnotationManager {
 
   MarkerView addMarker(@NonNull BaseMarkerViewOptions markerOptions, @NonNull MapboxMap mapboxMap,
                        @Nullable MarkerViewManager.OnMarkerViewAddedListener onMarkerViewAddedListener) {
+    Log.d("AnnotationManager", "_TTT addMarker ="+markerOptions.getPosition());
     final MarkerView marker = prepareViewMarker(markerOptions);
 
     // add marker to map
@@ -261,6 +263,7 @@ class AnnotationManager {
   }
 
   void updateMarker(@NonNull Marker updatedMarker, @NonNull MapboxMap mapboxMap) {
+    Log.d("AnnotationManager","_TTT updateMarker");
     if (updatedMarker == null) {
       return;
     }
@@ -271,6 +274,8 @@ class AnnotationManager {
 
     if (!(updatedMarker instanceof MarkerView)) {
       iconManager.ensureIconLoaded(updatedMarker, mapboxMap);
+    } else {
+      iconManager.loadIconForMarkerView((MarkerView)updatedMarker);
     }
 
     nativeMapView.updateMarker(updatedMarker);

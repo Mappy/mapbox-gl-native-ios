@@ -7,6 +7,7 @@ import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.util.LongSparseArray;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -77,6 +78,7 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
 
   @Override
   public void onMapChanged(@MapView.MapChange int change) {
+    if (isWaitingForRenderInvoke) Log.d("MarkerViewManager", "_TTT onMapChanged change="+change+" isWaitingForRenderInvoke="+isWaitingForRenderInvoke);
     if (isWaitingForRenderInvoke && change == MapView.DID_FINISH_RENDERING_FRAME_FULLY_RENDERED) {
       isWaitingForRenderInvoke = false;
       invalidateViewMarkersInVisibleRegion();
@@ -246,8 +248,9 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
   public void updateIcon(@NonNull MarkerView markerView) {
     View convertView = markerViewMap.get(markerView);
     if (convertView != null && convertView instanceof ImageView) {
-      ((ImageView) convertView).setImageBitmap(markerView.getIcon().getBitmap());
       markerView.invalidate();
+      ((ImageView) convertView).setImageBitmap(markerView.getIcon().getBitmap());
+      convertView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
     }
   }
 
@@ -475,6 +478,7 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
    * </p>
    */
   public void invalidateViewMarkersInVisibleRegion() {
+    Log.d("MarkerViewManager","_TTT invalidateViewMarkersInVisibleRegion ");
     RectF mapViewRect = new RectF(0, 0, markerViewContainer.getWidth(), markerViewContainer.getHeight());
     List<MarkerView> markers = mapboxMap.getMarkerViewsInRect(mapViewRect);
     View convertView;
