@@ -559,7 +559,7 @@ public class MyLocationView extends View {
                         new MapboxMap.CancelableCallback() {
                             @Override
                             public void onCancel() {
-
+                                mapboxMap.getTrackingSettings().setDismissTrackingModeForCameraPositionChange(true);
                             }
 
                             @Override
@@ -757,7 +757,7 @@ public class MyLocationView extends View {
         false /*linear interpolator*/, new MapboxMap.CancelableCallback() {
           @Override
           public void onCancel() {
-
+              mapboxMap.getTrackingSettings().setDismissTrackingModeForCameraPositionChange(true);
           }
 
           @Override
@@ -890,7 +890,7 @@ public class MyLocationView extends View {
         false /*linear interpolator*/, new MapboxMap.CancelableCallback() {
           @Override
           public void onCancel() {
-
+              mapboxMap.getTrackingSettings().setDismissTrackingModeForCameraPositionChange(true);
           }
 
           @Override
