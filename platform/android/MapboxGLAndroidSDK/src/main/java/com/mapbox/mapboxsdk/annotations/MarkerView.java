@@ -110,10 +110,6 @@ public class MarkerView extends Marker {
     this.anchorU = u;
     this.anchorV = v;
     setOffset(-1, -1);
-    if (markerViewManager != null) {
-      markerViewManager.setWaitingForRenderInvoke(true);
-      markerViewManager.update();
-    }
   }
 
   /**
@@ -427,7 +423,7 @@ public class MarkerView extends Marker {
    */
   @Override
   public String toString() {
-    return "MarkerView [position[" + getPosition() + "]]";
+    return "MarkerView [position[" + getPosition() + "], offsetX["+offsetX+","+offsetY+"], Dim["+width+","+height+"], Anchor["+anchorU+"/"+anchorV+"]]";
   }
 
 }

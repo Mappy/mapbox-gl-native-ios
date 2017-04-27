@@ -78,7 +78,6 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
 
   @Override
   public void onMapChanged(@MapView.MapChange int change) {
-    if (isWaitingForRenderInvoke) Log.d("MarkerViewManager", "_TTT onMapChanged change="+change+" isWaitingForRenderInvoke="+isWaitingForRenderInvoke);
     if (isWaitingForRenderInvoke && change == MapView.DID_FINISH_RENDERING_FRAME_FULLY_RENDERED) {
       isWaitingForRenderInvoke = false;
       invalidateViewMarkersInVisibleRegion();
@@ -214,7 +213,12 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
 
         // animate visibility
         if (marker.isVisible() && convertView.getVisibility() == View.GONE) {
-          animateVisible(marker, true);
+          convertView.post(new Runnable() {
+            @Override
+            public void run() {
+              animateVisible(marker, true);
+            }
+          });
         }
 
         marker.onViewPositionUpdated();
@@ -248,9 +252,8 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
   public void updateIcon(@NonNull MarkerView markerView) {
     View convertView = markerViewMap.get(markerView);
     if (convertView != null && convertView instanceof ImageView) {
-      markerView.invalidate();
       ((ImageView) convertView).setImageBitmap(markerView.getIcon().getBitmap());
-      convertView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+      markerView.invalidate();
     }
   }
 
@@ -402,9 +405,11 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
     if (viewHolder != null && marker != null) {
       for (final MapboxMap.MarkerViewAdapter<?> adapter : markerViewAdapters) {
         if (adapter.getMarkerClass().equals(marker.getClass())) {
+          ((ImageView) viewHolder).setImageBitmap(null);
           if (adapter.prepareViewForReuse(marker, viewHolder)) {
             // reset offset for reuse
             marker.setOffset(MapboxConstants.UNMEASURED, MapboxConstants.UNMEASURED);
+            marker.invalidate();
             adapter.releaseView(viewHolder);
           }
         }
@@ -478,7 +483,6 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
    * </p>
    */
   public void invalidateViewMarkersInVisibleRegion() {
-    Log.d("MarkerViewManager","_TTT invalidateViewMarkersInVisibleRegion ");
     RectF mapViewRect = new RectF(0, 0, markerViewContainer.getWidth(), markerViewContainer.getHeight());
     List<MarkerView> markers = mapboxMap.getMarkerViewsInRect(mapViewRect);
     View convertView;
