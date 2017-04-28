@@ -174,23 +174,6 @@ public class MyLocationView extends View {
             bearingDrawable = defaultDrawable.getConstantState().newDrawable();
         }
 
-        if (backgroundDrawable == null) {
-            // if the user didn't provide a background resource we will use the foreground resource instead,
-            // we need to create a new drawable to handle tinting correctly
-            backgroundDrawable = defaultDrawable.getConstantState().newDrawable();
-        }
-
-        if (backgroundBearingDrawable == null) {
-            // if the user didn't provide a background resource for bearing drawable we will use the bearingDrawable resource instead,
-            // we need to create a new drawable to handle tinting correctly
-            backgroundBearingDrawable = backgroundDrawable.getConstantState().newDrawable();
-        }
-
-        if (defaultDrawable.getIntrinsicWidth() != bearingDrawable.getIntrinsicWidth()
-                || defaultDrawable.getIntrinsicHeight() != bearingDrawable.getIntrinsicHeight()) {
-            throw new RuntimeException("The dimensions from location and bearing drawables should be match");
-        }
-
         foregroundDrawable = defaultDrawable;
         foregroundBearingDrawable = bearingDrawable;
 
@@ -646,18 +629,10 @@ public class MyLocationView extends View {
             MyLocationView locationView = userLocationView.get();
             if (locationView != null) {
                 LocationEngine locationSource = LocationSource.getLocationEngine(locationView.getContext());
-                if (ActivityCompat.checkSelfPermission(locationView.getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(locationView.getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    // TODO: Consider calling
-                    //    ActivityCompat#requestPermissions
-                    // here to request the missing permissions, and then overriding
-                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                    //                                          int[] grantResults)
-                    // to handle the case where the user grants the permission. See the documentation
-                    // for ActivityCompat#requestPermissions for more details.
-                    return;
-                }
+                //noinspection MissingPermission
                 Location location = locationSource.getLastLocation();
                 locationView.setLocation(location);
+                //noinspection MissingPermission
                 locationSource.requestLocationUpdates();
             }
         }
