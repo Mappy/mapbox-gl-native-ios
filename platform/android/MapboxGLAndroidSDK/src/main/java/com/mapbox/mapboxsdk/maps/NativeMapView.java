@@ -17,8 +17,10 @@ import com.mapbox.mapboxsdk.annotations.Icon;
 import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.Polygon;
 import com.mapbox.mapboxsdk.annotations.Polyline;
+import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
 import com.mapbox.mapboxsdk.geometry.LatLng;
+import com.mapbox.mapboxsdk.geometry.LatLngBounds;
 import com.mapbox.mapboxsdk.geometry.ProjectedMeters;
 import com.mapbox.mapboxsdk.storage.FileSource;
 import com.mapbox.mapboxsdk.style.layers.CannotAddLayerException;
@@ -307,6 +309,13 @@ final class NativeMapView {
     }
     // wrap longitude values coming from core
     return nativeGetLatLng().wrap();
+  }
+
+  public CameraPosition getCameraForLatLngBounds(LatLngBounds latLngBounds) {
+    if (isDestroyedOn("getCameraForLatLngBounds")) {
+      return null;
+    }
+    return nativeGetCameraForLatLngBounds(latLngBounds);
   }
 
   public void resetPosition() {
@@ -728,11 +737,11 @@ final class NativeMapView {
     nativeFlyTo(angle, center.getLatitude(), center.getLongitude(), duration, pitch, zoom);
   }
 
-  public double[] getCameraValues() {
+  public CameraPosition getCameraPosition() {
     if (isDestroyedOn("getCameraValues")) {
-      return new double[] {};
+      return new CameraPosition.Builder().build();
     }
-    return nativeGetCameraValues();
+    return nativeGetCameraPosition();
   }
 
   // Runtime style Api
@@ -1016,6 +1025,8 @@ final class NativeMapView {
 
   private native LatLng nativeGetLatLng();
 
+  private native CameraPosition nativeGetCameraForLatLngBounds(LatLngBounds latLngBounds);
+
   private native void nativeResetPosition();
 
   private native double nativeGetPitch();
@@ -1109,7 +1120,7 @@ final class NativeMapView {
   private native void nativeFlyTo(double angle, double latitude, double longitude,
                                   long duration, double pitch, double zoom);
 
-  private native double[] nativeGetCameraValues();
+  private native CameraPosition nativeGetCameraPosition();
 
   private native long nativeGetTransitionDuration();
 

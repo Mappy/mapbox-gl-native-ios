@@ -126,6 +126,9 @@ void registerNatives(JavaVM *vm) {
     IdentityStops::registerNative(env);
     IntervalStops::registerNative(env);
 
+    // Map
+    CameraPosition::registerNative(env);
+
     // Connectivity
     ConnectivityListener::registerNative(env);
 
