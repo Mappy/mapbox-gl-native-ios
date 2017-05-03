@@ -8,20 +8,22 @@
 -dontwarn okhttp3.**
 -dontwarn okio.**
 
-# Gesture package
--keep class almeros.android.multitouch.gesturedetectors.** { *; }
-
 # Package annotations
--keep class com.mapbox.mapboxsdk.annotations.** { *; }
+-keep class com.mapbox.mapboxsdk.annotations.Icon { *; }
+-keep class com.mapbox.mapboxsdk.annotations.Marker { *; }
+-keep class com.mapbox.mapboxsdk.annotations.Polygon { *; }
+-keep class com.mapbox.mapboxsdk.annotations.Polyline { *; }
 
 # Package camera
--keep class com.mapbox.mapboxsdk.camera.** { *; }
+-keep class com.mapbox.mapboxsdk.camera.CameraPosition { *; }
 
 # Package geometry
--keep class com.mapbox.mapboxsdk.geometry.** { *; }
+-keep class com.mapbox.mapboxsdk.geometry.LatLng { *; }
+-keep class com.mapbox.mapboxsdk.geometry.LatLngBounds { *; }
+-keep class com.mapbox.mapboxsdk.geometry.ProjectedMeters { *; }
 
 # Package http
--keep class com.mapbox.mapboxsdk.http.** { *; }
+-keep class com.mapbox.mapboxsdk.http.HTTPRequest { *; }
 
 # Package maps
 -keep class com.mapbox.mapboxsdk.maps.** { *; }
@@ -36,12 +38,11 @@
 -keep class com.mapbox.mapboxsdk.storage.** { *; }
 
 # Package style
--keep class com.mapbox.mapboxsdk.style.layers.** { *; }
--keep class com.mapbox.mapboxsdk.style.sources.** { *; }
+-keep class com.mapbox.mapboxsdk.style.layers.Layer { *; }
+-keep class com.mapbox.mapboxsdk.style.layers.NoSuchLayerException { *; }
+-keep class com.mapbox.mapboxsdk.style.sources.NoSuchSourceException { *; }
+-keep class com.mapbox.mapboxsdk.style.sources.Source { *; }
 -keep class com.mapbox.mapboxsdk.style.functions.** { *; }
-
-# Package telemetry
--keep class com.mapbox.mapboxsdk.telemetry.** { *; }
 
 #
 # Mapbox-java Proguard rules
@@ -49,7 +50,6 @@
 #
 
 # Gesture package
--keep class almeros.android.multitouch.gesturedetectors.** { *; }
 -dontshrink
 
 # Retrofit 2
@@ -77,11 +77,6 @@
 
 # MAS Data Models
 -keep class com.mapbox.services.commons.geojson.** { *; }
--keep class com.mapbox.services.mapmatching.v4.models.** { *; }
--keep class com.mapbox.services.distance.v1.models.** { *; }
--keep class com.mapbox.services.directions.v4.models.** { *; }
--keep class com.mapbox.services.directions.v5.models.** { *; }
--keep class com.mapbox.services.geocoding.v5.models.** { *; }
 
 -dontwarn javax.annotation.**
 
@@ -90,20 +85,8 @@
     long consumerIndex;
 }
 
--keep class com.google.** { *; }
+-keep class com.google.gson.GsonBuilder {*;}
+-keep class com.google.gson.JsonElement {*;}
+-keep class com.google.gson.JsonObject {*;}
+-keep class com.google.gson.JsonPrimitive {*;}
 -dontwarn com.google.**
-
-# Keep - Library. Keep all public and protected classes, fields, and methods.
--keep public class * {
-    public protected <fields>;
-    public protected <methods>;
-}
--keep public interface * {
-    public protected <methods>;
-}
-
--keepattributes *Annotation*
--keepattributes InnerClasses
-
--keep class com.mapzen.** { *; }
--keep class com.squareup.** { *; }
