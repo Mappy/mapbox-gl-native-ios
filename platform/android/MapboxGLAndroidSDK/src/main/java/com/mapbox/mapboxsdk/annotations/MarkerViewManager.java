@@ -7,7 +7,6 @@ import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.util.LongSparseArray;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,6 +21,7 @@ import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.utils.AnimatorUtils;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 
 import com.mapbox.mapboxsdk.maps.Projection;
@@ -47,7 +47,7 @@ import java.util.TreeMap;
 public class MarkerViewManager implements MapView.OnMapChangedListener {
 
   private final ViewGroup markerViewContainer;
-  private final Map<MarkerView, View> markerViewMap = new HashMap<>();
+  private final TreeMap<MarkerView, View> markerViewMap = new TreeMap<>();
   private final LongSparseArray<OnMarkerViewAddedListener> markerViewAddedListenerMap = new LongSparseArray<>();
   private final List<MapboxMap.MarkerViewAdapter> markerViewAdapters = new ArrayList<>();
 
@@ -67,6 +67,12 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
    */
   public MarkerViewManager(@NonNull ViewGroup container) {
     this.markerViewContainer = container;
+
+    //Mappy modifs
+    if(markerViewContainer instanceof MarkerViewLayout){
+      ((MarkerViewLayout) this.markerViewContainer).setMarkerViewManager(this);
+    }
+
     this.markerViewAdapters.add(new ImageMarkerViewAdapter(container.getContext()));
   }
 
@@ -372,6 +378,12 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
     return markerViewMap.get(marker);
   }
 
+  //Mappy modifs
+  public Collection<View> getSortedViews() {
+    return markerViewMap.values();
+  }
+
+
   /**
    * Get the view adapter for a marker.
    *
@@ -504,7 +516,6 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
       }
     }
 
-    Collections.sort(markers);
     // introduce new markers
     for (final MarkerView marker : markers) {
       if (!markerViewMap.containsKey(marker)) {

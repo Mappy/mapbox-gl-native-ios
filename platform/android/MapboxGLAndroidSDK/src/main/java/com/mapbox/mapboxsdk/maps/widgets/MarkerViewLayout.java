@@ -11,6 +11,7 @@ import android.widget.FrameLayout;
 
 import com.mapbox.mapboxsdk.annotations.MarkerViewManager;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.TreeMap;
 
@@ -52,13 +53,12 @@ public class MarkerViewLayout extends FrameLayout {
 
     @Override
     protected int getChildDrawingOrder(int childCount, int drawOrder) {
-
-        /*FIXME or REMOVE ME Mappy
-        if (drawOrder > markerViewManager.getMarkers().size()) {
+        Collection<View> collectionSorted = markerViewManager.getSortedViews();
+        if (collectionSorted == null || drawOrder > collectionSorted.size()) {
             return 0;
         }
 
-        Iterator<View> iteratorSorted = new TreeMap(markerViewManager.getMarkers()).values().iterator();
+        Iterator<View> iteratorSorted = collectionSorted.iterator();
 
         int i = 0;
         while (iteratorSorted.hasNext()) {
@@ -71,7 +71,7 @@ public class MarkerViewLayout extends FrameLayout {
             }
             i++;
         }
-        */
+
         return 0;
     }
 }

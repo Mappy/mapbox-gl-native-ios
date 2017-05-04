@@ -426,6 +426,7 @@ public class MarkerView extends Marker {
     return "MarkerView [position[" + getPosition() + "], offsetX["+offsetX+","+offsetY+"], Dim["+width+","+height+"], Anchor["+anchorU+"/"+anchorV+"]]";
   }
 
+  //Mappy modifs
   @Override
   public int compareTo(@NonNull Annotation annotation) {
     if (annotation instanceof MarkerView) {

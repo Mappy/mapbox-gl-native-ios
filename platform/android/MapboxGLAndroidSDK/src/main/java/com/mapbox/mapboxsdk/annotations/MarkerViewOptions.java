@@ -115,6 +115,8 @@ public class MarkerViewOptions extends BaseMarkerViewOptions<MarkerView, MarkerV
     marker.setRotation(rotation);
     marker.setVisible(visible);
     marker.setAlpha(alpha);
+    //Mappy modif
+    marker.setZOrder(zOrder);
     return marker;
   }
 
