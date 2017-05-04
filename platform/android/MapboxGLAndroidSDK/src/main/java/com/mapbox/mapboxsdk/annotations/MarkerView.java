@@ -426,4 +426,34 @@ public class MarkerView extends Marker {
     return "MarkerView [position[" + getPosition() + "], offsetX["+offsetX+","+offsetY+"], Dim["+width+","+height+"], Anchor["+anchorU+"/"+anchorV+"]]";
   }
 
+  @Override
+  public int compareTo(@NonNull Annotation annotation) {
+    if (annotation instanceof MarkerView) {
+      MarkerView other = (MarkerView) annotation;
+      int zOrderComparison = Double.compare(getZOrder(), other.getZOrder());
+      if (zOrderComparison != 0) {
+        return zOrderComparison;
+      }
+
+      LatLng left = getPosition();
+      LatLng right = other.getPosition();
+
+      //logic is reverse, right before left, because the last added is displayed on the top
+      final int latComparison = Double.compare(right.getLatitude(), left.getLatitude());
+      if (latComparison != 0) {
+        return latComparison;
+      }
+
+
+      final int lonComparison = Double.compare(right.getLongitude(), left.getLongitude());
+      if (lonComparison != 0) {
+        return lonComparison;
+      }
+
+      return (int) (getId() - other.getId());
+    }
+    return super.compareTo(annotation);
+  }
+
+
 }

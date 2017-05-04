@@ -504,6 +504,7 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
       }
     }
 
+    Collections.sort(markers);
     // introduce new markers
     for (final MarkerView marker : markers) {
       if (!markerViewMap.containsKey(marker)) {
