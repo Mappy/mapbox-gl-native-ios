@@ -47,7 +47,7 @@ import java.util.TreeMap;
 public class MarkerViewManager implements MapView.OnMapChangedListener {
 
   private final ViewGroup markerViewContainer;
-  private final TreeMap<MarkerView, View> markerViewMap = new TreeMap<>();
+  private final Map<MarkerView, View> markerViewMap = new HashMap<>();
   private final LongSparseArray<OnMarkerViewAddedListener> markerViewAddedListenerMap = new LongSparseArray<>();
   private final List<MapboxMap.MarkerViewAdapter> markerViewAdapters = new ArrayList<>();
 
@@ -59,6 +59,9 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
   private long updateTime;
   private MapboxMap.OnMarkerViewClickListener onMarkerViewClickListener;
   private boolean isWaitingForRenderInvoke;
+
+  //Mappy modif
+  private TreeMap<MarkerView, View> markerViewSortedMap;
 
   /**
    * Creates an instance of MarkerViewManager.
@@ -378,10 +381,10 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
     return markerViewMap.get(marker);
   }
 
-  //Mappy modifs
-  public Collection<View> getSortedViews() {
-    return markerViewMap.values();
-  }
+    //Mappy modifs
+    public Collection<View> getSortedViews() {
+        return (markerViewSortedMap != null) ? markerViewSortedMap.values() : null;
+    }
 
 
   /**
@@ -499,6 +502,8 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
     List<MarkerView> markers = mapboxMap.getMarkerViewsInRect(mapViewRect);
     View convertView;
 
+    boolean isMarkerViewModified = false;
+
     // remove old markers
     Iterator<MarkerView> iterator = markerViewMap.keySet().iterator();
     while (iterator.hasNext()) {
@@ -510,6 +515,7 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
           if (adapter.getMarkerClass().equals(marker.getClass())) {
             adapter.prepareViewForReuse(marker, convertView);
             adapter.releaseView(convertView);
+            isMarkerViewModified = true;
             iterator.remove();
           }
         }
@@ -540,6 +546,7 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
               }
 
               marker.setMapboxMap(mapboxMap);
+              isMarkerViewModified = true;
               markerViewMap.put(marker, adaptedView);
               if (convertView == null) {
                 adaptedView.setVisibility(View.GONE);
@@ -557,6 +564,10 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
         }
       }
     }
+
+      if (isMarkerViewModified) {
+          markerViewSortedMap = new TreeMap(markerViewMap);
+      }
 
     // clear map, don't keep references to MarkerView listeners that are not found in the bounds of the map.
     markerViewAddedListenerMap.clear();
