@@ -497,7 +497,7 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
    * ones for each found Marker in the changed viewport.
    * </p>
    */
-  public void invalidateViewMarkersInVisibleRegion() {
+  private void invalidateViewMarkersInVisibleRegion() {
     RectF mapViewRect = new RectF(0, 0, markerViewContainer.getWidth(), markerViewContainer.getHeight());
     List<MarkerView> markers = mapboxMap.getMarkerViewsInRect(mapViewRect);
     View convertView;
