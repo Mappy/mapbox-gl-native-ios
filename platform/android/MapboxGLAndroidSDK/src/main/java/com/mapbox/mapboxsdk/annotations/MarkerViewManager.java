@@ -14,7 +14,6 @@ import android.widget.ImageView;
 
 import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
-import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 
@@ -22,21 +21,13 @@ import com.mapbox.mapboxsdk.utils.AnimatorUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 
-import com.mapbox.mapboxsdk.maps.Projection;
 import com.mapbox.mapboxsdk.maps.widgets.MarkerViewLayout;
-import com.mapbox.mapboxsdk.utils.AnimatorUtils;
 
-import java.util.ArrayList;
-
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
 
 /**
  * Interface for interacting with ViewMarkers objects inside of a MapView.
@@ -60,8 +51,10 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
   private MapboxMap.OnMarkerViewClickListener onMarkerViewClickListener;
   private boolean isWaitingForRenderInvoke;
 
-  //Mappy modif
-  private TreeMap<MarkerView, View> markerViewSortedMap;
+  //mappy modif
+  boolean markerViewSortedModified = true;
+  private Collection<View> markerViewSortedCoolection;
+
 
   /**
    * Creates an instance of MarkerViewManager.
@@ -383,7 +376,12 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
 
     //Mappy modifs
     public Collection<View> getSortedViews() {
-        return (markerViewSortedMap != null) ? markerViewSortedMap.values() : null;
+      if (markerViewSortedCoolection == null || markerViewSortedModified) {
+        java.util.TreeMap<MarkerView, View> markerViewSortedTreeMap = new java.util.TreeMap(markerViewMap);
+        markerViewSortedCoolection = markerViewSortedTreeMap.values();
+        markerViewSortedModified = false;
+      }
+        return markerViewSortedCoolection;
     }
 
 
@@ -432,6 +430,7 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
     }
     marker.setMapboxMap(null);
     markerViewMap.remove(marker);
+    markerViewSortedModified = true;
   }
 
   /**
@@ -502,8 +501,6 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
     List<MarkerView> markers = mapboxMap.getMarkerViewsInRect(mapViewRect);
     View convertView;
 
-    boolean isMarkerViewModified = false;
-
     // remove old markers
     Iterator<MarkerView> iterator = markerViewMap.keySet().iterator();
     while (iterator.hasNext()) {
@@ -515,7 +512,7 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
           if (adapter.getMarkerClass().equals(marker.getClass())) {
             adapter.prepareViewForReuse(marker, convertView);
             adapter.releaseView(convertView);
-            isMarkerViewModified = true;
+            markerViewSortedModified = true;
             iterator.remove();
           }
         }
@@ -546,7 +543,7 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
               }
 
               marker.setMapboxMap(mapboxMap);
-              isMarkerViewModified = true;
+              markerViewSortedModified = true;
               markerViewMap.put(marker, adaptedView);
               if (convertView == null) {
                 adaptedView.setVisibility(View.GONE);
@@ -564,10 +561,6 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
         }
       }
     }
-
-      if (isMarkerViewModified) {
-          markerViewSortedMap = new TreeMap(markerViewMap);
-      }
 
     // clear map, don't keep references to MarkerView listeners that are not found in the bounds of the map.
     markerViewAddedListenerMap.clear();
