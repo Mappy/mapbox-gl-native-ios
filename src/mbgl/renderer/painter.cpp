@@ -175,8 +175,8 @@ void Painter::render(const Style& style, const FrameData& frame_, View& view, Sp
         MBGL_DEBUG_GROUP("clear");
         view.bind();
         context.clear(paintMode() == PaintMode::Overdraw
-                        ? Color::black()
-                        : renderData.backgroundColor,
+                        ? Color::salmon()
+                        : Color::salmon(),//renderData.backgroundColor,
                       1.0f,
                       0);
 /* Mappy TODO

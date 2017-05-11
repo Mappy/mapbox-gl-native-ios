@@ -1839,11 +1839,6 @@ public final class MapboxMap {
     return nativeMapView.queryRenderedFeatures(coordinates, layerIds, null);
   }
 
-  //Mappy modif
-  public void forceUpdateMarkers() {
-    getMarkerViewManager().invalidateViewMarkersInVisibleRegion();
-  }
-
   /**
    * Queries the map for rendered features
    *

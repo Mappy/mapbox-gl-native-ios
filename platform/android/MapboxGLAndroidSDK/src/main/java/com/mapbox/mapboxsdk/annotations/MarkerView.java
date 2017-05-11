@@ -110,6 +110,11 @@ public class MarkerView extends Marker {
     this.anchorU = u;
     this.anchorV = v;
     setOffset(-1, -1);
+    //Mappy modif
+    if (markerViewManager != null) {
+      markerViewManager.setWaitingForRenderInvoke(true);
+      markerViewManager.update();
+    }
   }
 
   /**
