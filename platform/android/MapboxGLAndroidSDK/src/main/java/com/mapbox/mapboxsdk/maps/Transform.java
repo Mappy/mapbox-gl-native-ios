@@ -49,6 +49,9 @@ final class Transform implements MapView.OnMapChangedListener {
     if (position != null && !position.equals(CameraPosition.DEFAULT)) {
       moveCamera(mapboxMap, CameraUpdateFactory.newCameraPosition(position), null);
     }
+    
+    setMaxZoom(options.getMaxZoomPreference());
+    setMinZoom(options.getMinZoomPreference());
   }
 
   //
