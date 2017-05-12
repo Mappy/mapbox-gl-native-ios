@@ -1,7 +1,5 @@
 package com.mapbox.mapboxsdk.maps.widgets;
 
-import com.google.gson.internal.LinkedTreeMap;
-
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.os.Build;
@@ -13,7 +11,6 @@ import com.mapbox.mapboxsdk.annotations.MarkerViewManager;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.TreeMap;
 
 public class MarkerViewLayout extends FrameLayout {
 
