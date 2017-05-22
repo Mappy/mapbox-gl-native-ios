@@ -678,7 +678,9 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
       viewHolder.imageView.setImageBitmap(marker.getIcon().getBitmap());
       viewHolder.imageView.setContentDescription(marker.getTitle());
       convertView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
-      convertView.clearAnimation();
+      if (!marker.isSelected()) {
+        convertView.clearAnimation();
+      }
       return convertView;
     }
 
