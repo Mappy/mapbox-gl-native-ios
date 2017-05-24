@@ -89,7 +89,8 @@ final class Transform implements MapView.OnMapChangedListener {
   @UiThread
   final void moveCamera(MapboxMap mapboxMap, CameraUpdate update, MapboxMap.CancelableCallback callback) {
     CameraPosition cameraPosition = update.getCameraPosition(mapboxMap);
-    if (!cameraPosition.equals(this.cameraPosition)) {
+    android.util.Log.d("Transform","_TTT moveCamera ");
+    if (cameraPosition!= null && !cameraPosition.equals(this.cameraPosition)) {
       trackingSettings.resetTrackingModesIfRequired(cameraPosition);
       cancelTransitions();
       mapView.jumpTo(cameraPosition.bearing, cameraPosition.target, cameraPosition.tilt, cameraPosition.zoom);
@@ -103,7 +104,7 @@ final class Transform implements MapView.OnMapChangedListener {
   final void easeCamera(MapboxMap mapboxMap, CameraUpdate update, int durationMs, boolean easingInterpolator,
                         final MapboxMap.CancelableCallback callback) {
     CameraPosition cameraPosition = update.getCameraPosition(mapboxMap);
-    if (!cameraPosition.equals(this.cameraPosition)) {
+    if (cameraPosition!= null && !cameraPosition.equals(this.cameraPosition)) {
       trackingSettings.resetTrackingModesIfRequired(cameraPosition);
       cancelTransitions();
       if (callback != null) {
@@ -120,7 +121,7 @@ final class Transform implements MapView.OnMapChangedListener {
   final void animateCamera(MapboxMap mapboxMap, CameraUpdate update, int durationMs,
                            final MapboxMap.CancelableCallback callback) {
     CameraPosition cameraPosition = update.getCameraPosition(mapboxMap);
-    if (!cameraPosition.equals(this.cameraPosition)) {
+    if (cameraPosition!= null && !cameraPosition.equals(this.cameraPosition)) {
       trackingSettings.resetTrackingModesIfRequired(cameraPosition);
 
       cancelTransitions();
