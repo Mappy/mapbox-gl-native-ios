@@ -89,7 +89,6 @@ final class Transform implements MapView.OnMapChangedListener {
   @UiThread
   final void moveCamera(MapboxMap mapboxMap, CameraUpdate update, MapboxMap.CancelableCallback callback) {
     CameraPosition cameraPosition = update.getCameraPosition(mapboxMap);
-    android.util.Log.d("Transform","_TTT moveCamera ");
     if (cameraPosition!= null && !cameraPosition.equals(this.cameraPosition)) {
       trackingSettings.resetTrackingModesIfRequired(cameraPosition);
       cancelTransitions();
