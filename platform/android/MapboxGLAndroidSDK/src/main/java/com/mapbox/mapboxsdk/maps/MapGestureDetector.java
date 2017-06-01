@@ -316,7 +316,7 @@ final class MapGestureDetector {
       MyLocationView myLocationView = trackingSettings.getMyLocationView();
       if (myLocation != null && myLocationView.myLocationViewClickListener != null) {
         RectF myLocationViewDrawRect = myLocationView.getDrawRect();
-        if (myLocationViewDrawRect.contains(tapPoint.x, tapPoint.y)) {
+        if (myLocationViewDrawRect != null && myLocationViewDrawRect.contains(tapPoint.x, tapPoint.y)) {
           myLocationView.myLocationViewClickListener.onMyLocationViewClicked(myLocation);
           tapHandled = true;
         }
