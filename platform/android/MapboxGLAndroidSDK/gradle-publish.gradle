@@ -76,14 +76,7 @@ afterEvaluate { project ->
                 pom.artifactId = POM_ARTIFACT_ID
                 pom.version = VERSION_NAME
 
-                repository(url: getReleaseRepositoryUrl()) {
-                    authentication(userName: getRepositoryUsername(),
-                            password: getRepositoryPassword())
-                }
-                snapshotRepository(url: getSnapshotRepositoryUrl()) {
-                    authentication(userName: getRepositoryUsername(),
-                            password: getRepositoryPassword())
-                }
+                repository(url: "file://${System.env.MAVEN}")
 
 /*
                 // Leaving out as artifact was incorrectly named when found
