@@ -51,7 +51,7 @@ afterEvaluate { project ->
                 pom.artifactId = POM_ARTIFACT_ID
                 pom.version = VERSION_NAME
 
-                repository(url: "file:///Users/mappy/tmp_maven")
+                repository(url: "file://${System.env.MAVEN}")
 
 /*
                 // Leaving out as artifact was incorrectly named when found
