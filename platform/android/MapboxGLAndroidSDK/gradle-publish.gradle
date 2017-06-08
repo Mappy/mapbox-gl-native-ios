@@ -15,15 +15,6 @@ repositories {
 }
 
 // From https://raw.github.com/mcxiaoke/gradle-mvn-push/master/jar.gradle
-android.libraryVariants.all { variant ->
-    def jarTask = project.tasks.create(name: "jar${variant.name.capitalize()}", type: Jar) {
-        from variant.javaCompile.destinationDir
-        exclude "**/R.class"
-        exclude "**/BuildConfig.class"
-    }
-    jarTask.dependsOn variant.javaCompile
-    artifacts.add('archives', jarTask);
-}
 
 // From https://raw.github.com/mcxiaoke/gradle-mvn-push/master/gradle-mvn-push.gradle
 def isReleaseBuild() {
@@ -50,33 +41,17 @@ def getRepositoryPassword() {
             (hasProperty('NEXUS_PASSWORD') ? NEXUS_PASSWORD : "")
 }
 
-task apklib(type: Zip) {
-    appendix = extension = 'apklib'
-
-    from 'AndroidManifest.xml'
-    into('res') {
-        from 'res'
-    }
-    into('src') {
-        from 'src'
-    }
-}
-
-artifacts {
-    archives apklib
-}
 
 afterEvaluate { project ->
     uploadArchives {
         repositories {
             mavenDeployer {
-                beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
                 pom.groupId = GROUP
                 pom.artifactId = POM_ARTIFACT_ID
                 pom.version = VERSION_NAME
 
-                repository(url: "file://${System.env.MAVEN}")
+                repository(url: "file:///Users/mappy/tmp_maven")
 
 /*
                 // Leaving out as artifact was incorrectly named when found
@@ -119,28 +94,5 @@ afterEvaluate { project ->
         }
     }
 
-    signing {
-        required { isReleaseBuild() && gradle.taskGraph.hasTask("uploadArchives") }
-        sign configurations.archives
-    }
 
-    task androidJavadocs(type: Javadoc) {
-        source = android.sourceSets.main.java.sourceFiles
-        classpath = files(android.bootClasspath)
-    }
-
-    task androidJavadocsJar(type: Jar, dependsOn: androidJavadocs) {
-        classifier = 'javadoc'
-        from androidJavadocs.destinationDir
-    }
-
-    task androidSourcesJar(type: Jar) {
-        classifier = 'sources'
-        from android.sourceSets.main.java.sourceFiles
-    }
-
-    artifacts {
-        archives androidSourcesJar
-        archives androidJavadocsJar
-    }
 }
