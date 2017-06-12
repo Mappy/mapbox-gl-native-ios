@@ -26,6 +26,7 @@ import android.support.annotation.ColorInt;
 import android.support.annotation.FloatRange;
 import android.support.annotation.IntRange;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -259,14 +260,18 @@ public class MyLocationView extends View {
     }
 
     //Mappy modif
+    @Nullable
     public RectF getDrawRect() {
-        if (myBearingTrackingMode == MyBearingTracking.NONE || !compassListener.isSensorAvailable()) {
-            drawRect.set(foregroundDrawable.getBounds());
-        } else {
-            drawRect.set(foregroundBearingDrawable.getBounds());
+        if (screenLocation != null) {
+            if (myBearingTrackingMode == MyBearingTracking.NONE || !compassListener.isSensorAvailable()) {
+                drawRect.set(foregroundDrawable.getBounds());
+            } else {
+                drawRect.set(foregroundBearingDrawable.getBounds());
+            }
+            drawRect.offset(screenLocation.x, screenLocation.y); //TODO manage orientation when map rotation will be activated
+            return drawRect;
         }
-        drawRect.offset(screenLocation.x, screenLocation.y); //TODO manage orientation when map rotation will be activated
-        return drawRect;
+        return null;
     }
 
     public void setOnMyLocationViewClickListener(MapboxMap.OnMyLocationViewClickListener listener) {
