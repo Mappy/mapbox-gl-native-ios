@@ -514,6 +514,13 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
             adapter.releaseView(convertView);
             markerViewSortedModified = true;
             iterator.remove();
+
+              //mappy
+              OnMarkerViewAddedListener onViewAddedListener = markerViewAddedListenerMap.get(marker.getId());
+              if (onViewAddedListener != null) {
+                  onViewAddedListener.onViewRemoved(marker);
+              }
+              //mappy
           }
         }
       }
@@ -555,15 +562,17 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
             OnMarkerViewAddedListener onViewAddedListener = markerViewAddedListenerMap.get(marker.getId());
             if (onViewAddedListener != null) {
               onViewAddedListener.onViewAdded(marker);
-              markerViewAddedListenerMap.remove(marker.getId());
+                //removed for mappy
+//              markerViewAddedListenerMap.remove(marker.getId());
             }
           }
         }
       }
     }
 
-    // clear map, don't keep references to MarkerView listeners that are not found in the bounds of the map.
-    markerViewAddedListenerMap.clear();
+//    // removed for mappy
+//    // clear map, don't keep references to MarkerView listeners that are not found in the bounds of the map.
+//    markerViewAddedListenerMap.clear();
 
     // trigger update to make newly added ViewMarker visible,
     // these would only be updated when the map is moved.
@@ -650,6 +659,11 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
     markerViewAddedListenerMap.put(markerView.getId(), onMarkerViewAddedListener);
   }
 
+  // for mappy
+  public void removeOnMarkerViewAddedListener(MarkerView markerView) {
+    markerViewAddedListenerMap.remove(markerView.getId());
+  }
+
   /**
    * Default MarkerViewAdapter used for base class of {@link MarkerView} to adapt a MarkerView to
    * an ImageView.
@@ -704,6 +718,13 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
      * @param markerView The MarkerView the View was added for
      */
     void onViewAdded(@NonNull MarkerView markerView);
+
+      /**
+       * for mappy
+       * Invoked when the View of a MarkerView has been removed from the Map.
+       * @param markerView The MarkerView the View was removed from
+       */
+      void onViewRemoved(@NonNull MarkerView markerView);
   }
 
     //MAPPY: needed to
