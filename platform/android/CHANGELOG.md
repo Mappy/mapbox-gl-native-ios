@@ -2,6 +2,96 @@
 
 Mapbox welcomes participation and contributions from everyone.  If you'd like to do so please see the [`Contributing Guide`](https://github.com/mapbox/mapbox-gl-native/blob/master/CONTRIBUTING.md) first to get started.
 
+## 5.1.0 - TBA
+
+## 5.1.0-beta.4 - June 9, 2017
+
+* Option to disable location change animation [#9210](https://github.com/mapbox/mapbox-gl-native/pull/9210)
+* Invalidating MyLocationView bearing when not following [#9212](https://github.com/mapbox/mapbox-gl-native/pull/9212)
+* Remove upgrade runtime exceptions [#9191](https://github.com/mapbox/mapbox-gl-native/pull/9191)
+* Check source usage before removal [#9129](https://github.com/mapbox/mapbox-gl-native/pull/9129)
+* Fix tracking mode + camera race condition [#9133](https://github.com/mapbox/mapbox-gl-native/pull/9133)
+* Harden orientation changes [#9128](https://github.com/mapbox/mapbox-gl-native/pull/9128)
+* Infinite location animation updates [#9194](https://github.com/mapbox/mapbox-gl-native/pull/9194)
+* Invoke callback with valid fling gestures [#9192](https://github.com/mapbox/mapbox-gl-native/pull/9192)
+* Keep location tracking after screen rotation [#9187](https://github.com/mapbox/mapbox-gl-native/pull/9187)
+* Update components with camera values when animating [#9174](https://github.com/mapbox/mapbox-gl-native/pull/9174) 
+* Validate if gestures should execute [#9173](https://github.com/mapbox/mapbox-gl-native/pull/9173)
+* Custom location source and LOST integration [#9142](https://github.com/mapbox/mapbox-gl-native/pull/9142)
+
+## 5.1.0-beta.3 - May 26, 2017
+
+* Add binding support for Light [#9013](https://github.com/mapbox/mapbox-gl-native/pull/9013)
+* Update attribution with new Mapbox wordmark [#8774](https://github.com/mapbox/mapbox-gl-native/pull/8774)
+* LatLngBounds bearing default value [#9102](https://github.com/mapbox/mapbox-gl-native/pull/9102)
+* Stop location updates when toggling MyLocationView [#9099](https://github.com/mapbox/mapbox-gl-native/pull/9099)
+* Horizontally rotated in snapshot [#9083](https://github.com/mapbox/mapbox-gl-native/pull/9083)
+* Disable letter spacing for Arabic text [#9071](https://github.com/mapbox/mapbox-gl-native/pull/9071)
+* Correct bearing conversion when animating the map [#9050](https://github.com/mapbox/mapbox-gl-native/pull/9050)
+* Don't leak selected markers when removing [#9047](https://github.com/mapbox/mapbox-gl-native/pull/9047)
+* Bump tools and support lib version [#9046](https://github.com/mapbox/mapbox-gl-native/pull/9046)
+* MarkerView deselect events with OnMarkerViewClickListener [#9047](https://github.com/mapbox/mapbox-gl-native/pull/9047)
+* LOST update to v3.0.0 [#9112](https://github.com/mapbox/mapbox-gl-native/pull/9112)
+* Convert dp to pixels for meters per pixel at latitude [#9048](https://github.com/mapbox/mapbox-gl-native/pull/9048)
+
+## 5.1.0-beta.2 - May 12, 2017
+
+5.1.0-beta.2 builds further on 5.1.0-beta.1 and adds:
+
+* When a layer is added, reload its source's tiles [#8963](https://github.com/mapbox/mapbox-gl-native/pull/8963)
+* Update release script to support CircleCI builds [#8950](https://github.com/mapbox/mapbox-gl-native/pull/8950)
+* URL getter on Sources [#8959](https://github.com/mapbox/mapbox-gl-native/pull/8959)
+* Build SNAPSHOT from release branch CI configuration [#8958](https://github.com/mapbox/mapbox-gl-native/pull/8958)
+* Fix UI test filter in Makefile [#8960](https://github.com/mapbox/mapbox-gl-native/pull/8960)
+* Bump & fixup dependencies [#8921](https://github.com/mapbox/mapbox-gl-native/pull/8921)
+* Ignore already deleted region [#8920](https://github.com/mapbox/mapbox-gl-native/pull/8920)
+* Keep offline observer when timeout occurs [#8919](https://github.com/mapbox/mapbox-gl-native/pull/8919)
+* Show error message when no browser installed [#8920](https://github.com/mapbox/mapbox-gl-native/pull/8920)
+* Reset observers of removed Sources and Layers [#8900](https://github.com/mapbox/mapbox-gl-native/pull/8900)
+* Only build custom layer .so for debug builds [#8885](https://github.com/mapbox/mapbox-gl-native/pull/8885)
+* Update localizations [#8883](https://github.com/mapbox/mapbox-gl-native/pull/8883)
+* Reset observers of removed Sources and Layers [#8862](https://github.com/mapbox/mapbox-gl-native/pull/8862)
+* Remove force style cascade [#8866](https://github.com/mapbox/mapbox-gl-native/pull/8866)
+* Update proguard config [#8944](https://github.com/mapbox/mapbox-gl-native/pull/8944)
+* Update LOST to 2.3.0-SNAPSHOT [#8872](https://github.com/mapbox/mapbox-gl-native/pull/8872)
+* Update logo [#8774](https://github.com/mapbox/mapbox-gl-native/pull/8774)
+* Camera change listener v2.0 [#8644](https://github.com/mapbox/mapbox-gl-native/pull/8644)
+* Allow filesource url transform reset [#8957](https://github.com/mapbox/mapbox-gl-native/pull/8957)
+
+## 5.1.0-beta.1 - May 2, 2017
+
+5.1.0-beta.1 builds further on 5.0.2 and adds:
+
+* Support for FillExtrusionLayer [#8431](https://github.com/mapbox/mapbox-gl-native/pull/8431)
+* Limit Viewport [#8622](https://github.com/mapbox/mapbox-gl-native/pull/8622)
+* Transition Properties for Layer attributes [#8509](https://github.com/mapbox/mapbox-gl-native/pull/8509)
+* Style wide transition duration and transition offset in milliseconds [#8576](https://github.com/mapbox/mapbox-gl-native/pull/8576)
+* Transifex integration, Catalan & Dutch translations [#8556](https://github.com/mapbox/mapbox-gl-native/pull/8556)
+* LatLngBounds includes with another bounds [#8517](https://github.com/mapbox/mapbox-gl-native/pull/8517)
+* LatLngBounds includes takes in account LatLng on the edges (cfr. core) [#8517](https://github.com/mapbox/mapbox-gl-native/pull/8517)
+* LatLngBounds facility getters/setters for LatLnbg on the edges of the bounds [#8517](https://github.com/mapbox/mapbox-gl-native/pull/8517)
+* Expose world bounds in LatLngBounds [#8517](https://github.com/mapbox/mapbox-gl-native/pull/8517)
+* OfflineRegion are validated if the bounds is found in the world bounds, else onError will be invoked [#8517](https://github.com/mapbox/mapbox-gl-native/pull/8517)
+* Polygon holes [#8557](https://github.com/mapbox/mapbox-gl-native/pull/8557) and [#8722](https://github.com/mapbox/mapbox-gl-native/pull/8722)
+* Custom location source [#8710](https://github.com/mapbox/mapbox-gl-native/pull/8710)
+* Expose source layer identifier [#8709](https://github.com/mapbox/mapbox-gl-native/pull/8709)
+* Ensure surface is created after display and context [#8759](https://github.com/mapbox/mapbox-gl-native/pull/8759)
+* Harden telemetry event dispatch [#8767](https://github.com/mapbox/mapbox-gl-native/pull/8767)
+* Move LatLngBounds calculation for CameraUpdateFactory to core [#8765](https://github.com/mapbox/mapbox-gl-native/pull/8765)
+* Spanish, Lithuanian, and Vietnamese localizations [#8852](https://github.com/mapbox/mapbox-gl-native/pull/8852)
+* Warning when updating a non-added annotation [#8832](https://github.com/mapbox/mapbox-gl-native/pull/8832)
+* Share location source between components [#8825](https://github.com/mapbox/mapbox-gl-native/pull/8825)
+* Test application runtime permissions for pre lollipop devices [#8823](https://github.com/mapbox/mapbox-gl-native/pull/8823)
+* Do not call OnMarkerClick listener twice [#8804](https://github.com/mapbox/mapbox-gl-native/pull/8804)
+* Rework instrumentation tests [#8793](https://github.com/mapbox/mapbox-gl-native/pull/8793)
+* Set first render flag to false when destroying the surface [#8739](https://github.com/mapbox/mapbox-gl-native/pull/8739)
+* Post resetting tracking settings to avoid race condition reset [#8738](https://github.com/mapbox/mapbox-gl-native/pull/8738)
+* Expose Source Layer identifier [#8709](https://github.com/mapbox/mapbox-gl-native/pull/8709)
+* Derived source attribution [#8630](https://github.com/mapbox/mapbox-gl-native/pull/8630)
+* Consistent use of duration unit [#8578](https://github.com/mapbox/mapbox-gl-native/pull/8578)
+* Swedish localization [#8883](https://github.com/mapbox/mapbox-gl-native/pull/8883)
+* Streets v10, Outdoors v10, Satellite Streets v10, Traffic Day v2, Traffic Night v2 [#6301](https://github.com/mapbox/mapbox-gl-native/pull/6301)
+
 ## 5.0.2 - April 3, 2017
 
 5.0.2 is a patch release that contains the following changes:

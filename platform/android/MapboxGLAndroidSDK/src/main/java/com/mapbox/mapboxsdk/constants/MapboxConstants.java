@@ -113,7 +113,6 @@ public class MapboxConstants {
   public static final String STATE_MY_BEARING_TRACKING_MODE = "mapbox_myBearingTracking";
   public static final String STATE_MY_LOCATION_TRACKING_DISMISS = "mapbox_myLocationTrackingDismiss";
   public static final String STATE_MY_BEARING_TRACKING_DISMISS = "mapbox_myBearingTrackingDismiss";
-  public static final String STATE_MY_TRACKING_MODE_DISMISS_FOR_CAMERA = "mapbox_myBearingTrackingDismiss";
   public static final String STATE_COMPASS_ENABLED = "mapbox_compassEnabled";
   public static final String STATE_COMPASS_GRAVITY = "mapbox_compassGravity";
   public static final String STATE_COMPASS_MARGIN_LEFT = "mapbox_compassMarginLeft";
@@ -121,6 +120,7 @@ public class MapboxConstants {
   public static final String STATE_COMPASS_MARGIN_RIGHT = "mapbox_compassMarginRight";
   public static final String STATE_COMPASS_MARGIN_BOTTOM = "mapbox_compassMarginBottom";
   public static final String STATE_COMPASS_FADE_WHEN_FACING_NORTH = "mapbox_compassFade";
+  public static final String STATE_COMPASS_IMAGE_BITMAP = "mapbox_compassImage";
   public static final String STATE_LOGO_GRAVITY = "mapbox_logoGravity";
   public static final String STATE_LOGO_MARGIN_LEFT = "mapbox_logoMarginLeft";
   public static final String STATE_LOGO_MARGIN_TOP = "mapbox_logoMarginTop";
@@ -133,24 +133,6 @@ public class MapboxConstants {
   public static final String STATE_ATTRIBUTION_MARGIN_RIGHT = "mapbox_attrMarginRight";
   public static final String STATE_ATTRIBUTION_MARGIN_BOTTOM = "mapbox_atrrMarginBottom";
   public static final String STATE_ATTRIBUTION_ENABLED = "mapbox_atrrEnabled";
-
-  //FIXME: Mappy to be removed
-  public static final String TAG = "MapboxMap";
-
-  public static final String MAPBOX_SHARED_PREFERENCES_FILE = "MapboxSharedPreferences";
-  public static final String MAPBOX_SHARED_PREFERENCE_KEY_VENDORID = "mapboxVendorId";
-  public static final String MAPBOX_SHARED_PREFERENCE_KEY_TELEMETRY_ENABLED = "mapboxTelemetryEnabled";
-  public static final String MAPBOX_SHARED_PREFERENCE_KEY_TELEMETRY_STAGING_URL = "mapboxTelemetryStagingUrl";
-  public static final String MAPBOX_SHARED_PREFERENCE_KEY_TELEMETRY_STAGING_ACCESS_TOKEN = "mapboxTelemetryStagingAccessToken";
-
-  /**
-   * Key used to store staging data server url in AndroidManifest.xml
-   */
-  public static final String KEY_META_DATA_STAGING_SERVER = "com.mapbox.TestEventsServer";
-
-  /**
-   * Key used to store staging data server access token in AndroidManifest.xml
-   */
-  public static final String KEY_META_DATA_STAGING_ACCESS_TOKEN = "com.mapbox.TestEventsAccessToken";
-
+  public static final String STATE_LOCATION_CHANGE_ANIMATION_ENABLED = "mapbox_locationChangeAnimationEnabled";
+  public static final String STATE_USING_CUSTOM_LOCATION_SOURCE = "mapbox_usingCustomLocationSource";
 }

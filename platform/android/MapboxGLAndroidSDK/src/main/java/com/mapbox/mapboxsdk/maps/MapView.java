@@ -1,15 +1,11 @@
 package com.mapbox.mapboxsdk.maps;
 
 import android.app.Activity;
-import android.app.Dialog;
 import android.app.Fragment;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.PointF;
 import android.graphics.SurfaceTexture;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.CallSuper;
@@ -17,7 +13,6 @@ import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.UiThread;
-import android.support.v7.app.AlertDialog;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -28,7 +23,6 @@ import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ZoomButtonsController;
@@ -36,14 +30,12 @@ import android.widget.ZoomButtonsController;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.annotations.MarkerViewManager;
-import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
 import com.mapbox.mapboxsdk.constants.Style;
 import com.mapbox.mapboxsdk.maps.widgets.CompassView;
 import com.mapbox.mapboxsdk.maps.widgets.MyLocationView;
 import com.mapbox.mapboxsdk.maps.widgets.MyLocationViewSettings;
 import com.mapbox.mapboxsdk.net.ConnectivityReceiver;
-import com.mapbox.services.android.telemetry.MapboxEvent;
 import com.mapbox.services.android.telemetry.MapboxTelemetry;
 
 import java.lang.annotation.Retention;
@@ -69,13 +61,12 @@ import java.util.List;
 public class MapView extends FrameLayout {
 
   private NativeMapView nativeMapView;
+  private boolean textureMode;
   private boolean destroyed;
   private boolean hasSurface;
 
   private MapboxMap mapboxMap;
   private MapCallback mapCallback;
-  private boolean onStartCalled;
-  private boolean onStopCalled;
 
   private MapGestureDetector mapGestureDetector;
   private MapKeyListener mapKeyListener;
@@ -112,12 +103,14 @@ public class MapView extends FrameLayout {
       return;
     }
 
+    // determine render surface
+    textureMode = options.getTextureMode();
+
     // inflate view
     View view = LayoutInflater.from(context).inflate(R.layout.mapbox_mapview_internal, this);
     CompassView compassView = (CompassView) view.findViewById(R.id.compassView);
     MyLocationView myLocationView = (MyLocationView) view.findViewById(R.id.userLocationView);
     ImageView attrView = (ImageView) view.findViewById(R.id.attributionView);
-    initalizeDrawingSurface(context, options);
 
     // add accessibility support
     setContentDescription(context.getString(R.string.mapbox_mapActionDescription));
@@ -134,6 +127,9 @@ public class MapView extends FrameLayout {
     // callback for zooming in the camera
     CameraZoomInvalidator zoomInvalidator = new CameraZoomInvalidator();
 
+    // callback for camera change events
+    CameraChangeDispatcher cameraChangeDispatcher = new CameraChangeDispatcher();
+
     // setup components for MapboxMap creation
     Projection proj = new Projection(nativeMapView);
     UiSettings uiSettings = new UiSettings(proj, focalPoint, compassView, attrView, view.findViewById(R.id.logoView));
@@ -141,12 +137,14 @@ public class MapView extends FrameLayout {
     MyLocationViewSettings myLocationViewSettings = new MyLocationViewSettings(myLocationView, proj, focalPoint);
     MarkerViewManager markerViewManager = new MarkerViewManager((ViewGroup) findViewById(R.id.markerViewContainer));
     AnnotationManager annotations = new AnnotationManager(nativeMapView, this, markerViewManager);
-    Transform transform = new Transform(nativeMapView, annotations.getMarkerViewManager(), trackingSettings);
+    Transform transform = new Transform(nativeMapView, annotations.getMarkerViewManager(), trackingSettings,
+      cameraChangeDispatcher);
     mapboxMap = new MapboxMap(nativeMapView, transform, uiSettings, trackingSettings, myLocationViewSettings, proj,
-      registerTouchListener, annotations);
+      registerTouchListener, annotations, cameraChangeDispatcher);
 
     // user input
-    mapGestureDetector = new MapGestureDetector(context, transform, proj, uiSettings, trackingSettings, annotations);
+    mapGestureDetector = new MapGestureDetector(context, transform, proj, uiSettings, trackingSettings, annotations,
+      cameraChangeDispatcher);
     mapKeyListener = new MapKeyListener(transform, trackingSettings, uiSettings);
 
     MapZoomControllerListener zoomListener = new MapZoomControllerListener(mapGestureDetector, uiSettings, transform);
@@ -155,7 +153,7 @@ public class MapView extends FrameLayout {
     // inject widgets with MapboxMap
     compassView.setMapboxMap(mapboxMap);
     myLocationView.setMapboxMap(mapboxMap);
-    attrView.setOnClickListener(new AttributionOnClickListener(context, transform));
+    attrView.setOnClickListener(new AttributionDialogManager(context, mapboxMap));
 
     // Ensure this view is interactable
     setClickable(true);
@@ -172,18 +170,6 @@ public class MapView extends FrameLayout {
 
     // initialise MapboxMap
     mapboxMap.initialise(context, options);
-  }
-
-  private void initalizeDrawingSurface(Context context, MapboxMapOptions options) {
-    if (options.getTextureMode()) {
-      TextureView textureView = new TextureView(context);
-      textureView.setSurfaceTextureListener(new SurfaceTextureListener());
-      addView(textureView, 0);
-    } else {
-      SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
-      surfaceView.getHolder().addCallback(new SurfaceCallback());
-      surfaceView.setVisibility(View.VISIBLE);
-    }
   }
 
   //
@@ -206,16 +192,28 @@ public class MapView extends FrameLayout {
     if (savedInstanceState == null) {
       if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
         MapboxTelemetry.getInstance().pushEvent(MapboxEvent.buildMapLoadEvent());
+        MapboxTelemetry.getInstance().pushEvent(MapboxEventWrapper.buildMapLoadEvent());
       }
     } else if (savedInstanceState.getBoolean(MapboxConstants.STATE_HAS_SAVED_STATE)) {
       mapboxMap.onRestoreInstanceState(savedInstanceState);
     }
 
-    // Initialize EGL
+    initialiseDrawingSurface(textureMode);
+    addOnMapChangedListener(mapCallback = new MapCallback(mapboxMap));
+  }
+
+  private void initialiseDrawingSurface(boolean textureMode) {
     nativeMapView.initializeDisplay();
     nativeMapView.initializeContext();
-
-    addOnMapChangedListener(mapCallback = new MapCallback(mapboxMap));
+    if (textureMode) {
+      TextureView textureView = new TextureView(getContext());
+      textureView.setSurfaceTextureListener(new SurfaceTextureListener());
+      addView(textureView, 0);
+    } else {
+      SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
+      surfaceView.getHolder().addCallback(new SurfaceCallback());
+      surfaceView.setVisibility(View.VISIBLE);
+    }
   }
 
   /**
@@ -236,7 +234,6 @@ public class MapView extends FrameLayout {
    */
   @UiThread
   public void onStart() {
-    onStartCalled = true;
     mapboxMap.onStart();
     ConnectivityReceiver.instance(getContext()).activate();
   }
@@ -246,11 +243,7 @@ public class MapView extends FrameLayout {
    */
   @UiThread
   public void onResume() {
-    if (!onStartCalled) {
-      // TODO: 26/10/16, can be removed after 5.0.0 release
-      throw new IllegalStateException("MapView#onStart() was not called. "
-        + "You must call this method from the parent's {@link Activity#onStart()} or {@link Fragment#onStart()}.");
-    }
+    // replaced by onStart in v5.0.0
   }
 
   /**
@@ -258,7 +251,7 @@ public class MapView extends FrameLayout {
    */
   @UiThread
   public void onPause() {
-    // replaced by onStop in v5.0.0, keep around for future development
+    // replaced by onStop in v5.0.0
   }
 
   /**
@@ -266,7 +259,6 @@ public class MapView extends FrameLayout {
    */
   @UiThread
   public void onStop() {
-    onStopCalled = true;
     mapboxMap.onStop();
     ConnectivityReceiver.instance(getContext()).deactivate();
   }
@@ -276,12 +268,6 @@ public class MapView extends FrameLayout {
    */
   @UiThread
   public void onDestroy() {
-    if (!onStopCalled) {
-      // TODO: 26/10/16, can be removed after 5.0.0 release
-      throw new IllegalStateException("MapView#onStop() was not called. "
-        + "You must call this method from the parent's {@link Activity#onStop()} or {@link Fragment#onStop()}.");
-    }
-
     destroyed = true;
     nativeMapView.terminateContext();
     nativeMapView.terminateDisplay();
@@ -597,84 +583,6 @@ public class MapView extends FrameLayout {
     this.mapboxMap = mapboxMap;
   }
 
-  private static class AttributionOnClickListener implements View.OnClickListener, DialogInterface.OnClickListener {
-
-    private static final int ATTRIBUTION_INDEX_IMPROVE_THIS_MAP = 2;
-    private static final int ATTRIBUTION_INDEX_TELEMETRY_SETTINGS = 3;
-    private Context context;
-    private Transform transform;
-
-    public AttributionOnClickListener(Context context, Transform transform) {
-      this.context = context;
-      this.transform = transform;
-    }
-
-    // Called when someone presses the attribution icon
-    @Override
-    public void onClick(View view) {
-      AlertDialog.Builder builder = new AlertDialog.Builder(context, R.style.mapbox_AlertDialogStyle);
-      builder.setTitle(R.string.mapbox_attributionsDialogTitle);
-      String[] items = context.getResources().getStringArray(R.array.mapbox_attribution_names);
-      builder.setAdapter(new ArrayAdapter<>(context, R.layout.mapbox_attribution_list_item, items), this);
-      builder.show();
-    }
-
-    // Called when someone selects an attribution, 'Improve this map' adds location data to the url
-    @Override
-    public void onClick(DialogInterface dialog, int which) {
-      final Context context = ((Dialog) dialog).getContext();
-      if (which == ATTRIBUTION_INDEX_TELEMETRY_SETTINGS) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(context, R.style.mapbox_AlertDialogStyle);
-        builder.setTitle(R.string.mapbox_attributionTelemetryTitle);
-        builder.setMessage(R.string.mapbox_attributionTelemetryMessage);
-        builder.setPositiveButton(R.string.mapbox_attributionTelemetryPositive, new DialogInterface.OnClickListener() {
-          @Override
-          public void onClick(DialogInterface dialog, int which) {
-            //Mappy modif
-            if(Mapbox.ENABLE_METRICS_ON_MAPPY) {
-              MapboxTelemetry.getInstance().setTelemetryEnabled(true);
-            }
-            dialog.cancel();
-          }
-        });
-        builder.setNeutralButton(R.string.mapbox_attributionTelemetryNeutral, new DialogInterface.OnClickListener() {
-          @Override
-          public void onClick(DialogInterface dialog, int which) {
-            String url = context.getResources().getStringArray(R.array.mapbox_attribution_links)[3];
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setData(Uri.parse(url));
-            context.startActivity(intent);
-            dialog.cancel();
-          }
-        });
-        builder.setNegativeButton(R.string.mapbox_attributionTelemetryNegative, new DialogInterface.OnClickListener() {
-          @Override
-          public void onClick(DialogInterface dialog, int which) {
-            //Mappy modif
-            if(Mapbox.ENABLE_METRICS_ON_MAPPY) {
-              MapboxTelemetry.getInstance().setTelemetryEnabled(false);
-            }
-            dialog.cancel();
-          }
-        });
-
-        builder.show();
-        return;
-      }
-      String url = context.getResources().getStringArray(R.array.mapbox_attribution_links)[which];
-      if (which == ATTRIBUTION_INDEX_IMPROVE_THIS_MAP) {
-        CameraPosition cameraPosition = transform.getCameraPosition();
-        if (cameraPosition != null) {
-          url = String.format(url, cameraPosition.target.getLongitude(),
-            cameraPosition.target.getLatitude(), (int) cameraPosition.zoom);
-        }
-      }
-      Intent intent = new Intent(Intent.ACTION_VIEW);
-      intent.setData(Uri.parse(url));
-      context.startActivity(intent);
-    }
-  }
-
   /**
    * Definition of a map change event.
    *
@@ -871,7 +779,7 @@ public class MapView extends FrameLayout {
   public static final int DID_FINISH_LOADING_STYLE = 14;
 
   /**
-   * This {@link MapChange} is triggered when a source attribution changes.
+   * This {@link MapChange} is triggered when a source changes.
    * <p>
    * Register to {@link MapChange} events with {@link MapView#addOnMapChangedListener(OnMapChangedListener)}.
    * </p>

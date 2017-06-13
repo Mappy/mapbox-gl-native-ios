@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import timber.log.Timber;
+
 /**
  * Responsible for managing and tracking state of Annotations linked to Map. All events related to
  * annotations that occur on {@link MapboxMap} are forwarded to this class.
@@ -90,6 +92,10 @@ class AnnotationManager {
     if (annotation instanceof Marker) {
       Marker marker = (Marker) annotation;
       marker.hideInfoWindow();
+      if (selectedMarkers.contains(marker)) {
+        selectedMarkers.remove(marker);
+      }
+
       if (marker instanceof MarkerView) {
         markerViewManager.removeMarkerView((MarkerView) marker);
       }
@@ -116,6 +122,10 @@ class AnnotationManager {
       if (annotation instanceof Marker) {
         Marker marker = (Marker) annotation;
         marker.hideInfoWindow();
+        if (selectedMarkers.contains(marker)) {
+          selectedMarkers.remove(marker);
+        }
+
         if (marker instanceof MarkerView) {
           markerViewManager.removeMarkerView((MarkerView) marker);
         }
@@ -136,6 +146,7 @@ class AnnotationManager {
     Annotation annotation;
     int count = annotations.size();
     long[] ids = new long[count];
+    selectedMarkers.clear();
     for (int i = 0; i < count; i++) {
       ids[i] = annotations.keyAt(i);
       annotation = annotations.get(ids[i]);
@@ -260,26 +271,24 @@ class AnnotationManager {
     return marker;
   }
 
-  void updateMarker(@NonNull Marker updatedMarker, @NonNull MapboxMap mapboxMap) {
-    if (updatedMarker == null) {
+  void updateMarker(@NonNull Marker updatedMarker) {
+    if (!isAddedToMap(updatedMarker)) {
+      Timber.w("Attempting to update non-added Marker with value %s", updatedMarker);
       return;
     }
 
-    if (updatedMarker.getId() == -1) {
-      return;
-    }
-
-    if (!(updatedMarker instanceof MarkerView)) {
-      iconManager.ensureIconLoaded(updatedMarker, mapboxMap);
-    } else {
-      iconManager.loadIconForMarkerView((MarkerView)updatedMarker);
-    }
-
+    ensureIconLoaded(updatedMarker);
     nativeMapView.updateMarker(updatedMarker);
+    annotations.setValueAt(annotations.indexOfKey(updatedMarker.getId()), updatedMarker);
+  }
 
-    int index = annotations.indexOfKey(updatedMarker.getId());
-    if (index > -1) {
-      annotations.setValueAt(index, updatedMarker);
+  private boolean isAddedToMap(Annotation annotation) {
+    return annotation != null && annotation.getId() != -1 && annotations.indexOfKey(annotation.getId()) != -1;
+  }
+
+  private void ensureIconLoaded(Marker marker) {
+    if (!(marker instanceof MarkerView)) {
+      iconManager.ensureIconLoaded(marker, mapboxMap);
     }
   }
 
@@ -475,21 +484,14 @@ class AnnotationManager {
     return polygons;
   }
 
-  void updatePolygon(Polygon polygon) {
-    if (polygon == null) {
-      return;
-    }
-
-    if (polygon.getId() == -1) {
+  void updatePolygon(@NonNull Polygon polygon) {
+    if (!isAddedToMap(polygon)) {
+      Timber.w("Attempting to update non-added Polygon with value %s", polygon);
       return;
     }
 
     nativeMapView.updatePolygon(polygon);
-
-    int index = annotations.indexOfKey(polygon.getId());
-    if (index > -1) {
-      annotations.setValueAt(index, polygon);
-    }
+    annotations.setValueAt(annotations.indexOfKey(polygon.getId()), polygon);
   }
 
   List<Polygon> getPolygons() {
@@ -556,21 +558,13 @@ class AnnotationManager {
     return polylines;
   }
 
-  void updatePolyline(Polyline polyline) {
-    if (polyline == null) {
-      return;
-    }
-
-    if (polyline.getId() == -1) {
-      return;
+  void updatePolyline(@NonNull Polyline polyline) {
+    if (!isAddedToMap(polyline)) {
+      Timber.w("Attempting to update non-added Polyline with value %s", polyline);
     }
 
     nativeMapView.updatePolyline(polyline);
-
-    int index = annotations.indexOfKey(polyline.getId());
-    if (index > -1) {
-      annotations.setValueAt(index, polyline);
-    }
+    annotations.setValueAt(annotations.indexOfKey(polyline.getId()), polyline);
   }
 
   List<Polyline> getPolylines() {
@@ -704,13 +698,9 @@ class AnnotationManager {
               }
             }
 
-            if (annotation instanceof MarkerView) {
-              markerViewManager.onClickMarkerView((MarkerView) annotation);
-            } else {
-              if (!handledDefaultClick) {
-                // only select marker if user didn't handle the click event themselves
-                selectMarker(marker);
-              }
+            if (!handledDefaultClick) {
+              // only select marker if user didn't handle the click event themselves
+              selectMarker(marker);
             }
 
             return true;
@@ -722,12 +712,15 @@ class AnnotationManager {
       for (Marker nearbyMarker : nearbyMarkers) {
         for (Marker selectedMarker : selectedMarkers) {
           if (nearbyMarker.equals(selectedMarker)) {
-            if (onMarkerClickListener != null) {
-              // end developer has provided a custom click listener
+            if (nearbyMarker instanceof MarkerView) {
+              handledDefaultClick = markerViewManager.onClickMarkerView((MarkerView) nearbyMarker);
+            } else if (onMarkerClickListener != null) {
               handledDefaultClick = onMarkerClickListener.onMarkerClick(nearbyMarker);
-              if (!handledDefaultClick) {
-                deselectMarker(nearbyMarker);
-              }
+            }
+
+            if (!handledDefaultClick) {
+              // only deselect marker if user didn't handle the click event themselves
+              deselectMarker(nearbyMarker);
             }
             return true;
           }

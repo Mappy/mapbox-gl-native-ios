@@ -59,10 +59,10 @@ public class LatLngBoundsActivity extends AppCompatActivity implements OnMapRead
 
   private void moveToBounds(LatLngBounds latLngBounds, int[] padding) {
     mapboxMap.clear();
-    mapboxMap.addMarker(new MarkerOptions().position(new LatLng(latLngBounds.getLatNorth(),latLngBounds.getLonEast())));
-    mapboxMap.addMarker(new MarkerOptions().position(new LatLng(latLngBounds.getLatSouth(), latLngBounds.getLonEast())));
-    mapboxMap.addMarker(new MarkerOptions().position(new LatLng(latLngBounds.getLatSouth(), latLngBounds.getLonWest())));
-    mapboxMap.addMarker(new MarkerOptions().position(new LatLng(latLngBounds.getLatNorth(), latLngBounds.getLonWest())));
+    mapboxMap.addMarker(new MarkerOptions().position(latLngBounds.getNorthEast()));
+    mapboxMap.addMarker(new MarkerOptions().position(latLngBounds.getSouthEast()));
+    mapboxMap.addMarker(new MarkerOptions().position(latLngBounds.getSouthWest()));
+    mapboxMap.addMarker(new MarkerOptions().position(latLngBounds.getNorthWest()));
     CameraUpdate update =
       CameraUpdateFactory.newLatLngBounds(latLngBounds,
         padding[0],

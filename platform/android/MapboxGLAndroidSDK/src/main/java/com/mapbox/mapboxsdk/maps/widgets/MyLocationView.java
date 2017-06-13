@@ -1,9 +1,7 @@
 package com.mapbox.mapboxsdk.maps.widgets;
 
-import android.Manifest;
 import android.animation.ValueAnimator;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.graphics.Camera;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -27,14 +25,13 @@ import android.support.annotation.FloatRange;
 import android.support.annotation.IntRange;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 
+import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.constants.MyBearingTracking;
@@ -49,304 +46,312 @@ import com.mapbox.services.android.telemetry.location.LocationEnginePriority;
 
 import java.lang.ref.WeakReference;
 
+import timber.log.Timber;
+
 /**
  * UI element overlaid on a map to show the user's location.
  */
 public class MyLocationView extends View {
 
-    private MyLocationBehavior myLocationBehavior;
-    private MapboxMap mapboxMap;
+  private MyLocationBehavior myLocationBehavior;
+  private MapboxMap mapboxMap;
 
-    private Projection projection;
-    private float[] projectedCoordinate = new float[2];
-    private float projectedX;
-    private float projectedY;
+  private Projection projection;
+  private float[] projectedCoordinate = new float[2];
+  private float projectedX;
+  private float projectedY;
 
-    private float contentPaddingX;
-    private float contentPaddingY;
+  private float contentPaddingX;
+  private float contentPaddingY;
 
-    private LatLng latLng;
-    private Location location;
-    private long locationUpdateTimestamp;
-    private float previousDirection;
+  private LatLng latLng;
+  private Location location;
+  private LocationEngine locationSource;
+  private long locationUpdateTimestamp;
+  private float previousDirection;
 
-    private float accuracy;
-    private Paint accuracyPaint;
+  private float accuracy;
+  private Paint accuracyPaint;
 
-    private ValueAnimator locationChangeAnimator;
-    private ValueAnimator accuracyAnimator;
-    private ValueAnimator directionAnimator;
+  private ValueAnimator locationChangeAnimator;
+  private ValueAnimator accuracyAnimator;
+  private ValueAnimator directionAnimator;
+  private boolean locationChangeAnimationEnabled;
 
-    private ValueAnimator.AnimatorUpdateListener invalidateSelfOnUpdateListener =
-            new ValueAnimator.AnimatorUpdateListener() {
-                @Override
-                public void onAnimationUpdate(ValueAnimator animation) {
-                    invalidate();
-                }
-            };
-
-    private Drawable foregroundDrawable;
-    private Drawable foregroundBearingDrawable;
-    private Drawable backgroundDrawable;
-    private Drawable backgroundBearingDrawable;
-
-    private final Rect foregroundBounds = new Rect();
-    private final Rect foregroundBearingBounds = new Rect();
-    private final Rect backgroundBounds = new Rect();
-    private final Rect backgroundBearingBounds = new Rect();
-
-    private int backgroundOffsetLeft;
-    private int backgroundOffsetTop;
-    private int backgroundOffsetRight;
-    private int backgroundOffsetBottom;
-
-    private Matrix matrix;
-    private Camera camera;
-    private PointF screenLocation;
-
-    // camera vars
-    private double tilt;
-    private double bearing;
-    private float magneticHeading;
-
-    // Controls the compass update rate in milliseconds
-    private static final int COMPASS_UPDATE_RATE_MS = 500;
-
-    @MyLocationTracking.Mode
-    private int myLocationTrackingMode;
-
-    @MyBearingTracking.Mode
-    private int myBearingTrackingMode;
-
-    private GpsLocationListener userLocationListener;
-    private CompassListener compassListener;
-
-    //Mappy modif
-    private WindowManager mWindowManager;
-    private final RectF drawRect = new RectF();
-    public MapboxMap.OnMyLocationViewClickListener myLocationViewClickListener;
-
-    public MyLocationView(Context context) {
-        super(context);
-        init(context);
-    }
-
-    public MyLocationView(Context context, AttributeSet attrs) {
-        super(context, attrs);
-        init(context);
-    }
-
-    public MyLocationView(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        init(context);
-    }
-
-    private void init(Context context) {
-        if (isInEditMode()) {
-            return;
-        }
-
-        setEnabled(false);
-
-        // setup LayoutParams
-        ViewGroup.LayoutParams lp = new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT);
-        setLayoutParams(lp);
-
-        matrix = new Matrix();
-        camera = new Camera();
-        camera.setLocation(0, 0, -1000);
-        accuracyPaint = new Paint();
-
-        myLocationBehavior = new MyLocationBehaviorFactory().getBehavioralModel(MyLocationTracking.TRACKING_NONE);
-        compassListener = new CompassListener(context);
-        mWindowManager = (WindowManager) context.getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
-    }
-
-    public final void setForegroundDrawables(Drawable defaultDrawable, Drawable bearingDrawable) {
-        if (defaultDrawable == null) {
-            return;
-        }
-
-        if (bearingDrawable == null) {
-            // if user only provided one resource
-            // use same for bearing mode
-            bearingDrawable = defaultDrawable.getConstantState().newDrawable();
-        }
-
-        foregroundDrawable = defaultDrawable;
-        foregroundBearingDrawable = bearingDrawable;
-
-        invalidateBounds();
-    }
-
-    public final void setForegroundDrawableTint(@ColorInt int color) {
-        if (color != Color.TRANSPARENT) {
-            if (foregroundDrawable != null) {
-                foregroundDrawable.mutate().setColorFilter(color, PorterDuff.Mode.SRC_IN);
-            }
-            if (foregroundBearingDrawable != null) {
-                foregroundBearingDrawable.mutate().setColorFilter(color, PorterDuff.Mode.SRC_IN);
-            }
-        }
+  private ValueAnimator.AnimatorUpdateListener invalidateSelfOnUpdateListener =
+    new ValueAnimator.AnimatorUpdateListener() {
+      @Override
+      public void onAnimationUpdate(ValueAnimator animation) {
         invalidate();
+      }
+    };
+
+  private Drawable foregroundDrawable;
+  private Drawable foregroundBearingDrawable;
+  private Drawable backgroundDrawable;
+  private Drawable backgroundBearingDrawable;
+
+  private final Rect foregroundBounds = new Rect();
+  private final Rect foregroundBearingBounds = new Rect();
+  private final Rect backgroundBounds = new Rect();
+  private final Rect backgroundBearingBounds = new Rect();
+
+  private int backgroundOffsetLeft;
+  private int backgroundOffsetTop;
+  private int backgroundOffsetRight;
+  private int backgroundOffsetBottom;
+
+  private Matrix matrix;
+  private Camera camera;
+  private PointF screenLocation;
+
+  // camera vars
+  private double tilt;
+  private double bearing;
+  private float magneticHeading;
+
+  // Controls the compass update rate in milliseconds
+  private static final int COMPASS_UPDATE_RATE_MS = 500;
+
+  @MyLocationTracking.Mode
+  private int myLocationTrackingMode;
+
+  @MyBearingTracking.Mode
+  private int myBearingTrackingMode;
+
+  private GpsLocationListener userLocationListener;
+  private CompassListener compassListener;
+
+  //Mappy modif
+  private WindowManager mWindowManager;
+  private final RectF drawRect = new RectF();
+  public MapboxMap.OnMyLocationViewClickListener myLocationViewClickListener;
+
+  public MyLocationView(Context context) {
+    super(context);
+    init(context);
+  }
+
+  public MyLocationView(Context context, AttributeSet attrs) {
+    super(context, attrs);
+    init(context);
+  }
+
+  public MyLocationView(Context context, AttributeSet attrs, int defStyleAttr) {
+    super(context, attrs, defStyleAttr);
+    init(context);
+  }
+
+  private void init(Context context) {
+    if (isInEditMode()) {
+      return;
     }
 
-    public final void setShadowDrawable(Drawable defaultDrawable, Drawable bearingDrawable) {
-        setShadowDrawable(defaultDrawable, bearingDrawable, 0, 0, 0, 0);
+    setEnabled(false);
+
+    // setup LayoutParams
+    ViewGroup.LayoutParams lp = new ViewGroup.LayoutParams(
+      ViewGroup.LayoutParams.MATCH_PARENT,
+      ViewGroup.LayoutParams.MATCH_PARENT);
+    setLayoutParams(lp);
+
+    matrix = new Matrix();
+    camera = new Camera();
+    camera.setLocation(0, 0, -1000);
+    accuracyPaint = new Paint();
+
+    myLocationBehavior = new MyLocationBehaviorFactory().getBehavioralModel(MyLocationTracking.TRACKING_NONE);
+    compassListener = new CompassListener(context);
+    mWindowManager = (WindowManager) context.getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
+  }
+
+  public void init(LocationSource locationSource) {
+    this.locationSource = locationSource;
+  }
+
+  public final void setForegroundDrawables(Drawable defaultDrawable, Drawable bearingDrawable) {
+    if (defaultDrawable == null) {
+      return;
     }
 
-    public final void setShadowDrawable(Drawable defaultDrawable, Drawable bearingDrawable, int left, int top, int right, int bottom) {
-        backgroundDrawable = defaultDrawable;
-        backgroundBearingDrawable = bearingDrawable;
-
-        backgroundOffsetLeft = left;
-        backgroundOffsetTop = top;
-        backgroundOffsetRight = right;
-        backgroundOffsetBottom = bottom;
-
-        invalidateBounds();
+    if (bearingDrawable == null) {
+      // if user only provided one resource
+      // use same for bearing mode
+      bearingDrawable = defaultDrawable.getConstantState().newDrawable();
     }
 
-    public final void setShadowDrawableTint(@ColorInt int color) {
-        if (color != Color.TRANSPARENT) {
-            if (backgroundDrawable != null) {
-                backgroundDrawable.mutate().setColorFilter(color, PorterDuff.Mode.SRC_IN);
-            }
-            if (backgroundBearingDrawable != null) {
-                backgroundBearingDrawable.mutate().setColorFilter(color, PorterDuff.Mode.SRC_IN);
-            }
-        }
-        invalidate();
+    foregroundDrawable = defaultDrawable;
+    foregroundBearingDrawable = bearingDrawable;
+
+    invalidateBounds();
+  }
+
+  public final void setForegroundDrawableTint(@ColorInt int color) {
+    if (color != Color.TRANSPARENT) {
+      if (foregroundDrawable != null) {
+        foregroundDrawable.mutate().setColorFilter(color, PorterDuff.Mode.SRC_IN);
+      }
+      if (foregroundBearingDrawable != null) {
+        foregroundBearingDrawable.mutate().setColorFilter(color, PorterDuff.Mode.SRC_IN);
+      }
+    }
+    invalidate();
+  }
+
+  public final void setShadowDrawable(Drawable defaultDrawable, Drawable bearingDrawable) {
+    setShadowDrawable(defaultDrawable, bearingDrawable, 0, 0, 0, 0);
+  }
+
+  public final void setShadowDrawable(Drawable defaultDrawable, Drawable bearingDrawable, int left, int top, int right, int bottom) {
+    backgroundDrawable = defaultDrawable;
+    backgroundBearingDrawable = bearingDrawable;
+
+    backgroundOffsetLeft = left;
+    backgroundOffsetTop = top;
+    backgroundOffsetRight = right;
+    backgroundOffsetBottom = bottom;
+
+    invalidateBounds();
+  }
+
+  public final void setShadowDrawableTint(@ColorInt int color) {
+    if (color != Color.TRANSPARENT) {
+      if (backgroundDrawable != null) {
+        backgroundDrawable.mutate().setColorFilter(color, PorterDuff.Mode.SRC_IN);
+      }
+      if (backgroundBearingDrawable != null) {
+        backgroundBearingDrawable.mutate().setColorFilter(color, PorterDuff.Mode.SRC_IN);
+      }
+    }
+    invalidate();
+  }
+
+  public final void setAccuracyTint(@ColorInt int color) {
+    int alpha = accuracyPaint.getAlpha();
+    accuracyPaint.setColor(color);
+    accuracyPaint.setAlpha(alpha);
+    invalidate();
+  }
+
+  public final void setAccuracyAlpha(@IntRange(from = 0, to = 255) int alpha) {
+    accuracyPaint.setAlpha(alpha);
+    invalidate();
+  }
+
+  private void invalidateBounds() {
+    int horizontalOffset = backgroundOffsetLeft - backgroundOffsetRight;
+    int verticalOffset = backgroundOffsetTop - backgroundOffsetBottom;
+
+    computeBounds(backgroundDrawable, backgroundBounds, horizontalOffset, verticalOffset);
+    computeBounds(backgroundBearingDrawable, backgroundBearingBounds, horizontalOffset, verticalOffset);
+    computeBounds(foregroundDrawable, foregroundBounds);
+    computeBounds(foregroundBearingDrawable, foregroundBearingBounds);
+
+    // invoke a new draw
+    invalidate();
+  }
+
+  private void computeBounds(Drawable drawable, Rect bounds) {
+    computeBounds(drawable, bounds, 0, 0);
+  }
+
+  private void computeBounds(Drawable drawable, Rect bounds, int horizontalOffset, int verticalOffset) {
+    if (drawable != null) {
+      int halfWidth = drawable.getIntrinsicWidth() / 2;
+      int halfHeight = drawable.getIntrinsicHeight() / 2;
+      bounds.set(-halfWidth + horizontalOffset, -halfHeight + verticalOffset, halfWidth + horizontalOffset, halfHeight + verticalOffset);
+      drawable.setBounds(bounds);
+    }
+  }
+
+  //Mappy modif
+  @Nullable
+  public RectF getDrawRect() {
+    if (screenLocation != null) {
+      if (myBearingTrackingMode == MyBearingTracking.NONE || !compassListener.isSensorAvailable()) {
+        drawRect.set(foregroundDrawable.getBounds());
+      } else {
+        drawRect.set(foregroundBearingDrawable.getBounds());
+      }
+      drawRect.offset(screenLocation.x, screenLocation.y); //TODO manage orientation when map rotation will be activated
+      return drawRect;
+    }
+    return null;
+  }
+
+  public void setOnMyLocationViewClickListener(MapboxMap.OnMyLocationViewClickListener listener) {
+    myLocationViewClickListener = listener;
+  }
+
+  @Override
+  protected void onDraw(Canvas canvas) {
+    super.onDraw(canvas);
+
+    if (location == null || foregroundBounds == null || backgroundBounds == null || accuracyAnimator == null
+      || screenLocation == null) {
+      // Not ready yet
+      return;
     }
 
-    public final void setAccuracyTint(@ColorInt int color) {
-        int alpha = accuracyPaint.getAlpha();
-        accuracyPaint.setColor(color);
-        accuracyPaint.setAlpha(alpha);
-        invalidate();
+    final PointF pointF = screenLocation;
+    float metersPerPixel = (float) projection.getMetersPerPixelAtLatitude(location.getLatitude());
+    float accuracyPixels = (Float) accuracyAnimator.getAnimatedValue() / metersPerPixel;
+
+    // reset
+    matrix.reset();
+    projectedCoordinate[0] = 0;
+    projectedCoordinate[1] = 0;
+
+    // put camera in position
+    camera.save();
+    camera.rotate((float) tilt, 0, 0);
+    camera.getMatrix(matrix);
+
+    if (myBearingTrackingMode != MyBearingTracking.NONE && directionAnimator != null) {
+      matrix.preRotate((Float) directionAnimator.getAnimatedValue());
     }
 
-    public final void setAccuracyAlpha(@IntRange(from = 0, to = 255) int alpha) {
-        accuracyPaint.setAlpha(alpha);
-        invalidate();
+    matrix.preTranslate(0, contentPaddingY);
+    matrix.postTranslate(pointF.x, pointF.y - contentPaddingY);
+
+    // concat our matrix on canvas
+    canvas.concat(matrix);
+
+    // calculate focal point
+    matrix.mapPoints(projectedCoordinate);
+    projectedX = pointF.x - projectedCoordinate[0];
+    projectedY = pointF.y - projectedCoordinate[1];
+
+    // restore orientation from camera
+    camera.restore();
+
+    // draw circle
+    canvas.drawCircle(0, 0, accuracyPixels, accuracyPaint);
+
+    // draw foreground
+    if (myBearingTrackingMode == MyBearingTracking.NONE || !compassListener.isSensorAvailable()) {
+      draw(canvas, foregroundDrawable, backgroundDrawable);
+    } else if (foregroundBearingDrawable != null && foregroundBounds != null) {
+      draw(canvas, foregroundBearingDrawable, backgroundBearingDrawable);
     }
+  }
 
-    private void invalidateBounds() {
-        int horizontalOffset = backgroundOffsetLeft - backgroundOffsetRight;
-        int verticalOffset = backgroundOffsetTop - backgroundOffsetBottom;
-
-        computeBounds(backgroundDrawable, backgroundBounds, horizontalOffset, verticalOffset);
-        computeBounds(backgroundBearingDrawable, backgroundBearingBounds, horizontalOffset, verticalOffset);
-        computeBounds(foregroundDrawable, foregroundBounds);
-        computeBounds(foregroundBearingDrawable, foregroundBearingBounds);
-
-        // invoke a new draw
-        invalidate();
+  private void draw(Canvas canvas, Drawable foreground, Drawable background) {
+    if (background != null) {
+      background.draw(canvas);
     }
-
-    private void computeBounds(Drawable drawable, Rect bounds) {
-        computeBounds(drawable, bounds, 0, 0);
+    if (foreground != null) {
+      foreground.draw(canvas);
     }
+  }
 
-    private void computeBounds(Drawable drawable, Rect bounds, int horizontalOffset, int verticalOffset) {
-        if (drawable != null) {
-            int halfWidth = drawable.getIntrinsicWidth() / 2;
-            int halfHeight = drawable.getIntrinsicHeight() / 2;
-            bounds.set(-halfWidth + horizontalOffset, -halfHeight + verticalOffset, halfWidth + horizontalOffset, halfHeight + verticalOffset);
-            drawable.setBounds(bounds);
-        }
+  public void setTilt(@FloatRange(from = 0, to = 60.0f) double tilt) {
+    this.tilt = tilt;
+    if (myLocationTrackingMode == MyLocationTracking.TRACKING_FOLLOW) {
+      mapboxMap.getUiSettings().setFocalPoint(getCenter());
     }
-
-    //Mappy modif
-    @Nullable
-    public RectF getDrawRect() {
-        if (screenLocation != null) {
-            if (myBearingTrackingMode == MyBearingTracking.NONE || !compassListener.isSensorAvailable()) {
-                drawRect.set(foregroundDrawable.getBounds());
-            } else {
-                drawRect.set(foregroundBearingDrawable.getBounds());
-            }
-            drawRect.offset(screenLocation.x, screenLocation.y); //TODO manage orientation when map rotation will be activated
-            return drawRect;
-        }
-        return null;
-    }
-
-    public void setOnMyLocationViewClickListener(MapboxMap.OnMyLocationViewClickListener listener) {
-        myLocationViewClickListener = listener;
-    }
-
-    @Override
-    protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
-
-        if (location == null || foregroundBounds == null || backgroundBounds == null || accuracyAnimator == null
-                || screenLocation == null) {
-            // Not ready yet
-            return;
-        }
-
-        final PointF pointF = screenLocation;
-        float metersPerPixel = (float) projection.getMetersPerPixelAtLatitude(location.getLatitude());
-        float accuracyPixels = (Float) accuracyAnimator.getAnimatedValue() / metersPerPixel;
-
-        // reset
-        matrix.reset();
-        projectedCoordinate[0] = 0;
-        projectedCoordinate[1] = 0;
-
-        // put camera in position
-        camera.save();
-        camera.rotate((float) tilt, 0, 0);
-        camera.getMatrix(matrix);
-
-        if (myBearingTrackingMode != MyBearingTracking.NONE && directionAnimator != null) {
-            matrix.preRotate((Float) directionAnimator.getAnimatedValue());
-        }
-
-        matrix.preTranslate(0, contentPaddingY);
-        matrix.postTranslate(pointF.x, pointF.y - contentPaddingY);
-
-        // concat our matrix on canvas
-        canvas.concat(matrix);
-
-        // calculate focal point
-        matrix.mapPoints(projectedCoordinate);
-        projectedX = pointF.x - projectedCoordinate[0];
-        projectedY = pointF.y - projectedCoordinate[1];
-
-        // restore orientation from camera
-        camera.restore();
-
-        // draw circle
-        canvas.drawCircle(0, 0, accuracyPixels, accuracyPaint);
-
-        // draw foreground
-        if (myBearingTrackingMode == MyBearingTracking.NONE || !compassListener.isSensorAvailable()) {
-            draw(canvas, foregroundDrawable, backgroundDrawable);
-        } else if (foregroundBearingDrawable != null && foregroundBounds != null) {
-            draw(canvas, foregroundBearingDrawable, backgroundBearingDrawable);
-        }
-    }
-
-    private void draw(Canvas canvas, Drawable foreground, Drawable background) {
-        if (background != null) {
-            background.draw(canvas);
-        }
-        if (foreground != null) {
-            foreground.draw(canvas);
-        }
-    }
-
-    public void setTilt(@FloatRange(from = 0, to = 60.0f) double tilt) {
-        this.tilt = tilt;
-        if (myLocationTrackingMode == MyLocationTracking.TRACKING_FOLLOW) {
-            mapboxMap.getUiSettings().setFocalPoint(getCenter());
-        }
-        invalidate();
-    }
+    invalidate();
+  }
 
     /* Mappy : redefined above without tracking notion
   public void setBearing(double bearing) {
@@ -356,291 +361,307 @@ public class MyLocationView extends View {
         if (location != null) {
           setCompass(location.getBearing() - bearing);
         }
-      } else if (myBearingTrackingMode == MyBearingTracking.COMPASS
-              && compassListener.isSensorAvailable()) {
+      } else if (myBearingTrackingMode == MyBearingTracking.COMPASS && compassListener.isSensorAvailable()) {
         setCompass(magneticHeading - bearing);
       }
     }
   }
   */
 
-    public void setBearing(double newBearing) {
-        // take account of screen rotation away from its natural rotation
-        int rotation = mWindowManager.getDefaultDisplay().getRotation();
-        float screen_adjustment = 0;
-        switch (rotation) {
-            case Surface.ROTATION_0:
-                screen_adjustment = 0;
-                break;
-            case Surface.ROTATION_90:
-                screen_adjustment = 90;
-                break;
-            case Surface.ROTATION_180:
-                screen_adjustment = 180;
-                break;
-            case Surface.ROTATION_270:
-                screen_adjustment = 270;
-                break;
-        }
-        bearing = (newBearing - screen_adjustment) % 360;
-        setCompass(magneticHeading - bearing);
+  public void setBearing(double newBearing) {
+    // take account of screen rotation away from its natural rotation
+    int rotation = mWindowManager.getDefaultDisplay().getRotation();
+    float screen_adjustment = 0;
+    switch (rotation) {
+      case Surface.ROTATION_0:
+        screen_adjustment = 0;
+        break;
+      case Surface.ROTATION_90:
+        screen_adjustment = 90;
+        break;
+      case Surface.ROTATION_180:
+        screen_adjustment = 180;
+        break;
+      case Surface.ROTATION_270:
+        screen_adjustment = 270;
+        break;
+    }
+    bearing = (newBearing - screen_adjustment) % 360;
+    setCompass(magneticHeading - bearing);
+  }
+
+  public void setCameraPosition(CameraPosition position) {
+    if (position != null) {
+      //Mappy, the location marker is free from camara position bearing
+      //setBearing(position.bearing);
+      setTilt(position.tilt);
+    }
+  }
+
+  public void onStart() {
+    if (myBearingTrackingMode == MyBearingTracking.COMPASS && compassListener.isSensorAvailable()) {
+      compassListener.onResume();
+    }
+    if (isEnabled()) {
+      toggleGps(true);
+    }
+  }
+
+  public void onStop() {
+    compassListener.onPause();
+    toggleGps(false);
+  }
+
+  @Override
+  protected void onDetachedFromWindow() {
+    super.onDetachedFromWindow();
+    // cleanup to prevent memory leaks
+    if (locationChangeAnimator != null) {
+      locationChangeAnimator.cancel();
+      locationChangeAnimator = null;
     }
 
-    public void setCameraPosition(CameraPosition position) {
-        if (position != null) {
-            //Mappy, the location marker is free from camara position bearing
-            //setBearing(position.bearing);
-            setTilt(position.tilt);
-        }
+    if (accuracyAnimator != null) {
+      accuracyAnimator.cancel();
+      accuracyAnimator = null;
     }
 
-    public void onStart() {
-        if (myBearingTrackingMode == MyBearingTracking.COMPASS
-                && compassListener.isSensorAvailable()) {
-            compassListener.onResume();
-        }
-        if (isEnabled()) {
-            toggleGps(true);
-        }
+    if (directionAnimator != null) {
+      directionAnimator.cancel();
+      directionAnimator = null;
     }
 
-    public void onStop() {
-        compassListener.onPause();
-        toggleGps(false);
+    if (userLocationListener != null) {
+      LocationSource.getLocationEngine(getContext()).removeLocationEngineListener(userLocationListener);
+      locationSource = null;
+      userLocationListener = null;
     }
+  }
 
-    @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
-        // cleanup to prevent memory leaks
-        if (locationChangeAnimator != null) {
-            locationChangeAnimator.cancel();
-            locationChangeAnimator = null;
-        }
-
-        if (accuracyAnimator != null) {
-            accuracyAnimator.cancel();
-            accuracyAnimator = null;
-        }
-
-        if (directionAnimator != null) {
-            directionAnimator.cancel();
-            directionAnimator = null;
-        }
-
-        if (userLocationListener != null) {
-            LocationSource.getLocationEngine(getContext()).removeLocationEngineListener(userLocationListener);
-            userLocationListener = null;
-        }
+  public void update() {
+    if (isEnabled()) {
+      myLocationBehavior.invalidate();
+    } else {
+      setVisibility(View.INVISIBLE);
     }
+  }
 
-    public void update() {
-        if (isEnabled()) {
-            myLocationBehavior.invalidate();
+  // TODO refactor MapboxMap out
+  public void setMapboxMap(MapboxMap mapboxMap) {
+    this.mapboxMap = mapboxMap;
+    this.projection = mapboxMap.getProjection();
+  }
+
+  @Override
+  public void setEnabled(boolean enabled) {
+    setEnabled(enabled, false);
+  }
+
+  public void setEnabled(boolean enabled, boolean isCustomLocationSource) {
+    super.setEnabled(enabled);
+    setVisibility(enabled ? View.VISIBLE : View.INVISIBLE);
+    toggleGps(enabled, isCustomLocationSource);
+  }
+
+  @Override
+  protected Parcelable onSaveInstanceState() {
+    Bundle bundle = new Bundle();
+    bundle.putParcelable("superState", super.onSaveInstanceState());
+    bundle.putDouble("tilt", tilt);
+    return bundle;
+  }
+
+  @Override
+  public void onRestoreInstanceState(Parcelable state) {
+    if (state instanceof Bundle) {
+      Bundle bundle = (Bundle) state;
+      tilt = bundle.getDouble("tilt");
+      state = bundle.getParcelable("superState");
+    }
+    super.onRestoreInstanceState(state);
+  }
+
+  private void toggleGps(boolean enableGps) {
+    toggleGps(enableGps, mapboxMap != null && mapboxMap.getTrackingSettings().isCustomLocationSource());
+  }
+
+  /**
+   * Enabled / Disable GPS location updates along with updating the UI
+   *
+   * @param enableGps true if GPS is to be enabled, false if GPS is to be disabled
+   */
+  private void toggleGps(boolean enableGps, boolean isCustomLocationSource) {
+    if (enableGps) {
+      if (locationSource == null) {
+        if (!isCustomLocationSource) {
+          locationSource = Mapbox.getLocationSource();
         } else {
-            setVisibility(View.INVISIBLE);
+          return;
         }
+      }
+
+      if (userLocationListener == null) {
+        userLocationListener = new GpsLocationListener(this, locationSource);
+      }
+
+      locationSource.addLocationEngineListener(userLocationListener);
+      locationSource.setPriority(LocationEnginePriority.HIGH_ACCURACY);
+      locationSource.activate();
+    } else {
+      if (locationSource == null) {
+        return;
+      }
+      // Disable location and user dot
+      location = null;
+      locationSource.removeLocationEngineListener(userLocationListener);
+      locationSource.removeLocationUpdates();
+      locationSource.deactivate();
+    }
+  }
+
+  public Location getLocation() {
+    return location;
+  }
+
+  public void setLocation(Location location) {
+    if (location == null) {
+      this.location = null;
+      return;
     }
 
-    // TODO refactor MapboxMap out
-    public void setMapboxMap(MapboxMap mapboxMap) {
-        this.mapboxMap = mapboxMap;
-        this.projection = mapboxMap.getProjection();
+    this.location = location;
+    myLocationBehavior.updateLatLng(location);
+
+    if (mapboxMap != null && myBearingTrackingMode == MyBearingTracking.GPS
+      && myLocationTrackingMode == MyLocationTracking.TRACKING_NONE) {
+      setBearing(mapboxMap.getCameraPosition().bearing);
+    }
+  }
+
+  public void setLocationChangeAnimationEnabled(boolean locationChangeAnimationEnabled) {
+    this.locationChangeAnimationEnabled = locationChangeAnimationEnabled;
+  }
+
+  public void setMyBearingTrackingMode(@MyBearingTracking.Mode int myBearingTrackingMode) {
+    this.myBearingTrackingMode = myBearingTrackingMode;
+    if (myBearingTrackingMode == MyBearingTracking.COMPASS && compassListener.isSensorAvailable()) {
+      compassListener.onResume();
+    } else {
+      compassListener.onPause();
+      if (myLocationTrackingMode == MyLocationTracking.TRACKING_FOLLOW) {
+        // always face north
+        setCompass(0);
+      } else {
+        myLocationBehavior.invalidate();
+      }
+    }
+    invalidate();
+  }
+
+  public void setMyLocationTrackingMode(@MyLocationTracking.Mode int myLocationTrackingMode) {
+    MyLocationBehaviorFactory factory = new MyLocationBehaviorFactory();
+    myLocationBehavior = factory.getBehavioralModel(myLocationTrackingMode);
+
+    if (location != null) {
+      if (myLocationTrackingMode == MyLocationTracking.TRACKING_FOLLOW) {
+        // center map directly
+        mapboxMap.easeCamera(CameraUpdateFactory.newLatLng(new LatLng(location)), 0, false /*linear interpolator*/,
+          null, true);
+      } else {
+        // do not use interpolated location from tracking mode
+        latLng = null;
+      }
+      myLocationBehavior.updateLatLng(location);
+    }
+
+    this.myLocationTrackingMode = myLocationTrackingMode;
+    invalidate();
+  }
+
+  @MyLocationTracking.Mode
+  public int getMyLocationTrackingMode() {
+    return myLocationTrackingMode;
+  }
+
+
+  @MyBearingTracking.Mode
+  public int getMyBearingTrackingMode() {
+    return myBearingTrackingMode;
+  }
+
+  private void setCompass(double bearing) {
+    setCompass(bearing, 0 /* no animation */);
+  }
+
+  private void setCompass(double bearing, long duration) {
+    float oldDir = previousDirection;
+    if (directionAnimator != null) {
+      oldDir = (Float) directionAnimator.getAnimatedValue();
+      directionAnimator.end();
+      directionAnimator = null;
+    }
+
+    float newDir = (float) bearing;
+    float diff = oldDir - newDir;
+    if (diff > 180.0f) {
+      newDir += 360.0f;
+    } else if (diff < -180.0f) {
+      newDir -= 360.f;
+    }
+    previousDirection = newDir;
+
+    directionAnimator = ValueAnimator.ofFloat(oldDir, newDir);
+    directionAnimator.setDuration(duration);
+    directionAnimator.addUpdateListener(invalidateSelfOnUpdateListener);
+    directionAnimator.start();
+  }
+
+  public PointF getCenter() {
+    return new PointF(getCenterX(), getCenterY());
+  }
+
+  private float getCenterX() {
+    return (getX() + getMeasuredWidth()) / 2 + contentPaddingX - projectedX;
+  }
+
+  private float getCenterY() {
+    return (getY() + getMeasuredHeight()) / 2 + contentPaddingY - projectedY;
+  }
+
+  public void setContentPadding(int[] padding) {
+    contentPaddingX = (padding[0] - padding[2]) / 2;
+    contentPaddingY = (padding[1] - padding[3]) / 2;
+  }
+
+  public void setLocationSource(LocationEngine locationSource) {
+    toggleGps(false);
+    this.locationSource = locationSource;
+    this.userLocationListener = null;
+    setEnabled(isEnabled(), locationSource != null);
+  }
+
+  private static class GpsLocationListener implements LocationEngineListener {
+
+    private WeakReference<MyLocationView> userLocationView;
+    private WeakReference<LocationEngine> locationSource;
+
+    GpsLocationListener(MyLocationView myLocationView, LocationEngine locationEngine) {
+      userLocationView = new WeakReference<>(myLocationView);
+      locationSource = new WeakReference<>(locationEngine);
     }
 
     @Override
-    public void setEnabled(boolean enabled) {
-        super.setEnabled(enabled);
-        setVisibility(enabled ? View.VISIBLE : View.INVISIBLE);
-        toggleGps(enabled);
-    }
-
-    @Override
-    protected Parcelable onSaveInstanceState() {
-        Bundle bundle = new Bundle();
-        bundle.putParcelable("superState", super.onSaveInstanceState());
-        bundle.putDouble("tilt", tilt);
-        return bundle;
-    }
-
-    @Override
-    public void onRestoreInstanceState(Parcelable state) {
-        if (state instanceof Bundle) {
-            Bundle bundle = (Bundle) state;
-            tilt = bundle.getDouble("tilt");
-            state = bundle.getParcelable("superState");
+    public void onConnected() {
+      MyLocationView locationView = userLocationView.get();
+      LocationEngine locationEngine = locationSource.get();
+      if (locationView != null && locationEngine != null) {
+        Location lastKnownLocation = locationEngine.getLastLocation();
+        if (lastKnownLocation != null) {
+          locationView.setLocation(lastKnownLocation);
         }
-        super.onRestoreInstanceState(state);
+        locationEngine.requestLocationUpdates();
+      }
     }
-
-    /**
-     * Enabled / Disable GPS location updates along with updating the UI
-     *
-     * @param enableGps true if GPS is to be enabled, false if GPS is to be disabled
-     */
-    private void toggleGps(boolean enableGps) {
-        LocationEngine locationEngine = LocationSource.getLocationEngine(getContext());
-        if (enableGps) {
-            //noinspection MissingPermission
-            Location lastLocation = locationEngine.getLastLocation();
-
-            if (lastLocation != null) {
-                setLocation(lastLocation);
-            }
-
-            if (userLocationListener == null) {
-                userLocationListener = new GpsLocationListener(this);
-            }
-
-            locationEngine.addLocationEngineListener(userLocationListener);
-            locationEngine.activate();
-        } else {
-            // Disable location and user dot
-            location = null;
-            locationEngine.removeLocationEngineListener(userLocationListener);
-            locationEngine.deactivate();
-        }
-
-        locationEngine.setPriority(LocationEnginePriority.HIGH_ACCURACY);
-    }
-
-    public Location getLocation() {
-        return location;
-    }
-
-    public void setLocation(Location location) {
-        if (location == null) {
-            this.location = null;
-            return;
-        }
-
-        this.location = location;
-        myLocationBehavior.updateLatLng(location);
-    }
-
-    public void setMyBearingTrackingMode(@MyBearingTracking.Mode int myBearingTrackingMode) {
-        this.myBearingTrackingMode = myBearingTrackingMode;
-        if (myBearingTrackingMode == MyBearingTracking.COMPASS
-                && compassListener.isSensorAvailable()) {
-            compassListener.onResume();
-        } else {
-            compassListener.onPause();
-            if (myLocationTrackingMode == MyLocationTracking.TRACKING_FOLLOW) {
-                // always face north
-                setCompass(0);
-            } else {
-                myLocationBehavior.invalidate();
-            }
-        }
-        invalidate();
-    }
-
-    public void setMyLocationTrackingMode(@MyLocationTracking.Mode int myLocationTrackingMode) {
-        MyLocationBehaviorFactory factory = new MyLocationBehaviorFactory();
-        myLocationBehavior = factory.getBehavioralModel(myLocationTrackingMode);
-
-        if (location != null) {
-            if (myLocationTrackingMode == MyLocationTracking.TRACKING_FOLLOW) {
-                // center map directly
-                mapboxMap.getTrackingSettings().setDismissTrackingModeForCameraPositionChange(false);
-                mapboxMap.easeCamera(CameraUpdateFactory.newLatLng(new LatLng(location)), 0, false /*linear interpolator*/,
-                        new MapboxMap.CancelableCallback() {
-                            @Override
-                            public void onCancel() {
-                                mapboxMap.getTrackingSettings().setDismissTrackingModeForCameraPositionChange(true);
-                            }
-
-                            @Override
-                            public void onFinish() {
-                                mapboxMap.getTrackingSettings().setDismissTrackingModeForCameraPositionChange(true);
-                            }
-                        });
-            } else {
-                // do not use interpolated location from tracking mode
-                latLng = null;
-            }
-            myLocationBehavior.updateLatLng(location);
-        }
-
-        this.myLocationTrackingMode = myLocationTrackingMode;
-        invalidate();
-    }
-
-    @MyLocationTracking.Mode
-    public int getMyLocationTrackingMode() {
-        return myLocationTrackingMode;
-    }
-
-
-    @MyBearingTracking.Mode
-    public int getMyBearingTrackingMode() {
-        return myBearingTrackingMode;
-    }
-
-    private void setCompass(double bearing) {
-        setCompass(bearing, 0 /* no animation */);
-    }
-
-    private void setCompass(double bearing, long duration) {
-        float oldDir = previousDirection;
-        if (directionAnimator != null) {
-            oldDir = (Float) directionAnimator.getAnimatedValue();
-            directionAnimator.end();
-            directionAnimator = null;
-        }
-
-        float newDir = (float) bearing;
-        float diff = oldDir - newDir;
-        if (diff > 180.0f) {
-            newDir += 360.0f;
-        } else if (diff < -180.0f) {
-            newDir -= 360.f;
-        }
-        previousDirection = newDir;
-
-        directionAnimator = ValueAnimator.ofFloat(oldDir, newDir);
-        directionAnimator.setDuration(duration);
-        directionAnimator.addUpdateListener(invalidateSelfOnUpdateListener);
-        directionAnimator.start();
-    }
-
-    public PointF getCenter() {
-        return new PointF(getCenterX(), getCenterY());
-    }
-
-    private float getCenterX() {
-        return (getX() + getMeasuredWidth()) / 2 + contentPaddingX - projectedX;
-    }
-
-    private float getCenterY() {
-        return (getY() + getMeasuredHeight()) / 2 + contentPaddingY - projectedY;
-    }
-
-    public void setContentPadding(int[] padding) {
-        contentPaddingX = (padding[0] - padding[2]) / 2;
-        contentPaddingY = (padding[1] - padding[3]) / 2;
-    }
-
-    private static class GpsLocationListener implements LocationEngineListener {
-
-        private WeakReference<MyLocationView> userLocationView;
-
-        GpsLocationListener(MyLocationView myLocationView) {
-            userLocationView = new WeakReference<>(myLocationView);
-        }
-
-        @Override
-        public void onConnected() {
-            MyLocationView locationView = userLocationView.get();
-            if (locationView != null) {
-                LocationEngine locationSource = LocationSource.getLocationEngine(locationView.getContext());
-                //noinspection MissingPermission
-                Location location = locationSource.getLastLocation();
-                locationView.setLocation(location);
-                //noinspection MissingPermission
-                locationSource.requestLocationUpdates();
-            }
-        }
 
     /**
      * Callback method for receiving location updates from LocationServices.
@@ -681,6 +702,9 @@ public class MyLocationView extends View {
     }
 
     public boolean isSensorAvailable() {
+      if (rotationVectorSensor == null) {
+        Timber.e("Sensor.TYPE_ROTATION_VECTOR is missing from this device. Unable to use MyBearingTracking.COMPASS.");
+      }
       return rotationVectorSensor != null;
     }
 
@@ -695,13 +719,13 @@ public class MyLocationView extends View {
 
       if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
 
-          /**
-           * Mappy Fix
-           * On some Samsung devices (e.g. Galaxy Note 3 and Galaxy S4) the
-           * SensorManager.getRotationMatrixFromVector() appears to throw an
-           * exception when the passed rotation vector has length > 4.
-           * In this case
-           */
+        /**
+         * Mappy Fix
+         * On some Samsung devices (e.g. Galaxy Note 3 and Galaxy S4) the
+         * SensorManager.getRotationMatrixFromVector() appears to throw an
+         * exception when the passed rotation vector has length > 4.
+         * In this case
+         */
         try {
           // calculate the rotation matrix
           SensorManager.getRotationMatrixFromVector(matrix, event.values);
@@ -710,7 +734,7 @@ public class MyLocationView extends View {
           float magneticHeading = (float) Math.toDegrees(orientation[0]);
           setCompass(magneticHeading - bearing);
         } catch (Exception e) {
-            e.printStackTrace();
+          e.printStackTrace();
         }
 
         /* Mappy, the bearing of the sensor doesn't allow to rotate the map
@@ -732,19 +756,8 @@ public class MyLocationView extends View {
     private void rotateCamera(float rotation) {
       CameraPosition.Builder builder = new CameraPosition.Builder();
       builder.bearing(rotation);
-      mapboxMap.getTrackingSettings().setDismissTrackingModeForCameraPositionChange(false);
       mapboxMap.easeCamera(CameraUpdateFactory.newCameraPosition(builder.build()), COMPASS_UPDATE_RATE_MS,
-        false /*linear interpolator*/, new MapboxMap.CancelableCallback() {
-          @Override
-          public void onCancel() {
-              mapboxMap.getTrackingSettings().setDismissTrackingModeForCameraPositionChange(true);
-          }
-
-          @Override
-          public void onFinish() {
-            mapboxMap.getTrackingSettings().setDismissTrackingModeForCameraPositionChange(true);
-          }
-        });
+        false /*linear interpolator*/, null);
     }
 
     @Override
@@ -792,6 +805,12 @@ public class MyLocationView extends View {
 
   private abstract class MyLocationBehavior {
 
+    MyLocationBehavior() {
+      if (latLng != null) {
+        locationUpdateTimestamp = SystemClock.elapsedRealtime();
+      }
+    }
+
     void updateLatLng(@NonNull Location newLocation) {
       location = newLocation;
     }
@@ -811,8 +830,8 @@ public class MyLocationView extends View {
 
       if (accuracyAnimator != null) {
         if (accuracyAnimator.isRunning()) {
-            // use current accuracy as a starting point
-            accuracy = (Float) accuracyAnimator.getAnimatedValue();
+          // use current accuracy as a starting point
+          accuracy = (Float) accuracyAnimator.getAnimatedValue();
         }
         accuracyAnimator.end();
       }
@@ -842,13 +861,15 @@ public class MyLocationView extends View {
       locationUpdateTimestamp = SystemClock.elapsedRealtime();
 
       // calculate animation duration
-      float animationDuration;
+      int animationDuration;
       if (previousUpdateTimeStamp == 0) {
         animationDuration = 0;
       } else {
-        animationDuration = 750L;//(locationUpdateTimestamp - previousUpdateTimeStamp) * 1.1f
+          //Mappy modif
+          animationDuration = 750L;//(locationUpdateTimestamp - previousUpdateTimeStamp) * 1.1f
         /*make animation slightly longer*/;
       }
+
       // calculate interpolated location
       latLng = new LatLng(location);
       CameraPosition.Builder builder = new CameraPosition.Builder().target(latLng);
@@ -864,20 +885,14 @@ public class MyLocationView extends View {
       // accuracy
       updateAccuracy(location);
 
-      mapboxMap.getTrackingSettings().setDismissTrackingModeForCameraPositionChange(false);
-      // ease to new camera position with a linear interpolator
-      mapboxMap.easeCamera(CameraUpdateFactory.newCameraPosition(builder.build()), (int) animationDuration,
-        false /*linear interpolator*/, new MapboxMap.CancelableCallback() {
-          @Override
-          public void onCancel() {
-              mapboxMap.getTrackingSettings().setDismissTrackingModeForCameraPositionChange(true);
-          }
-
-          @Override
-          public void onFinish() {
-            mapboxMap.getTrackingSettings().setDismissTrackingModeForCameraPositionChange(true);
-          }
-        });
+      if (locationChangeAnimationEnabled) {
+        // ease to new camera position with a linear interpolator
+        mapboxMap.easeCamera(CameraUpdateFactory.newCameraPosition(builder.build()), animationDuration, false, null,
+          true);
+      } else {
+        mapboxMap.easeCamera(CameraUpdateFactory.newCameraPosition(builder.build()), 0, false, null,
+          true);
+      }
     }
 
     @Override
@@ -919,7 +934,11 @@ public class MyLocationView extends View {
       }
 
       locationChangeAnimator = ValueAnimator.ofFloat(0.0f, 1.0f);
-      locationChangeAnimator.setDuration(locationUpdateDuration);
+      if (locationChangeAnimationEnabled) {
+        locationChangeAnimator.setDuration(locationUpdateDuration);
+      } else {
+        locationChangeAnimator.setDuration(0);
+      }
       locationChangeAnimator.addUpdateListener(new MarkerCoordinateAnimatorListener(this,
         latLng, newLocation
       ));

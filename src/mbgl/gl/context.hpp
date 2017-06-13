@@ -22,7 +22,6 @@
 #include <vector>
 #include <array>
 #include <string>
-#include <unordered_map>
 
 namespace mbgl {
 
@@ -31,10 +30,22 @@ class View;
 namespace gl {
 
 constexpr size_t TextureMax = 64;
+using ProcAddress = void (*)();
+
+namespace extension {
+class VertexArray;
+class Debugging;
+class ProgramBinary;
+} // namespace extension
 
 class Context : private util::noncopyable {
 public:
+    Context();
     ~Context();
+
+    void initializeExtensions(const std::function<gl::ProcAddress(const char*)>&);
+
+    void enableDebugging();
 
     UniqueShader createShader(ShaderType type, const std::string& source);
     UniqueProgram createProgram(ShaderID vertexShader, ShaderID fragmentShader);
@@ -70,7 +81,9 @@ public:
 
     template <RenderbufferType type>
     Renderbuffer<type> createRenderbuffer(const Size size) {
-        static_assert(type == RenderbufferType::RGBA || type == RenderbufferType::DepthStencil,
+        static_assert(type == RenderbufferType::RGBA ||
+                      type == RenderbufferType::DepthStencil ||
+                      type == RenderbufferType::DepthComponent,
                       "invalid renderbuffer type");
         return { size, createRenderbuffer(type, size) };
     }
@@ -81,6 +94,8 @@ public:
     Framebuffer createFramebuffer(const Texture&,
                                   const Renderbuffer<RenderbufferType::DepthStencil>&);
     Framebuffer createFramebuffer(const Texture&);
+    Framebuffer createFramebuffer(const Texture&,
+                                  const Renderbuffer<RenderbufferType::DepthComponent>&);
 
     template <typename Image,
               TextureFormat format = Image::channels == 4 ? TextureFormat::RGBA
@@ -165,11 +180,27 @@ public:
 
     void setDirtyState();
 
+    extension::Debugging* getDebuggingExtension() const {
+        return debugging.get();
+    }
+
+    extension::VertexArray* getVertexArrayExtension() const {
+        return vertexArray.get();
+    }
+
+private:
+    std::unique_ptr<extension::Debugging> debugging;
+    std::unique_ptr<extension::VertexArray> vertexArray;
+#if MBGL_HAS_BINARY_PROGRAMS
+    std::unique_ptr<extension::ProgramBinary> programBinary;
+#endif
+
+public:
     State<value::ActiveTexture> activeTexture;
     State<value::BindFramebuffer> bindFramebuffer;
     State<value::Viewport> viewport;
     std::array<State<value::BindTexture>, 2> texture;
-    State<value::BindVertexArray> vertexArrayObject;
+    State<value::BindVertexArray, const Context&> vertexArrayObject { *this };
     State<value::Program> program;
     State<value::BindVertexBuffer> vertexBuffer;
     State<value::BindElementBuffer> elementBuffer;
