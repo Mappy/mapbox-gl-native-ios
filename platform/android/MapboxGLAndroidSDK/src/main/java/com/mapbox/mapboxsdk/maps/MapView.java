@@ -191,7 +191,6 @@ public class MapView extends FrameLayout {
   public void onCreate(@Nullable Bundle savedInstanceState) {
     if (savedInstanceState == null) {
       if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
-        MapboxTelemetry.getInstance().pushEvent(MapboxEvent.buildMapLoadEvent());
         MapboxTelemetry.getInstance().pushEvent(MapboxEventWrapper.buildMapLoadEvent());
       }
     } else if (savedInstanceState.getBoolean(MapboxConstants.STATE_HAS_SAVED_STATE)) {

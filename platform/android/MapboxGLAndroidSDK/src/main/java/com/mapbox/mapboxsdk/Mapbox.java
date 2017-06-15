@@ -48,9 +48,9 @@ public final class Mapbox {
     if (INSTANCE == null) {
       Context appContext = context.getApplicationContext();
       INSTANCE = new Mapbox(appContext, accessToken, new LocationSource(appContext));
-      LocationEngine locationEngine = new LocationSource(appContext);
-      locationEngine.setPriority(LocationEnginePriority.NO_POWER);
       if(ENABLE_METRICS_ON_MAPPY) {
+        LocationEngine locationEngine = new LocationSource(appContext);
+        locationEngine.setPriority(LocationEnginePriority.NO_POWER);
         MapboxTelemetry.getInstance().initialize(
                 appContext, accessToken, BuildConfig.MAPBOX_EVENTS_USER_AGENT, locationEngine);
       }
@@ -137,4 +137,9 @@ public final class Mapbox {
   public static LocationSource getLocationSource() {
     return INSTANCE.locationSource;
   }
+
+  public static void setLocationSource(LocationSource  locSource) {
+    INSTANCE.locationSource = locSource;
+  }
+
 }

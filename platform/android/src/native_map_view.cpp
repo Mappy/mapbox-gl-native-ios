@@ -46,10 +46,7 @@
 #include "java/util.hpp"
 #include "geometry/lat_lng_bounds.hpp"
 #include "map/camera_position.hpp"
-<<<<<<< HEAD
-=======
 #include "style/light.hpp"
->>>>>>> release-ios-v3.6.0-android-v5.1.0
 
 namespace mbgl {
 namespace android {

@@ -23,7 +23,7 @@ void Painter::renderLine(PaintParameters& parameters,
 
     const LinePaintProperties::Evaluated& properties = layer.evaluated;
 
-    auto draw = [&] (auto& program, auto&& uniformValues, auto& lineProperties) {
+    auto draw = [&] (auto& program, auto&& uniformValues) {
         program.draw(
             context,
             gl::Triangles(),
@@ -35,7 +35,7 @@ void Painter::renderLine(PaintParameters& parameters,
             *bucket.indexBuffer,
             bucket.segments,
             bucket.paintPropertyBinders.at(layer.getID()),
-            lineProperties,
+            properties,
             state.getZoom()
         );
     };
@@ -76,29 +76,15 @@ void Painter::renderLine(PaintParameters& parameters,
                  state,
                  pixelsToGLUnits,
                  *posA,
-                 *posB),
-             properties);
+                 *posB));
 
     } else {
-		// Mappy specific drawing on paths
-		if (layer.impl->isMappyPath == true) {
-            const LinePaintProperties::Evaluated& mappyProperties = layer.impl->mappyPaint.evaluated;
-            draw(parameters.programs.line,
-                 LineProgram::uniformValues(
-                                            mappyProperties,
-                                            tile,
-                                            state,
-                                            pixelsToGLUnits),
-                 mappyProperties);
-		}
-
-        draw(parameters.programs.line,
+		draw(parameters.programs.line,
              LineProgram::uniformValues(
-                                        properties,
-                                        tile,
-                                        state,
-                                        pixelsToGLUnits),
-             properties);
+                 properties,
+                 tile,
+                 state,
+                 pixelsToGLUnits));
     }
 }
 

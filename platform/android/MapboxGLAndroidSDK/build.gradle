@@ -1,10 +1,17 @@
 apply plugin: 'com.android.library'
 
+apply from: '../configuration.gradle'
 apply from: '../dependencies.gradle'
 
+print "project.ext.dep.supportAnnotations "+ project.ext.dep.supportAnnotations+"\n"
+print "project.ext.dep.supportV4 "+ project.ext.dep.supportV4+"\n"
+print "project.ext.dep.supportDesign "+ project.ext.dep.supportDesign+"\n"
 print "project.ext.dep.timber "+ project.ext.dep.timber+"\n"
 print "project.ext.dep.okhttp3 "+ project.ext.dep.okhttp3+"\n"
 print "project.ext.dep.lost "+ project.ext.dep.lost+"\n"
+
+print "project.ext.node "+ project.ext.node+"\n"
+print "project.ext.npm "+ project.ext.npm+"\n"
 
 print "compileSdkVersion ${compileSdkVersion} / "+project.ext.compileSdkVersion+"\n"
 print "buildToolsVersion ${buildToolsVersion} / "+project.ext.buildToolsVersion+"\n"
@@ -12,20 +19,13 @@ print "minSdkVersion "+project.ext.minSdkVersion.toInteger()+"\n"
 print "targetSdkVersion "+project.ext.targetSdkVersion.toInteger()+"\n"
 
 dependencies {
-    compile "com.android.support:support-annotations:${supportLibVersion}"
-    compile "com.android.support:support-v4:${supportLibVersion}"
-    compile "com.android.support:design:${supportLibVersion}"
+    compile project.ext.dep.supportAnnotations
+    compile project.ext.dep.supportV4
+    compile project.ext.dep.supportDesign
     compile project.ext.dep.timber
     compile project.ext.dep.okhttp3
     compile project.ext.dep.lost
-/*
-    compile rootProject.ext.dep.supportAnnotations
-    compile rootProject.ext.dep.supportV4
-    compile rootProject.ext.dep.supportDesign
-    compile rootProject.ext.dep.timber
-    compile rootProject.ext.dep.okhttp3
-    compile rootProject.ext.dep.lost
-*/
+
     // Mapbox Android Services (GeoJSON support)
     compile(project.ext.dep.mapboxJavaGeoJSON) {
         transitive = true
@@ -73,6 +73,8 @@ android {
     }
 
     defaultConfig {
+        print "build with abi = "+ abi+"\n"
+
         if (abi != 'none') {
             externalNativeBuild {
                 cmake {
@@ -81,12 +83,12 @@ android {
                     arguments "-DANDROID_CPP_FEATURES=rtti;exceptions"
                     arguments "-DMBGL_PLATFORM=android"
                     arguments "-DMASON_PLATFORM=android"
-                    arguments "-DNodeJS_EXECUTABLE=" + rootProject.ext.node
-                    arguments "-Dnpm_EXECUTABLE=" + rootProject.ext.npm
+                    arguments "-DNodeJS_EXECUTABLE=" + project.ext.node
+                    arguments "-Dnpm_EXECUTABLE=" + project.ext.npm
 
                     // Enable ccache if the user has installed it.
-                    if (rootProject.ext.ccache?.trim()) {
-                        arguments "-DANDROID_CCACHE=" + rootProject.ext.ccache
+                    if (project.ext.ccache?.trim()) {
+                        arguments "-DANDROID_CCACHE=" + project.ext.ccache
                         // ccache splits up the compile command until multiple invocations and uses -E
                         // with one of them, and clang doesn't like unused arguments in that case.
                         cFlags "-Qunused-arguments"

@@ -432,7 +432,7 @@ public class MyLocationView extends View {
     }
 
     if (userLocationListener != null) {
-      LocationSource.getLocationEngine(getContext()).removeLocationEngineListener(userLocationListener);
+      locationSource.removeLocationEngineListener(userLocationListener);
       locationSource = null;
       userLocationListener = null;
     }
@@ -866,7 +866,7 @@ public class MyLocationView extends View {
         animationDuration = 0;
       } else {
           //Mappy modif
-          animationDuration = 750L;//(locationUpdateTimestamp - previousUpdateTimeStamp) * 1.1f
+          animationDuration = 750;//(locationUpdateTimestamp - previousUpdateTimeStamp) * 1.1f
         /*make animation slightly longer*/;
       }
 
