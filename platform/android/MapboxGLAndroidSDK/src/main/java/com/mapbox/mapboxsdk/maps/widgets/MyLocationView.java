@@ -500,6 +500,13 @@ public class MyLocationView extends View {
         }
       }
 
+      // Set an initial location if one available
+      Location lastLocation = locationSource.getLastLocation();
+
+      if (lastLocation != null) {
+        setLocation(lastLocation);
+      }
+
       if (userLocationListener == null) {
         userLocationListener = new GpsLocationListener(this, locationSource);
       }
