@@ -379,7 +379,7 @@ public class MapboxMapOptions implements Parcelable {
   /**
    * Specifies the gravity state of mapbox_compass_icon for a map view.
    *
-   * @param gravity see {@link android.view.Gravity}
+   * @param gravity Android SDK Gravity.
    * @return This
    */
   public MapboxMapOptions compassGravity(int gravity) {
@@ -440,7 +440,7 @@ public class MapboxMapOptions implements Parcelable {
   /**
    * Specifies the gravity state of logo for a map view.
    *
-   * @param gravity see {@link android.view.Gravity}
+   * @param gravity Android SDK Gravity.
    * @return This
    */
   public MapboxMapOptions logoGravity(int gravity) {
@@ -473,7 +473,7 @@ public class MapboxMapOptions implements Parcelable {
   /**
    * Specifies the gravity state of attribution for a map view.
    *
-   * @param gravity see {@link android.view.Gravity}
+   * @param gravity Android SDK Gravity.
    * @return This
    */
   public MapboxMapOptions attributionGravity(int gravity) {
