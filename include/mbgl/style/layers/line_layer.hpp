@@ -111,7 +111,7 @@ public:
 
     // Mappy path
     bool getLineIsMappyPath () const;
-    void setLineIsMappyPath(/*bool*/);
+    void setLineIsMappyPath(bool);
 
     // Private implementation
 

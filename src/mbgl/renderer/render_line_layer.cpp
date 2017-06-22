@@ -22,6 +22,18 @@ std::unique_ptr<Bucket> RenderLineLayer::createBucket(const BucketParameters& pa
 
 void RenderLineLayer::cascade(const CascadeParameters& parameters) {
     unevaluated = impl->cascading.cascade(parameters, std::move(unevaluated));
+    /*
+    if (impl->isMappyPath == true) {
+        const optional<std::string>& klass = {};
+        mappyUnevaluated = unevaluated;
+        auto widthProperty = unevaluated.get<style::LineWidth>(klass);
+        float width = widthProperty.asConstant();
+        mappyEvaluated.set<style::LineWidth>(width * 3.0f / 2.0f, klass);
+        Color white = Color::white();
+        mappyUnevaluated.set<LineColor>(white, klass);
+        mappyUnevaluated = impl->cascading.cascade(parameters, std::move(mappyUnevaluated));
+    }
+     */
 }
 
 void RenderLineLayer::evaluate(const PropertyEvaluationParameters& parameters) {
@@ -32,6 +44,13 @@ void RenderLineLayer::evaluate(const PropertyEvaluationParameters& parameters) {
 
     evaluated = unevaluated.evaluate(parameters);
 
+    if (impl->isMappyPath == true) {
+        mappyEvaluated = unevaluated.evaluate(parameters);
+        float width = evaluated.get<style::LineWidth>();
+        mappyEvaluated.get<style::LineWidth>() ={width * 3.0f / 2.0f};
+        mappyEvaluated.get<style::LineColor>() = {Color::white()};
+    }
+    
     passes = (evaluated.get<style::LineOpacity>().constantOr(1.0) > 0
               && evaluated.get<style::LineColor>().constantOr(Color::black()).a > 0
               && evaluated.get<style::LineWidth>() > 0)

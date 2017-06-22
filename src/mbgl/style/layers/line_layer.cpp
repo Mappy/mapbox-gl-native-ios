@@ -181,11 +181,11 @@ PropertyValue<std::array<float, 2>> LineLayer::getDefaultLineTranslate() {
 }
 
 bool LineLayer::getLineIsMappyPath() const {
-	return false;//impl->isMappyPath;
+	return impl->isMappyPath;
 }
 	
-void LineLayer::setLineIsMappyPath(/*bool value*/) {
-	//impl->isMappyPath = value;
+void LineLayer::setLineIsMappyPath(bool value) {
+	impl->isMappyPath = value;
 }
 
 PropertyValue<std::array<float, 2>> LineLayer::getLineTranslate(const optional<std::string>& klass) const {

@@ -123,6 +123,11 @@ public class AnimatedMarkerActivity extends AppCompatActivity {
             mapboxMap.selectMarker(carMarker);
             animateMoveToPassenger(carMarker);
           }
+
+          @Override
+          public void onViewRemoved(@NonNull MarkerView markerView) {
+
+          }
         });
       markerViews.add(carMarker);
     } else {
@@ -151,6 +156,11 @@ public class AnimatedMarkerActivity extends AppCompatActivity {
         @Override
         public void onViewAdded(@NonNull MarkerView markerView) {
           randomlyMoveMarker(markerView);
+        }
+
+        @Override
+        public void onViewRemoved(@NonNull MarkerView markerView) {
+
         }
       }));
   }

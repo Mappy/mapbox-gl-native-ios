@@ -17,6 +17,9 @@ public:
 
     LineLayoutProperties layout;
     LinePaintProperties::Cascading cascading;
+    
+    bool isMappyPath = false;
+    
 };
 
 } // namespace style

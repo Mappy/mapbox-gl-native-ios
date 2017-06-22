@@ -988,8 +988,8 @@ public class MyLocationView extends View {
 
       if (accuracyAnimator != null) {
         if (accuracyAnimator.isRunning()) {
-          // use current accuracy as a starting point
-          accuracy = (Float) accuracyAnimator.getAnimatedValue();
+            // use current accuracy as a starting point
+            accuracy = (float) accuracyAnimator.getAnimatedValue();
         }
         accuracyAnimator.end();
       }

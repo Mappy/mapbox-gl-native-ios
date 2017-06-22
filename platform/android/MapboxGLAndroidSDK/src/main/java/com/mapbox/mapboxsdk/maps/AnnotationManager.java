@@ -97,7 +97,11 @@ class AnnotationManager {
       }
 
       if (marker instanceof MarkerView) {
-        markerViewManager.removeMarkerView((MarkerView) marker);
+          //mappy
+          final MarkerView markerView = (MarkerView) marker;
+          markerViewManager.removeOnMarkerViewAddedListener(markerView);
+          markerViewManager.removeMarkerView(markerView);
+          //mappy
       }
     }
     long id = annotation.getId();
@@ -127,7 +131,11 @@ class AnnotationManager {
         }
 
         if (marker instanceof MarkerView) {
-          markerViewManager.removeMarkerView((MarkerView) marker);
+            //mappy
+            final MarkerView markerView = (MarkerView) marker;
+            markerViewManager.removeOnMarkerViewAddedListener(markerView);
+            markerViewManager.removeMarkerView(markerView);
+            //mappy
         }
       }
       ids[i] = annotationList.get(i).getId();
@@ -154,7 +162,11 @@ class AnnotationManager {
         Marker marker = (Marker) annotation;
         marker.hideInfoWindow();
         if (marker instanceof MarkerView) {
-          markerViewManager.removeMarkerView((MarkerView) marker);
+            //mappy
+            final MarkerView markerView = (MarkerView) marker;
+            markerViewManager.removeOnMarkerViewAddedListener(markerView);
+            markerViewManager.removeMarkerView(markerView);
+            //mappy
         }
       }
     }
