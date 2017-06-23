@@ -290,7 +290,7 @@ public class MyLocationView extends View {
 
         final PointF pointF = screenLocation;
         float metersPerPixel = (float) projection.getMetersPerPixelAtLatitude(location.getLatitude());
-        float accuracyPixels = (Float) accuracyAnimator.getAnimatedValue() / metersPerPixel;
+        float accuracyPixels = Math.min(300F, (float) accuracyAnimator.getAnimatedValue()) / metersPerPixel; //max 300 meters for mappy
 
         // reset
         matrix.reset();
