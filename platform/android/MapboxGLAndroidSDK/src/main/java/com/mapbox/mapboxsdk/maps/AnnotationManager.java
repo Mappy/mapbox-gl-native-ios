@@ -321,7 +321,7 @@ class AnnotationManager {
       deselectMarkers();
     }
 
-    boolean handledDefaultClick = false;
+    boolean handledDefaultClick = true;
     if (onMarkerClickListener != null) {
       // end developer has provided a custom click listener
       handledDefaultClick = onMarkerClickListener.onMarkerClick(marker);
