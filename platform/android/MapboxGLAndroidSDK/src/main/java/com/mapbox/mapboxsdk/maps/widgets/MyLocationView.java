@@ -379,7 +379,12 @@ public class MyLocationView extends View {
     if (myBearingTrackingMode == MyBearingTracking.NONE || !compassListener.isSensorAvailable()) {
       draw(canvas, foregroundDrawable, backgroundDrawable);
     } else if (foregroundBearingDrawable != null && foregroundBounds != null) {
-      draw(canvas, foregroundBearingDrawable, backgroundBearingDrawable);
+      if (myBearingTrackingMode == MyBearingTracking.GPS || compassListener.isSensorAvailable()) {
+        draw(canvas, foregroundBearingDrawable, backgroundBearingDrawable);
+      } else {
+        // We are tracking MyBearingTracking.COMPASS, but sensor is not available.
+        draw(canvas, foregroundDrawable, backgroundDrawable);
+      }
     }
   }
 
@@ -840,9 +845,9 @@ public class MyLocationView extends View {
     private final SensorManager sensorManager;
 
     private Sensor rotationVectorSensor;
-    float[] matrix = new float[9];
-    float[] orientation = new float[3];
-
+    private float[] matrix = new float[9];
+    private float[] orientation = new float[3];
+    private boolean reportMissingSensor = true;
     // Compass data
     private long compassUpdateNextTimestamp = 0;
 
@@ -860,7 +865,8 @@ public class MyLocationView extends View {
     }
 
     public boolean isSensorAvailable() {
-      if (rotationVectorSensor == null) {
+      if (rotationVectorSensor == null && reportMissingSensor) {
+        reportMissingSensor = false;
         Timber.e("Sensor.TYPE_ROTATION_VECTOR is missing from this device. Unable to use MyBearingTracking.COMPASS.");
       }
       return rotationVectorSensor != null;

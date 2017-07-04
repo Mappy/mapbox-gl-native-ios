@@ -28,7 +28,7 @@ import com.mapzen.android.lost.api.LostApiClient;
  * in the history stack.
  * </p>
  */
-public class LocationSource extends LocationEngine implements LostApiClient.ConnectionCallbacks, LocationListener {
+public class LocationSource extends LocationEngine implements LocationListener {
 
   private static final String LOG_TAG = LocationSource.class.getSimpleName();
 
@@ -43,9 +43,7 @@ public class LocationSource extends LocationEngine implements LostApiClient.Conn
   public LocationSource(Context context) {
     super();
     this.context = context.getApplicationContext();
-    lostApiClient = new LostApiClient.Builder(this.context)
-      .addConnectionCallbacks(this)
-      .build();
+    lostApiClient = new LostApiClient.Builder(this.context).build();
   }
 
   /**
@@ -56,6 +54,9 @@ public class LocationSource extends LocationEngine implements LostApiClient.Conn
   public void activate() {
     if (!lostApiClient.isConnected()) {
       lostApiClient.connect();
+    }
+    for (LocationEngineListener listener : locationListeners) {
+      listener.onConnected();
     }
   }
 
@@ -83,23 +84,6 @@ public class LocationSource extends LocationEngine implements LostApiClient.Conn
   }
 
   /**
-   * Invoked when the location provider has connected.
-   */
-  @Override
-  public void onConnected() {
-    for (LocationEngineListener listener : locationListeners) {
-      listener.onConnected();
-    }
-  }
-
-  /**
-   * Invoked when the location provider connection has been suspended.
-   */
-  @Override
-  public void onConnectionSuspended() {
-  }
-
-  /**
    * Returns the Last known location is the location provider is connected and location permissions are granted.
    *
    * @return the last known location
@@ -109,9 +93,8 @@ public class LocationSource extends LocationEngine implements LostApiClient.Conn
   public Location getLastLocation() {
     if (lostApiClient.isConnected() && PermissionsManager.areLocationPermissionsGranted(context)) {
       //noinspection MissingPermission
-      return LocationServices.FusedLocationApi.getLastLocation(lostApiClient);
+      return LocationServices.FusedLocationApi.getLastLocation();
     }
-
     return null;
   }
 
@@ -139,7 +122,7 @@ public class LocationSource extends LocationEngine implements LostApiClient.Conn
 
     if (lostApiClient.isConnected() && PermissionsManager.areLocationPermissionsGranted(context)) {
       //noinspection MissingPermission
-      LocationServices.FusedLocationApi.requestLocationUpdates(lostApiClient, request, this);
+      LocationServices.FusedLocationApi.requestLocationUpdates(request, this);
     }
   }
 
@@ -149,7 +132,7 @@ public class LocationSource extends LocationEngine implements LostApiClient.Conn
   @Override
   public void removeLocationUpdates() {
     if (lostApiClient.isConnected()) {
-      LocationServices.FusedLocationApi.removeLocationUpdates(lostApiClient, this);
+      LocationServices.FusedLocationApi.removeLocationUpdates(this);
     }
   }
 
