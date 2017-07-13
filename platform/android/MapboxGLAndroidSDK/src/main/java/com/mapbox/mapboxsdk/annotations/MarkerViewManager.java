@@ -233,12 +233,8 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
 
         // animate visibility
         if (marker.isVisible() && convertView.getVisibility() == View.GONE) {
-          convertView.post(new Runnable() {
-            @Override
-            public void run() {
-              animateVisible(marker, true);
-            }
-          });
+
+          animateVisible(marker, true);
         }
 
         marker.onViewPositionUpdated();
@@ -272,8 +268,9 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
   public void updateIcon(@NonNull MarkerView markerView) {
     View convertView = markerViewMap.get(markerView);
     if (convertView != null && convertView instanceof ImageView) {
-      ((ImageView) convertView).setImageBitmap(markerView.getIcon().getBitmap());
       markerView.invalidate();
+      ((ImageView) convertView).setImageBitmap(markerView.getIcon().getBitmap());
+      convertView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
     }
   }
 

@@ -301,6 +301,8 @@ class AnnotationManager {
   private void ensureIconLoaded(Marker marker) {
     if (!(marker instanceof MarkerView)) {
       iconManager.ensureIconLoaded(marker, mapboxMap);
+    } else {
+      iconManager.loadIconForMarkerView((MarkerView)marker);
     }
   }
 
