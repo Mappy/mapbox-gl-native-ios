@@ -8,3 +8,5 @@
 -keep interface com.mapbox.mapboxsdk.** { *; }
 -keep class com.mapbox.services.android.telemetry.** { *; }
 -keep class com.mapbox.services.commons.** { *;}
+-keep class com.google.** { *; }
+-dontwarn com.google.**
