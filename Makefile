@@ -529,7 +529,7 @@ android-lib-$1: $(MBGL_ANDROID_BUILD_DIR)/build.ninja
 
 .PHONY: android-$1
 android-$1: android-lib-$1
-	cd platform/android && ./gradlew --parallel --max-workers=$(JOBS) :MapboxGLAndroidSDKTestApp:assemble$(BUILDTYPE)
+	#cd platform/android && ./gradlew --parallel --max-workers=$(JOBS) :MapboxGLAndroidSDKTestApp:assemble$(BUILDTYPE)
 
 .PHONY: android-core-test-$1
 android-core-test-$1: android-test-lib-$1
