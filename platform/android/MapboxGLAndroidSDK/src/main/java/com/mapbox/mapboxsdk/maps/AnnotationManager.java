@@ -281,17 +281,16 @@ class AnnotationManager {
       return;
     }
 
-    if (!(updatedMarker instanceof MarkerView)) {
-      iconManager.ensureIconLoaded(updatedMarker, mapboxMap);
-    } else {
-      iconManager.loadIconForMarkerView((MarkerView)updatedMarker);
-    }
-
+    ensureIconLoaded(updatedMarker);
     nativeMapView.updateMarker(updatedMarker);
+    annotations.setValueAt(annotations.indexOfKey(updatedMarker.getId()), updatedMarker);
+  }
 
-    int index = annotations.indexOfKey(updatedMarker.getId());
-    if (index > -1) {
-      annotations.setValueAt(index, updatedMarker);
+  private void ensureIconLoaded(Marker marker) {
+    if (!(marker instanceof MarkerView)) {
+      iconManager.ensureIconLoaded(marker, mapboxMap);
+    } else {
+      iconManager.loadIconForMarkerView((MarkerView)marker);
     }
   }
 
@@ -321,7 +320,7 @@ class AnnotationManager {
       deselectMarkers();
     }
 
-    boolean handledDefaultClick = false;
+    boolean handledDefaultClick = true;
     if (onMarkerClickListener != null) {
       // end developer has provided a custom click listener
       handledDefaultClick = onMarkerClickListener.onMarkerClick(marker);
