@@ -4,6 +4,7 @@ package com.mapbox.mapboxsdk.http;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.os.Build;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import com.mapbox.mapboxsdk.BuildConfig;
@@ -37,6 +38,9 @@ class HTTPRequest implements Callback {
   private static final int CONNECTION_ERROR = 0;
   private static final int TEMPORARY_ERROR = 1;
   private static final int PERMANENT_ERROR = 2;
+
+  @Nullable
+  static HttpRequestHeaderProvider httpRequestHeaderProvider;
 
   // Reentrancy is not needed, but "Lock" is an
   // abstract class.
@@ -75,13 +79,18 @@ class HTTPRequest implements Callback {
 
       Request.Builder builder = new Request.Builder()
         .url(resourceUrl)
-        .tag(resourceUrl.toLowerCase(MapboxConstants.MAPBOX_LOCALE))
-        .addHeader("User-Agent", getUserAgent());
+        .tag(resourceUrl.toLowerCase(MapboxConstants.MAPBOX_LOCALE));
+        //.addHeader("User-Agent", getUserAgent()); /User Mappy user agent header instead.
       if (etag.length() > 0) {
         builder = builder.addHeader("If-None-Match", etag);
       } else if (modified.length() > 0) {
         builder = builder.addHeader("If-Modified-Since", modified);
       }
+      /* Start MAPPY */
+      if (httpRequestHeaderProvider != null) {
+        httpRequestHeaderProvider.addHeader(builder);
+      }
+      /* End MAPPY */
       mRequest = builder.build();
       mCall = mClient.newCall(mRequest);
       mCall.enqueue(this);
@@ -201,5 +210,9 @@ class HTTPRequest implements Callback {
     } catch (Exception exception) {
       return "";
     }
+  }
+
+  public interface HttpRequestHeaderProvider {
+    void addHeader(Request.Builder builder);
   }
 }
