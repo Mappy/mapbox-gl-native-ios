@@ -80,7 +80,7 @@ class HTTPRequest implements Callback {
       Request.Builder builder = new Request.Builder()
         .url(resourceUrl)
         .tag(resourceUrl.toLowerCase(MapboxConstants.MAPBOX_LOCALE));
-        //.addHeader("User-Agent", getUserAgent()); /User Mappy user agent header instead.
+        //.addHeader("User-Agent", getUserAgent()); /Use MapBox Header only if mappy Header is null
       if (etag.length() > 0) {
         builder = builder.addHeader("If-None-Match", etag);
       } else if (modified.length() > 0) {
@@ -89,6 +89,9 @@ class HTTPRequest implements Callback {
       /* Start MAPPY */
       if (httpRequestHeaderProvider != null) {
         httpRequestHeaderProvider.addHeader(builder);
+      }
+      else {
+        builder.addHeader("User-Agent", getUserAgent()); //Use MapBox Header only if mappy Header is null
       }
       /* End MAPPY */
       mRequest = builder.build();
