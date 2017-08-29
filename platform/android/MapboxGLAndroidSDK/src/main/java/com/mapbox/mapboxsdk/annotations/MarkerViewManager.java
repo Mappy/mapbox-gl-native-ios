@@ -491,6 +491,10 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
     }
   }
 
+  public void notifyUpdatedZOrder(){
+    markerViewSortedModified = true;
+  }
+
   /**
    * Invalidate the ViewMarkers found in the viewport.
    * <p>

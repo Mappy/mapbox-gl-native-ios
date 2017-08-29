@@ -1182,6 +1182,11 @@ public final class MapboxMap {
     annotationManager.updateMarker(updatedMarker, this);
   }
 
+  @UiThread
+  public void notifyUpdatedZOrder(){
+    annotationManager.getMarkerViewManager().notifyUpdatedZOrder();
+  }
+
   /**
    * Adds a polyline to this map.
    *
