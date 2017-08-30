@@ -336,8 +336,6 @@ private:
     std::shared_ptr<mbgl::ThreadPool> threadPool;
     std::unique_ptr<mbgl::Map> map;
     mbgl::EdgeInsets insets;
-
-    unsigned active = 0;
 };
 
 } // namespace android

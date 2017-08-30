@@ -10,3 +10,4 @@
 -keep class com.mapbox.services.commons.** { *;}
 -keep class com.google.** { *; }
 -dontwarn com.google.**
+-keep class com.google.gson.** { *; }

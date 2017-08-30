@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.location.Location;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.view.GestureDetectorCompat;
 import android.support.v4.view.ScaleGestureDetectorCompat;
@@ -137,7 +136,12 @@ final class MapGestureDetector {
    * @param event the MotionEvent
    * @return True if touch event is handled
    */
-  boolean onTouchEvent(@NonNull MotionEvent event) {
+  boolean onTouchEvent(MotionEvent event) {
+    // framework can return null motion events in edge cases #9432
+    if (event == null) {
+      return false;
+    }
+
     // Check and ignore non touch or left clicks
     if ((event.getButtonState() != 0) && (event.getButtonState() != MotionEvent.BUTTON_PRIMARY)) {
       return false;
@@ -333,7 +337,7 @@ final class MapGestureDetector {
       }
 
       if (!tapHandled) {
-        tapHandled = annotationManager.onTap(tapPoint, uiSettings.getPixelRatio());
+        tapHandled = annotationManager.onTap(tapPoint);
       }
 
       if (!tapHandled) {
@@ -390,7 +394,7 @@ final class MapGestureDetector {
 
       // tilt results in a bigger translation, limiting input for #5281
       double tilt = transform.getTilt();
-      double tiltFactor = 1 + ((tilt != 0) ? (tilt / 10) : 0); /* 1 -> 7 */
+      double tiltFactor = 1.5 + ((tilt != 0) ? (tilt / 10) : 0);
       double offsetX = velocityX / tiltFactor / screenDensity;
       double offsetY = velocityY / tiltFactor / screenDensity;
 

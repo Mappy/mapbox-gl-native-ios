@@ -1475,6 +1475,28 @@ public final class MapboxMap {
   }
 
   /**
+   * Sets a callback that's invoked when the user clicks on a polygon.
+   *
+   * @param listener The callback that's invoked when the user clicks on a polygon.
+   *                 To unset the callback, use null.
+   */
+  @UiThread
+  public void setOnPolygonClickListener(@Nullable OnPolygonClickListener listener) {
+    annotationManager.setOnPolygonClickListener(listener);
+  }
+
+  /**
+   * Sets a callback that's invoked when the user clicks on a polyline.
+   *
+   * @param listener The callback that's invoked when the user clicks on a polyline.
+   *                 To unset the callback, use null.
+   */
+  @UiThread
+  public void setOnPolylineClickListener(@Nullable OnPolylineClickListener listener) {
+    annotationManager.setOnPolylineClickListener(listener);
+  }
+
+  /**
    * <p>
    * Selects a marker. The selected marker will have it's info window opened.
    * Any other open info windows will be closed unless isAllowConcurrentMultipleOpenInfoWindows()
@@ -1701,7 +1723,7 @@ public final class MapboxMap {
    * @param listener the listener to notify
    */
   @UiThread
-  public void setOnCameraMoveStartedistener(@Nullable OnCameraMoveStartedListener listener) {
+  public void setOnCameraMoveStartedListener(@Nullable OnCameraMoveStartedListener listener) {
     cameraChangeDispatcher.setOnCameraMoveStartedListener(listener);
   }
 
@@ -2176,6 +2198,34 @@ public final class MapboxMap {
      * @return If true the listener has consumed the event and the info window will not be shown.
      */
     boolean onMarkerClick(@NonNull Marker marker);
+  }
+
+  /**
+   * Interface definition for a callback to be invoked when the user clicks on a polygon.
+   *
+   * @see MapboxMap#setOnPolygonClickListener(OnPolygonClickListener)
+   */
+  public interface OnPolygonClickListener {
+    /**
+     * Called when the user clicks on a polygon.
+     *
+     * @param polygon The polygon the user clicked on.
+     */
+    void onPolygonClick(@NonNull Polygon polygon);
+  }
+
+  /**
+   * Interface definition for a callback to be invoked when the user clicks on a polyline.
+   *
+   * @see MapboxMap#setOnPolylineClickListener(OnPolylineClickListener)
+   */
+  public interface OnPolylineClickListener {
+    /**
+     * Called when the user clicks on a polyline.
+     *
+     * @param polyline The polyline the user clicked on.
+     */
+    void onPolylineClick(@NonNull Polyline polyline);
   }
 
   /**
