@@ -25,6 +25,7 @@ import com.mapbox.mapboxsdk.annotations.PolylineOptions;
 import com.mapbox.services.commons.geojson.Feature;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import timber.log.Timber;
