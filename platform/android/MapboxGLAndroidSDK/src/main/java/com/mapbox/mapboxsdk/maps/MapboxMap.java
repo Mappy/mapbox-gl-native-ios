@@ -1242,6 +1242,11 @@ public final class MapboxMap {
     annotationManager.updateMarker(updatedMarker);
   }
 
+  @UiThread
+  public void notifyUpdatedZOrder(){
+    annotationManager.getMarkerViewManager().notifyUpdatedZOrder();
+  }
+
   /**
    * Adds a polyline to this map.
    *
@@ -1508,11 +1513,15 @@ public final class MapboxMap {
    */
   @UiThread
   public void selectMarker(@NonNull Marker marker) {
+      selectMarker(marker,false);
+  }
+
+  public void selectMarker(@NonNull Marker marker, boolean clickByUser) {
     if (marker == null) {
       Timber.w("marker was null, so just returning");
       return;
     }
-    annotationManager.selectMarker(marker);
+    annotationManager.selectMarker(marker, clickByUser);
   }
 
   /**
@@ -2194,10 +2203,11 @@ public final class MapboxMap {
     /**
      * Called when the user clicks on a marker.
      *
-     * @param marker The marker the user clicked on.
+     * @param marker The clicked marker.
+     * @param clickByUser whether the marker was clicked by user.
      * @return If true the listener has consumed the event and the info window will not be shown.
      */
-    boolean onMarkerClick(@NonNull Marker marker);
+    boolean onMarkerClick(@NonNull Marker marker, boolean clickByUser);
   }
 
   /**

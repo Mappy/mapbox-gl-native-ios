@@ -366,10 +366,15 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
    */
   public void select(@NonNull MarkerView marker, View convertView, MapboxMap.MarkerViewAdapter adapter,
                      boolean callbackToMap) {
+    select(marker, convertView, adapter, callbackToMap, false);
+  }
+
+  public void select(@NonNull MarkerView marker, View convertView, MapboxMap.MarkerViewAdapter adapter,
+                     boolean callbackToMap, boolean clickByUser) {
     if (convertView != null) {
       if (adapter.onSelect(marker, convertView, false)) {
         if (callbackToMap) {
-          mapboxMap.selectMarker(marker);
+          mapboxMap.selectMarker(marker, clickByUser);
         }
       }
       marker.setSelected(true);
@@ -502,6 +507,10 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
       invalidateViewMarkersInVisibleRegion();
       updateTime = currentTime + 250;
     }
+  }
+
+  public void notifyUpdatedZOrder(){
+    markerViewSortedModified = true;
   }
 
   /**

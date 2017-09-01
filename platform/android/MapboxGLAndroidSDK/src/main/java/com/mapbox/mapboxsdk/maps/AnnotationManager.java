@@ -347,6 +347,10 @@ class AnnotationManager {
   }
 
   void selectMarker(@NonNull Marker marker) {
+    selectMarker(marker, false);
+  }
+
+  void selectMarker(@NonNull Marker marker, boolean clickByUser) {
     if (selectedMarkers.contains(marker)) {
       return;
     }
@@ -356,10 +360,10 @@ class AnnotationManager {
       deselectMarkers();
     }
 
-    boolean handledDefaultClick = false;
+    boolean handledDefaultClick = true;
     if (onMarkerClickListener != null) {
       // end developer has provided a custom click listener
-      handledDefaultClick = onMarkerClickListener.onMarkerClick(marker);
+      handledDefaultClick = onMarkerClickListener.onMarkerClick(marker, clickByUser);
     }
 
     if (!handledDefaultClick) {
@@ -747,7 +751,7 @@ class AnnotationManager {
   }
 
   private boolean onClickMarker(Marker marker) {
-    return onMarkerClickListener != null && onMarkerClickListener.onMarkerClick(marker);
+    return onMarkerClickListener != null && onMarkerClickListener.onMarkerClick(marker, false);
   }
 
   private void toggleMarkerSelectionState(Marker marker) {

@@ -182,7 +182,7 @@ public class Marker extends Annotation {
         this.zOrder = zOrder;
         MapboxMap map = getMapboxMap();
         if (map != null) {
-            map.updateMarker(this);
+            map.notifyUpdatedZOrder();
         }
     }
 
