@@ -665,6 +665,14 @@ class AnnotationManager {
   //
 
   boolean onTap(PointF tapPoint) {
+    if (!shapeAnnotationIds.isEmpty()) {
+      ShapeAnnotationHit shapeAnnotationHit = getShapeAnnotationHitFromTap(tapPoint);
+      long shapeAnnotationId = new ShapeAnnotationHitResolver(mapboxMap).execute(shapeAnnotationHit);
+      if (shapeAnnotationId != NO_ANNOTATION_ID) {
+        handleClickForShapeAnnotation(shapeAnnotationId);
+      }
+    }
+
     List<MarkerView> markerViews = new ArrayList<>();
     final List<Marker> markers = mapboxMap.getMarkers();
     for (Marker marker : markers) {
@@ -683,25 +691,10 @@ class AnnotationManager {
     if (hasSelectedMarkerView) {
       Collections.sort(markerViews);
       final MarkerView selectedMarker = markerViews.get(markerViews.size() - 1);
-      mapboxMap.getMarkerViewManager().onClickMarkerView(selectedMarker);
+      isClickHandledForMarker(selectedMarker);
     }
 
     return hasSelectedMarkerView;
-
-    //dead code since we do not use MarkerGL
-    /*
-    if (!shapeAnnotationIds.isEmpty()) {
-      ShapeAnnotationHit shapeAnnotationHit = getShapeAnnotationHitFromTap(tapPoint);
-      long shapeAnnotationId = new ShapeAnnotationHitResolver(mapboxMap).execute(shapeAnnotationHit);
-      if (shapeAnnotationId != NO_ANNOTATION_ID) {
-        handleClickForShapeAnnotation(shapeAnnotationId);
-      }
-    }
-
-    MarkerHit markerHit = getMarkerHitFromTouchArea(tapPoint);
-    long markerId = new MarkerHitResolver(mapboxMap).execute(markerHit);
-    return markerId != NO_ANNOTATION_ID && isClickHandledForMarker(markerId);
-    */
   }
 
   private ShapeAnnotationHit getShapeAnnotationHitFromTap(PointF tapPoint) {
@@ -736,8 +729,12 @@ class AnnotationManager {
   }
 
   private boolean isClickHandledForMarker(long markerId) {
+    return isClickHandledForMarker((Marker) getAnnotation(markerId));
+  }
+
+  //MAPPY Modif
+  private boolean isClickHandledForMarker(Marker marker) {
     boolean handledDefaultClick;
-    Marker marker = (Marker) getAnnotation(markerId);
     if (marker instanceof MarkerView) {
       handledDefaultClick = markerViewManager.onClickMarkerView((MarkerView) marker);
     } else {
