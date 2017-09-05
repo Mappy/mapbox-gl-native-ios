@@ -366,15 +366,10 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
    */
   public void select(@NonNull MarkerView marker, View convertView, MapboxMap.MarkerViewAdapter adapter,
                      boolean callbackToMap) {
-    select(marker, convertView, adapter, callbackToMap, false);
-  }
-
-  public void select(@NonNull MarkerView marker, View convertView, MapboxMap.MarkerViewAdapter adapter,
-                     boolean callbackToMap, boolean clickByUser) {
     if (convertView != null) {
       if (adapter.onSelect(marker, convertView, false)) {
         if (callbackToMap) {
-          mapboxMap.selectMarker(marker, clickByUser);
+          mapboxMap.selectMarker(marker);
         }
       }
       marker.setSelected(true);
