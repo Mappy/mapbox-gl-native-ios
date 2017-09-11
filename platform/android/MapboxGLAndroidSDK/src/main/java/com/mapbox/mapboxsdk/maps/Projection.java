@@ -6,6 +6,7 @@ import android.support.annotation.NonNull;
 
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.geometry.LatLngBounds;
+import com.mapbox.mapboxsdk.geometry.ProjectedMeters;
 import com.mapbox.mapboxsdk.geometry.VisibleRegion;
 
 /**
@@ -42,6 +43,20 @@ public class Projection {
 
   public void invalidateContentPadding(int[] userLocationViewPadding) {
     setContentPadding(contentPadding, userLocationViewPadding);
+  }
+
+  /**
+   * Returns the spherical Mercator projected meters for a LatLng.
+   */
+  public ProjectedMeters getProjectedMetersForLatLng(LatLng latLng) {
+    return nativeMapView.projectedMetersForLatLng(latLng);
+  }
+
+  /**
+   * Returns the LatLng for a spherical Mercator projected meters.
+   */
+  public LatLng getLatLngForProjectedMeters(ProjectedMeters projectedMeters) {
+    return nativeMapView.latLngForProjectedMeters(projectedMeters);
   }
 
   /**
@@ -124,12 +139,13 @@ public class Projection {
     pixels.set(left, bottom);
     LatLng bottomLeft = fromScreenLocation(pixels);
 
-    builder.include(topLeft)
-            .include(topRight)
-            .include(bottomRight)
-            .include(bottomLeft);
-
-    return new VisibleRegion(topLeft, topRight, bottomLeft, bottomRight, builder.build());
+    return new VisibleRegion(topLeft, topRight, bottomLeft, bottomRight,
+            LatLngBounds.from(
+                    topRight.getLatitude(),
+                    topRight.getLongitude(),
+                    bottomLeft.getLatitude(),
+                    bottomLeft.getLongitude())
+    );
   }
 
 
@@ -160,6 +176,6 @@ public class Projection {
    * @return zoom level that fits the MapView.
    */
   public double calculateZoom(float minScale) {
-    return Math.log(nativeMapView.getScale() * minScale) / Math.log(2);
+    return nativeMapView.getZoom() + Math.log(minScale) / Math.log(2);
   }
 }

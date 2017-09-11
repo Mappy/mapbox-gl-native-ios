@@ -6,9 +6,9 @@ import android.support.annotation.IntRange;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.constants.MyLocationTracking;
 import com.mapbox.mapboxsdk.maps.FocalPointChangeListener;
-import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.maps.MapboxMapOptions;
 import com.mapbox.mapboxsdk.maps.Projection;
 
@@ -79,6 +79,11 @@ public class MyLocationViewSettings {
     this.focalPointChangeListener = focalPointChangedListener;
   }
 
+  /**
+   * Initialise this with MapboxMapOptions.
+   *
+   * @param options the options to initialise this class from
+   */
   public void initialise(@NonNull MapboxMapOptions options) {
     CameraPosition position = options.getCamera();
     if (position != null && !position.equals(CameraPosition.DEFAULT)) {
@@ -116,6 +121,7 @@ public class MyLocationViewSettings {
    * <p>
    * The foreground drawable is the image visible on screen
    * </p>
+   * It's linked with the foreground tint color
    *
    * @param foregroundDrawable        the drawable to show as foreground without bearing
    * @param foregroundBearingDrawable the drawable to show as foreground when bearing is enabled
@@ -124,6 +130,7 @@ public class MyLocationViewSettings {
     this.foregroundDrawable = foregroundDrawable;
     this.foregroundBearingDrawable = foregroundBearingDrawable;
     myLocationView.setForegroundDrawables(foregroundDrawable, foregroundBearingDrawable);
+    myLocationView.setForegroundDrawableTint(foregroundTintColor);
   }
 
   /**
@@ -150,7 +157,8 @@ public class MyLocationViewSettings {
    * The color will tint both the foreground and the bearing foreground drawable.
    * </p>
    *
-   * @param foregroundTintColor the color to tint the foreground drawable
+   * @param foregroundTintColor the color to tint the foreground drawable or -1 (undefined color) to remove the
+   *                            existing foreground tint color
    */
   public void setForegroundTintColor(@ColorInt int foregroundTintColor) {
     this.foregroundTintColor = foregroundTintColor;
@@ -171,6 +179,7 @@ public class MyLocationViewSettings {
    * <p>
    * Padding can be added to provide an offset to the background
    * </p>
+   * It's linked with the background tint color
    *
    * @param backgroundDrawable the drawable to show as background
    * @param padding            the padding added to the background
@@ -184,6 +193,7 @@ public class MyLocationViewSettings {
     } else {
       myLocationView.setShadowDrawable(backgroundDrawable, backgroundBearingDrawable);
     }
+    myLocationView.setShadowDrawableTint(backgroundTintColor);
   }
 
   /**
@@ -207,7 +217,8 @@ public class MyLocationViewSettings {
   /**
    * Set the background tint color.
    *
-   * @param backgroundTintColor the color to tint the background
+   * @param backgroundTintColor the color to tint the background drawable or -1 (undefined color) to remove the
+   *                            existing background tint color
    */
   public void setBackgroundTintColor(@ColorInt int backgroundTintColor) {
     this.backgroundTintColor = backgroundTintColor;

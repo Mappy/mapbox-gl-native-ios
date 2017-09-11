@@ -4,6 +4,7 @@
 #import <UIKit/UIKit.h>
 #import <CoreLocation/CoreLocation.h>
 
+#import "MGLFoundation.h"
 #import "MGLTypes.h"
 
 NS_ASSUME_NONNULL_BEGIN
@@ -23,13 +24,13 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol MGLFeature;
 
 /** The default deceleration rate for a map view. */
-extern const CGFloat MGLMapViewDecelerationRateNormal;
+extern MGL_EXPORT const CGFloat MGLMapViewDecelerationRateNormal;
 
 /** A fast deceleration rate for a map view. */
-extern const CGFloat MGLMapViewDecelerationRateFast;
+extern MGL_EXPORT const CGFloat MGLMapViewDecelerationRateFast;
 
 /** Disables deceleration in a map view. */
-extern const CGFloat MGLMapViewDecelerationRateImmediate;
+extern MGL_EXPORT const CGFloat MGLMapViewDecelerationRateImmediate;
 
 /**
  The vertical alignment of an annotation within a map view. Used with
@@ -125,7 +126,7 @@ typedef NS_ENUM(NSUInteger, MGLUserTrackingMode) {
  ensuring that your use adheres to the relevant terms of use.
 
  */
-IB_DESIGNABLE
+MGL_EXPORT IB_DESIGNABLE
 @interface MGLMapView : UIView
 
 #pragma mark Creating Instances
@@ -224,6 +225,12 @@ IB_DESIGNABLE
  reflects those changes.
  */
 - (IBAction)reloadStyle:(id)sender;
+
+/**
+ A control indicating the scale of the map. The scale bar is positioned in the
+ upper-left corner. The scale bar is hidden by default.
+ */
+@property (nonatomic, readonly) UIView *scaleBar;
 
 /**
  A control indicating the map’s direction and allowing the user to manipulate
@@ -570,7 +577,7 @@ IB_DESIGNABLE
  *
  * The default minimumZoomLevel is 0.
  */
-@property (nonatomic) double minimumZoomLevel;
+@property (nonatomic) IBInspectable double minimumZoomLevel;
 
 /**
  * The maximum zoom level the map can be shown at.
@@ -580,7 +587,7 @@ IB_DESIGNABLE
  *
  * The default maximumZoomLevel is 20.
  */
-@property (nonatomic) double maximumZoomLevel;
+@property (nonatomic) IBInspectable double maximumZoomLevel;
 
 /**
  The heading of the map, measured in degrees clockwise from true north.
@@ -756,6 +763,23 @@ IB_DESIGNABLE
  @param completion The block to execute after the animation finishes.
  */
 - (void)setCamera:(MGLMapCamera *)camera withDuration:(NSTimeInterval)duration animationTimingFunction:(nullable CAMediaTimingFunction *)function completionHandler:(nullable void (^)(void))completion;
+
+/**
+ Moves the viewpoint to a different location with respect to the map with an
+ optional transition duration and timing function.
+ 
+ @param camera The new viewpoint.
+ @param duration The amount of time, measured in seconds, that the transition
+ animation should take. Specify `0` to jump to the new viewpoint
+ instantaneously.
+ @param function A timing function used for the animation. Set this parameter to
+ `nil` for a transition that matches most system animations. If the duration
+ is `0`, this parameter is ignored.
+ @param edgePadding The minimum padding (in screen points) that would be visible
+ around the returned camera object if it were set as the receiver’s camera.
+ @param completion The block to execute after the animation finishes.
+ */
+- (void)setCamera:(MGLMapCamera *)camera withDuration:(NSTimeInterval)duration animationTimingFunction:(nullable CAMediaTimingFunction *)function edgePadding:(UIEdgeInsets)edgePadding completionHandler:(nullable void (^)(void))completion;
 
 /**
  Moves the viewpoint to a different location using a transition animation that
@@ -967,16 +991,6 @@ IB_DESIGNABLE
 @property (nonatomic, readonly, nullable) NS_ARRAY_OF(id <MGLAnnotation>) *annotations;
 
 /**
- The complete list of annotations associated with the receiver that are
- currently visible.
-
- The objects in this array must adopt the `MGLAnnotation` protocol. If no
- annotations are associated with the map view or if no annotations associated
- with the map view are currently visible, the value of this property is `nil`.
- */
-@property (nonatomic, readonly, nullable) NS_ARRAY_OF(id <MGLAnnotation>) *visibleAnnotations;
-
-/**
  Adds an annotation to the map view.
 
  @note `MGLMultiPolyline`, `MGLMultiPolygon`, `MGLShapeCollection`, and
@@ -1069,6 +1083,16 @@ IB_DESIGNABLE
     such object exists in the reuse queue.
  */
 - (nullable __kindof MGLAnnotationView *)dequeueReusableAnnotationViewWithIdentifier:(NSString *)identifier;
+
+/**
+ The complete list of annotations associated with the receiver that are
+ currently visible.
+
+ The objects in this array must adopt the `MGLAnnotation` protocol. If no
+ annotations are associated with the map view or if no annotations associated
+ with the map view are currently visible, the value of this property is `nil`.
+ */
+@property (nonatomic, readonly, nullable) NS_ARRAY_OF(id <MGLAnnotation>) *visibleAnnotations;
 
 /**
  Returns the list of annotations associated with the receiver that intersect with
@@ -1229,6 +1253,11 @@ IB_DESIGNABLE
  visibility, use the
  `-[MGLVectorSource featuresInSourceLayersWithIdentifiers:predicate:]` and
  `-[MGLShapeSource featuresMatchingPredicate:]` methods on the relevant sources.
+
+ The returned features may also include features corresponding to annotations.
+ These features are not object-equal to the `MGLAnnotation` objects that were
+ originally added to the map. To query the map for annotations, use
+ `visibleAnnotations` or `-[MGLMapView visibleAnnotationsInRect:]`.
 
  @note Layer identifiers are not guaranteed to exist across styles or different
     versions of the same style. Applications that use this API must first set

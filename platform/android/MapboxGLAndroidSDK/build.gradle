@@ -1,10 +1,17 @@
 apply plugin: 'com.android.library'
 
+apply from: '../configuration.gradle'
 apply from: '../dependencies.gradle'
 
+print "project.ext.dep.supportAnnotations "+ project.ext.dep.supportAnnotations+"\n"
+print "project.ext.dep.supportV4 "+ project.ext.dep.supportV4+"\n"
+print "project.ext.dep.supportDesign "+ project.ext.dep.supportDesign+"\n"
 print "project.ext.dep.timber "+ project.ext.dep.timber+"\n"
 print "project.ext.dep.okhttp3 "+ project.ext.dep.okhttp3+"\n"
 print "project.ext.dep.lost "+ project.ext.dep.lost+"\n"
+
+print "project.ext.node "+ project.ext.node+"\n"
+print "project.ext.npm "+ project.ext.npm+"\n"
 
 print "compileSdkVersion ${compileSdkVersion} / "+project.ext.compileSdkVersion+"\n"
 print "buildToolsVersion ${buildToolsVersion} / "+project.ext.buildToolsVersion+"\n"
@@ -12,12 +19,14 @@ print "minSdkVersion "+project.ext.minSdkVersion.toInteger()+"\n"
 print "targetSdkVersion "+project.ext.targetSdkVersion.toInteger()+"\n"
 
 dependencies {
-    compile "com.android.support:support-annotations:${supportLibVersion}"
-    compile "com.android.support:support-v4:${supportLibVersion}"
-    compile "com.android.support:design:${supportLibVersion}"
+    compile project.ext.dep.supportAnnotations
+    compile project.ext.dep.supportV4
+    compile project.ext.dep.supportDesign
     compile project.ext.dep.timber
     compile project.ext.dep.okhttp3
-    compile project.ext.dep.lost
+    compile(project.ext.dep.lost) {
+        exclude group: 'com.google.guava'
+    }
 
     // Mapbox Android Services (GeoJSON support)
     compile(project.ext.dep.mapboxJavaGeoJSON) {
@@ -34,12 +43,83 @@ android {
     compileSdkVersion project.ext.compileSdkVersion
     buildToolsVersion project.ext.buildToolsVersion
 
+    publishNonDefault true
+
     defaultConfig {
         minSdkVersion project.ext.minSdkVersion
         targetSdkVersion project.ext.targetSdkVersion
         buildConfigField "String", "GIT_REVISION_SHORT", String.format("\"%s\"", getGitRevision())
         buildConfigField "String", "MAPBOX_VERSION_STRING", String.format("\"Mapbox/%s\"", project.VERSION_NAME)
         buildConfigField "String", "MAPBOX_EVENTS_USER_AGENT", String.format("\"MapboxEventsAndroid/%s\"", project.VERSION_NAME)
+    }
+
+    defaultPublishConfig project.hasProperty("mapbox.buildtype") ? project.getProperty("mapbox.buildtype") : "debug"
+
+    // We sometimes want to invoke Gradle without building a native dependency, e.g. when we just want
+    // to invoke the Java tests. When we explicitly specify an ABI of 'none', no native dependencies are
+    // added. When another ABI is specified explicitly, we're just going to build that ABI. In all other
+    // cases, all ABIs are built.
+    // When invoking from the command line, set `-Pmapbox.abis=...` to only build the desired architectures.
+    // When building from Android Studio, gradle.properties sets `android.buildOnlyTargetAbi=true` so that
+    // only the architecture for the device you're running on gets built.
+    def abi = 'all'
+    if (!project.hasProperty('android.injected.invoked.from.ide')) {
+        // Errors when the user invokes Gradle from the command line and didn't set mapbox.abis
+        abi = project.getProperty("mapbox.abis")
+    }
+
+    if (abi != 'none') {
+        externalNativeBuild {
+            cmake {
+                path "../../../CMakeLists.txt"
+            }
+        }
+    }
+
+    defaultConfig {
+        print "build with abi = "+ abi+"\n"
+
+        if (abi != 'none') {
+            externalNativeBuild {
+                cmake {
+                    arguments "-DANDROID_TOOLCHAIN=clang"
+                    arguments "-DANDROID_STL=c++_static"
+                    arguments "-DANDROID_CPP_FEATURES=rtti;exceptions"
+                    arguments "-DMBGL_PLATFORM=android"
+                    arguments "-DMASON_PLATFORM=android"
+                    arguments "-DNodeJS_EXECUTABLE=" + project.ext.node
+                    arguments "-Dnpm_EXECUTABLE=" + project.ext.npm
+
+                    // Enable ccache if the user has installed it.
+                    if (project.ext.ccache?.trim()) {
+                        arguments "-DANDROID_CCACHE=" + project.ext.ccache
+                        // ccache splits up the compile command until multiple invocations and uses -E
+                        // with one of them, and clang doesn't like unused arguments in that case.
+                        cFlags "-Qunused-arguments"
+                        cppFlags "-Qunused-arguments"
+                    }
+
+                    targets "mapbox-gl"
+
+                    if (defaultPublishConfig.equalsIgnoreCase("debug")) {
+                        targets "example-custom-layer"
+                    }
+
+                    if (project.hasProperty("mapbox.with_test")) {
+                        targets "mbgl-test"
+                    }
+
+                    if (abi != 'all') {
+                        abiFilters abi.split(' ')
+                    } else {
+                        abiFilters "armeabi-v7a", "x86", "arm64-v8a", "x86_64"
+                    }
+                }
+            }
+        }
+
+        // proguard config for .aar
+        consumerProguardFiles 'proguard-rules.pro'
     }
 
     // avoid naming conflicts, force usage of prefix
@@ -72,7 +152,6 @@ android {
             minifyEnabled false
             buildConfigField "String", "MAPBOX_EVENTS_USER_AGENT_BASE", new StringBuilder().append("\"").append("MapboxEventsAndroid/").append(project.VERSION_NAME).append("\"").toString()
             consumerProguardFiles 'proguard-rules.pro'
-            jniDebuggable false
         }
     }
 }
