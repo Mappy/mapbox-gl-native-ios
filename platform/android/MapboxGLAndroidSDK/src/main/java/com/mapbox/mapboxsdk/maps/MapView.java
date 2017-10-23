@@ -267,6 +267,7 @@ public class MapView extends FrameLayout {
     nativeMapView.terminateContext();
     nativeMapView.terminateDisplay();
     nativeMapView.destroySurface();
+    mapCallback.clearOnMapReadyCallbacks();
     nativeMapView.destroy();
     nativeMapView = null;
   }
@@ -528,7 +529,7 @@ public class MapView extends FrameLayout {
   //
 
   /**
-   * <p>
+   * <p>P
    * Add a callback that's invoked when the displayed map view changes.
    * </p>
    * To remove the callback, use {@link MapView#removeOnMapChangedListener(OnMapChangedListener)}.
@@ -959,6 +960,10 @@ public class MapView extends FrameLayout {
 
     void addOnMapReadyCallback(OnMapReadyCallback callback) {
       onMapReadyCallbackList.add(callback);
+    }
+
+    void clearOnMapReadyCallbacks() {
+      onMapReadyCallbackList.clear();
     }
   }
 
