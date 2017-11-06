@@ -256,7 +256,7 @@ std::vector<FontStack> Parser::fontStacks() const {
         if (layer->is<SymbolLayer>()) {
             PropertyValue<FontStack> textFont = layer->as<SymbolLayer>()->getTextFont();
             if (textFont.isUndefined()) {
-                optional.insert({"Open Sans Regular", "Arial Unicode MS Regular"});
+                optional.insert({"DejaVu Sans Condensed"});
             } else if (textFont.isConstant()) {
                 optional.insert(textFont.asConstant());
             } else if (textFont.isCameraFunction()) {
