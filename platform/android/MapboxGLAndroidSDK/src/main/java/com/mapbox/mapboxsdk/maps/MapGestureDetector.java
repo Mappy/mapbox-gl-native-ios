@@ -10,6 +10,7 @@ import android.support.v4.view.ScaleGestureDetectorCompat;
 import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
+import android.view.View;
 import android.view.ViewConfiguration;
 
 import com.almeros.android.multitouch.gesturedetectors.RotateGestureDetector;
@@ -70,6 +71,23 @@ final class MapGestureDetector {
     this.projection = projection;
     this.uiSettings = uiSettings;
     this.trackingSettings = trackingSettings;
+
+    //Mappy modifs
+    final MyLocationView myLocationView = trackingSettings.getMyLocationView();
+       myLocationView.setOnTouchListener(new View.OnTouchListener() {
+          @Override
+          public boolean onTouch(View view, MotionEvent motionEvent) {
+              if(onMapClickListener!=null){
+                PointF tapPoint = new PointF(motionEvent.getX(), motionEvent.getY());
+                RectF myLocationViewDrawRect = myLocationView.getDrawRect();
+                if (myLocationViewDrawRect != null && myLocationViewDrawRect.contains(tapPoint.x, tapPoint.y)) {
+                  onMapClickListener.isNotSimpleTouch();
+                }
+              }
+              return false;
+          }
+      });
+
     this.cameraChangeDispatcher = cameraChangeDispatcher;
 
     // Touch gesture detectors
@@ -270,6 +288,12 @@ final class MapGestureDetector {
 
     // We are not interested in this event
     return false;
+  }
+
+  public void onMarkerViewTouch(MotionEvent motionEvent) {
+    if(onMapClickListener!=null){
+        onMapClickListener.isNotSimpleTouch();
+    }
   }
 
 
