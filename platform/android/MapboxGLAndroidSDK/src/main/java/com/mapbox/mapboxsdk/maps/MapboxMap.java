@@ -2174,6 +2174,12 @@ public final class MapboxMap {
      * @param point The projected map coordinate the user clicked on.
      */
     void onMapClick(@NonNull LatLng point);
+
+    //Mappy modifs
+    /**
+     * Called when the user touch on the map view and do a complex gesture.
+     */
+    void isNotSimpleTouch();
   }
 
   /**

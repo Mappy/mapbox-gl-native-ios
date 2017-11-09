@@ -148,6 +148,11 @@ final class MapGestureDetector {
       return false;
     }
 
+    //Mappy modif
+    if(event.getPointerCount() > 1 && onMapClickListener!=null){
+      onMapClickListener.isNotSimpleTouch();
+    }
+
     // Check two finger gestures first
     scaleGestureDetector.onTouchEvent(event);
     rotateGestureDetector.onTouchEvent(event);
@@ -418,6 +423,11 @@ final class MapGestureDetector {
     // Called for drags
     @Override
     public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+      //Mappy modifs
+      if(onMapClickListener != null){
+        onMapClickListener.isNotSimpleTouch();
+      }
+
       if (!trackingSettings.isScrollGestureCurrentlyEnabled()) {
         return false;
       }
