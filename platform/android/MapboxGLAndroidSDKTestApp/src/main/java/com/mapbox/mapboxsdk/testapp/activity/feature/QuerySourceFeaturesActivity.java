@@ -62,6 +62,11 @@ public class QuerySourceFeaturesActivity extends AppCompatActivity {
             Toast.makeText(QuerySourceFeaturesActivity.this, String.format("Found %s features",
               features.size()), Toast.LENGTH_SHORT).show();
           }
+
+          @Override
+          public void isNotSimpleTouch() {
+
+          }
         });
       }
     });

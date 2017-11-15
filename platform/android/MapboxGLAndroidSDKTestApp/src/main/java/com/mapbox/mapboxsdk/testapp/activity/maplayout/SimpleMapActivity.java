@@ -37,6 +37,10 @@ public class SimpleMapActivity extends AppCompatActivity {
           public void onMapClick(@NonNull LatLng point) {
             Timber.e(projection.getVisibleRegion().toString());
           }
+          @Override
+          public void isNotSimpleTouch() {
+
+          }
         });
       }
     });
