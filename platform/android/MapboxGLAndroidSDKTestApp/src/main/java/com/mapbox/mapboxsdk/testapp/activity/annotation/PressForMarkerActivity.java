@@ -59,6 +59,11 @@ public class PressForMarkerActivity extends AppCompatActivity {
           public void onMapClick(@NonNull LatLng point) {
             addMarker(point);
           }
+
+          @Override
+          public void isNotSimpleTouch() {
+
+          }
         });
 
         if (savedInstanceState != null) {
