@@ -28,7 +28,7 @@ public:
 
 class RenderData {
 public:
-    Color backgroundColor;
+    Color backgroundColor = Color::salmon();
     std::unordered_set<RenderSource*> sources;
     std::vector<RenderItem> order;
 };
