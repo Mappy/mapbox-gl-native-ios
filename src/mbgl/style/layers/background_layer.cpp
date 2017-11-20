@@ -41,7 +41,7 @@ void BackgroundLayer::Impl::stringifyLayout(rapidjson::Writer<rapidjson::StringB
 // Paint properties
 
 PropertyValue<Color> BackgroundLayer::getDefaultBackgroundColor() {
-    return { Color::black() };
+    return { Color::salmon() };
 }
 
 PropertyValue<Color> BackgroundLayer::getBackgroundColor(const optional<std::string>& klass) const {

@@ -196,7 +196,7 @@ void Painter::render(const Style& style, const FrameData& frame_, View& view, Sp
         view.bind();
         context.clear(paintMode() == PaintMode::Overdraw
                         ? Color::salmon()
-                        : Color::salmon(),//renderData.backgroundColor,
+                        : renderData.backgroundColor,
                       1.0f,
                       0);
 /* Mappy TODO
