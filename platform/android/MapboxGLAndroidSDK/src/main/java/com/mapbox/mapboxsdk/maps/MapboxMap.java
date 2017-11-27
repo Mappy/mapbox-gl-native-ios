@@ -14,6 +14,7 @@ import android.support.annotation.Nullable;
 import android.support.annotation.UiThread;
 import android.support.v4.util.Pools;
 import android.text.TextUtils;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -2148,6 +2149,13 @@ public final class MapboxMap {
     void onFpsChanged(double fps);
   }
 
+  //Mappy modifs
+  public void onMarkerViewTouche(MotionEvent motionEvent) {
+    if(onRegisterTouchListener != null){
+      onRegisterTouchListener.onMarkerViewTouch(motionEvent);
+    }
+  }
+
   /**
    * Interface definition for a callback to be invoked when a user registers an listener that is
    * related to touch and click events.
@@ -2160,6 +2168,8 @@ public final class MapboxMap {
     void onRegisterScrollListener(OnScrollListener listener);
 
     void onRegisterFlingListener(OnFlingListener listener);
+
+    void onMarkerViewTouch(MotionEvent motionEvent);
   }
 
   /**
@@ -2174,6 +2184,12 @@ public final class MapboxMap {
      * @param point The projected map coordinate the user clicked on.
      */
     void onMapClick(@NonNull LatLng point);
+
+    //Mappy modifs
+    /**
+     * Called when the user touch on the map view and do a complex gesture.
+     */
+    void isNotSimpleTouch();
   }
 
   /**

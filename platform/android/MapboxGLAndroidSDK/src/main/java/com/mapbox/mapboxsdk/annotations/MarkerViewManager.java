@@ -8,6 +8,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.util.LongSparseArray;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -61,9 +62,16 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
   private MapboxMap.OnMarkerViewClickListener onMarkerViewClickListener;
   private boolean isWaitingForRenderInvoke;
 
-  //mappy modif
+  //Mappy modif
   boolean markerViewSortedModified = true;
   private Collection<View> markerViewSortedCoolection;
+  private View.OnTouchListener mOnMarkerViewTouchListener = new View.OnTouchListener() {
+    @Override
+    public boolean onTouch(View view, MotionEvent motionEvent) {
+      mapboxMap.onMarkerViewTouche(motionEvent);
+      return false;
+    }
+  };
 
 
   /**
@@ -555,6 +563,8 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
             convertView = (View) adapter.getViewReusePool().acquire();
             final View adaptedView = adapter.getView(marker, convertView, markerViewContainer);
             if (adaptedView != null) {
+              //Mappy modif
+              adaptedView.setOnTouchListener(mOnMarkerViewTouchListener);
               adaptedView.setRotationX(marker.getTilt());
               adaptedView.setRotation(marker.getRotation());
               adaptedView.setAlpha(marker.getAlpha());

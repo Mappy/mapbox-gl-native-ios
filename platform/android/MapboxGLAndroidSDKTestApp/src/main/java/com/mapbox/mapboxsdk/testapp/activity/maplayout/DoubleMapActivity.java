@@ -120,6 +120,10 @@ public class DoubleMapActivity extends AppCompatActivity {
               // test if we can open 2 activities after each other
               startActivity(new Intent(mapViewMini.getContext(), DoubleMapActivity.class));
             }
+            @Override
+            public void isNotSimpleTouch() {
+
+            }
           });
         }
       });

@@ -854,6 +854,12 @@ public class MapView extends FrameLayout {
     public void onRegisterFlingListener(MapboxMap.OnFlingListener listener) {
       mapGestureDetector.setOnFlingListener(listener);
     }
+
+    //Mappy modifs
+    @Override
+    public void onMarkerViewTouch(MotionEvent motionEvent){
+      mapGestureDetector.onMarkerViewTouch(motionEvent);
+    }
   }
 
   private class MapZoomControllerListener implements ZoomButtonsController.OnZoomListener {
