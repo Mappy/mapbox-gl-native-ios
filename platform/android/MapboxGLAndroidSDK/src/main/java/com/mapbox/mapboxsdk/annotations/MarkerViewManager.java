@@ -68,7 +68,7 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
   private View.OnTouchListener mOnMarkerViewTouchListener = new View.OnTouchListener() {
     @Override
     public boolean onTouch(View view, MotionEvent motionEvent) {
-      mapboxMap.onMarkerViewTouche(motionEvent);
+      mapboxMap.onMarkerViewTouch(motionEvent);
       return false;
     }
   };

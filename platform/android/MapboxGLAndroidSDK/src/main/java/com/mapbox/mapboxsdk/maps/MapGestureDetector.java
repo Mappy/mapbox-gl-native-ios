@@ -81,7 +81,7 @@ final class MapGestureDetector {
                 PointF tapPoint = new PointF(motionEvent.getX(), motionEvent.getY());
                 RectF myLocationViewDrawRect = myLocationView.getDrawRect();
                 if (myLocationViewDrawRect != null && myLocationViewDrawRect.contains(tapPoint.x, tapPoint.y)) {
-                  onMapClickListener.isNotSimpleTouch();
+                  onMapClickListener.isNotSimpleTouch(true);
                 }
               }
               return false;
@@ -168,7 +168,7 @@ final class MapGestureDetector {
 
     //Mappy modif
     if(event.getPointerCount() > 1 && onMapClickListener!=null){
-      onMapClickListener.isNotSimpleTouch();
+      onMapClickListener.isNotSimpleTouch(false);
     }
 
     // Check two finger gestures first
@@ -292,7 +292,7 @@ final class MapGestureDetector {
 
   public void onMarkerViewTouch(MotionEvent motionEvent) {
     if(onMapClickListener!=null){
-        onMapClickListener.isNotSimpleTouch();
+        onMapClickListener.isNotSimpleTouch(true);
     }
   }
 
@@ -449,7 +449,7 @@ final class MapGestureDetector {
     public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
       //Mappy modifs
       if(onMapClickListener != null){
-        onMapClickListener.isNotSimpleTouch();
+        onMapClickListener.isNotSimpleTouch(false);
       }
 
       if (!trackingSettings.isScrollGestureCurrentlyEnabled()) {

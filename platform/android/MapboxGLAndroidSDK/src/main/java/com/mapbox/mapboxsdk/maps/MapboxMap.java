@@ -2150,7 +2150,7 @@ public final class MapboxMap {
   }
 
   //Mappy modifs
-  public void onMarkerViewTouche(MotionEvent motionEvent) {
+  public void onMarkerViewTouch(MotionEvent motionEvent) {
     if(onRegisterTouchListener != null){
       onRegisterTouchListener.onMarkerViewTouch(motionEvent);
     }
@@ -2188,8 +2188,9 @@ public final class MapboxMap {
     //Mappy modifs
     /**
      * Called when the user touch on the map view and do a complex gesture.
+     * @param isMarkerTouch true if touch is above a marker
      */
-    void isNotSimpleTouch();
+    void isNotSimpleTouch(boolean isMarkerTouch);
   }
 
   /**
