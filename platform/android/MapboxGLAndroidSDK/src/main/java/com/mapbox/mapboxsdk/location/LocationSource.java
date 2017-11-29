@@ -196,7 +196,6 @@ public class LocationSource extends LocationEngine implements LostApiClient.Conn
       lostApiClient.disconnect();
     }
   }
-}
 
   private void connect() {
     if (lostApiClient != null) {

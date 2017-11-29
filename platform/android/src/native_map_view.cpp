@@ -517,29 +517,6 @@ jni::Array<jlong> NativeMapView::addPolylines(JNIEnv& env, jni::Array<jni::Objec
     return result;
 }
 
-jni::Array<jni::jlong> NativeMapView::addPolylinesWithStroke(JNIEnv& env, jni::Array<jni::Object<Polyline>> polylines, jni::jboolean withWhiteStroke) {
-    NullCheck(env, &polylines);
-    std::size_t len = polylines.Length(env);
-
-    std::vector<jni::jlong> ids;
-    ids.reserve(len);
-
-    for (std::size_t i = 0; i < len; i++) {
-        auto polyline = polylines.Get(env, i);
-
-        mbgl::LineAnnotation annotation = Polyline::toAnnotation(env, polyline);
-        annotation.isMappyPath = withWhiteStroke;
-        ids.push_back(map->addAnnotation(annotation));
-
-        jni::DeleteLocalRef(env, polyline);
-    }
-
-    auto result = jni::Array<jni::jlong>::New(env, len);
-    result.SetRegion<std::vector<jni::jlong>>(env, 0, ids);
-
-    return result;
-}
-
 jni::Array<jlong> NativeMapView::addPolygons(JNIEnv& env, jni::Array<jni::Object<Polygon>> polygons) {
     NullCheck(env, &polygons);
     std::size_t len = polygons.Length(env);
@@ -1043,7 +1020,6 @@ void NativeMapView::registerNative(jni::JNIEnv& env) {
             METHOD(&NativeMapView::latLngForProjectedMeters, "nativeLatLngForProjectedMeters"),
             METHOD(&NativeMapView::latLngForPixel, "nativeLatLngForPixel"),
             METHOD(&NativeMapView::addPolylines, "nativeAddPolylines"),
-            METHOD(&NativeMapView::addPolylinesWithStroke, "nativeAddPolylinesWithStroke"),
             METHOD(&NativeMapView::addPolygons, "nativeAddPolygons"),
             METHOD(&NativeMapView::updatePolyline, "nativeUpdatePolyline"),
             METHOD(&NativeMapView::updatePolygon, "nativeUpdatePolygon"),

@@ -592,8 +592,8 @@ public class MyLocationView extends View {
         }
       }
 
-      // Set an initial location if one available
-      Location lastLocation = locationSource.getLastLocation();
+      //Mappy modif: Set an initial location if one available
+      Location lastLocation = locationEngine.getLastLocation();
 
       if (lastLocation != null) {
         setLocation(lastLocation);

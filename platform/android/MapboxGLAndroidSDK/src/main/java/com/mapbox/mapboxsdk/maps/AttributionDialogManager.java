@@ -16,6 +16,7 @@ import com.mapbox.mapboxsdk.attribution.AttributionParser;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.style.sources.Source;
 import com.mapbox.services.android.telemetry.MapboxTelemetry;
+import com.mapbox.mapboxsdk.Mapbox;
 
 import java.util.ArrayList;
 import java.util.List;

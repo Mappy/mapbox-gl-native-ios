@@ -28,9 +28,9 @@ dependencies {
     compile(project.ext.dep.lost) {
         exclude group: 'com.android.support'
     }
-    testCompile rootProject.ext.dep.junit
-    testCompile rootProject.ext.dep.mockito
-    testCompile rootProject.ext.dep.robolectric
+    testCompile project.ext.dep.junit
+    testCompile project.ext.dep.mockito
+    testCompile project.ext.dep.robolectric
 
     // Mapbox Android Services (GeoJSON support)
     compile(project.ext.dep.mapboxJavaGeoJSON) {
@@ -70,7 +70,7 @@ android {
     //
     // When building from Android Studio, gradle.properties sets `android.buildOnlyTargetAbi=true` so that
     // only the architecture for the device you're running on gets built.
-    def abi = 'all'
+    def abi = 'arm64-v8a'
     if (!project.hasProperty('android.injected.invoked.from.ide') || project.hasProperty("mapbox.abis")) {
         // Errors when the user invokes Gradle from the command line and didn't set mapbox.abis
         abi = project.getProperty("mapbox.abis")

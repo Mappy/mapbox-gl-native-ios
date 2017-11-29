@@ -169,7 +169,7 @@ public final class Mapbox {
   }
 
   public static void setLocationSource(LocationSource  locSource) {
-    INSTANCE.locationSource = locSource;
+    INSTANCE.locationEngine = locSource;
   }
 
 }
