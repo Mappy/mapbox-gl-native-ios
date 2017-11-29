@@ -79,7 +79,7 @@ public class QueryRenderedFeaturesPropertiesActivity extends AppCompatActivity {
           }
 
           @Override
-          public void isNotSimpleTouch() {
+          public void isNotSimpleTouch(boolean isMarkerTouch) {
 
           }
         });

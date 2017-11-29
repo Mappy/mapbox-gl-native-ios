@@ -77,7 +77,7 @@ public class DynamicInfoWindowAdapterActivity extends AppCompatActivity implemen
       }
 
       @Override
-      public void isNotSimpleTouch() {
+      public void isNotSimpleTouch(boolean isMarkerTouch) {
 
       }
     });

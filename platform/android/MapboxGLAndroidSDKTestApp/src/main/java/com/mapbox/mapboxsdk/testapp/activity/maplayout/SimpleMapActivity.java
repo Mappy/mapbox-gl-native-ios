@@ -38,7 +38,7 @@ public class SimpleMapActivity extends AppCompatActivity {
             Timber.e(projection.getVisibleRegion().toString());
           }
           @Override
-          public void isNotSimpleTouch() {
+          public void isNotSimpleTouch(boolean isMarkerTouch) {
 
           }
         });
