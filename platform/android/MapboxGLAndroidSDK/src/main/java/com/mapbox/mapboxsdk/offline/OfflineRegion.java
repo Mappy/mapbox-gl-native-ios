@@ -6,6 +6,7 @@ import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import com.mapbox.mapboxsdk.LibraryLoader;
 import com.mapbox.mapboxsdk.storage.FileSource;
 
 import java.lang.annotation.Retention;
@@ -23,7 +24,7 @@ public class OfflineRegion {
   //
 
   static {
-    System.loadLibrary("mapbox-gl");
+    LibraryLoader.load();
   }
 
   // Members
@@ -299,10 +300,19 @@ public class OfflineRegion {
 
   /**
    * Pause or resume downloading of regional resources.
+   * <p>
+   * After a download has been completed, you are required to reset the state of the region to STATE_INACTIVE.
+   * </p>
    *
    * @param state the download state
    */
   public void setDownloadState(@DownloadState int state) {
+    if (state == STATE_ACTIVE) {
+      fileSource.activate();
+    } else {
+      fileSource.deactivate();
+    }
+
     this.state = state;
     setOfflineRegionDownloadState(state);
   }

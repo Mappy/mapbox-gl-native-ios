@@ -76,9 +76,9 @@ public class FileSource {
         MapboxConstants.KEY_META_DATA_SET_STORAGE_EXTERNAL,
         MapboxConstants.DEFAULT_SET_STORAGE_EXTERNAL);
     } catch (PackageManager.NameNotFoundException exception) {
-      Timber.e("Failed to read the package metadata: ", exception);
+      Timber.e(exception, "Failed to read the package metadata: ");
     } catch (Exception exception) {
-      Timber.e("Failed to read the storage key: ", exception);
+      Timber.e(exception, "Failed to read the storage key: ");
     }
 
     String cachePath = null;
@@ -87,7 +87,7 @@ public class FileSource {
         // Try getting the external storage path
         cachePath = context.getExternalFilesDir(null).getAbsolutePath();
       } catch (NullPointerException exception) {
-        Timber.e("Failed to obtain the external storage path: ", exception);
+        Timber.e(exception, "Failed to obtain the external storage path: ");
       }
     }
 
@@ -123,9 +123,27 @@ public class FileSource {
   }
 
   private long nativePtr;
+  private long activeCounter;
+  private boolean wasPaused;
 
   private FileSource(String cachePath, AssetManager assetManager) {
     initialize(Mapbox.getAccessToken(), cachePath, assetManager);
+  }
+
+  public void activate() {
+    activeCounter++;
+    if (activeCounter == 1 && wasPaused) {
+      wasPaused = false;
+      resume();
+    }
+  }
+
+  public void deactivate() {
+    activeCounter--;
+    if (activeCounter == 0) {
+      wasPaused = true;
+      pause();
+    }
   }
 
   public native void setAccessToken(@NonNull String accessToken);
@@ -133,6 +151,10 @@ public class FileSource {
   public native String getAccessToken();
 
   public native void setApiBaseUrl(String baseUrl);
+
+  private native void resume();
+
+  private native void pause();
 
   /**
    * Sets a callback for transforming URLs requested from the internet
