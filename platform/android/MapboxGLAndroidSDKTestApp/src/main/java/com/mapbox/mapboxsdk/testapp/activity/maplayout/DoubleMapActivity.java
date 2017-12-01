@@ -121,7 +121,7 @@ public class DoubleMapActivity extends AppCompatActivity {
               startActivity(new Intent(mapViewMini.getContext(), DoubleMapActivity.class));
             }
             @Override
-            public void isNotSimpleTouch() {
+            public void isNotSimpleTouch(boolean isMarkerTouch) {
 
             }
           });
