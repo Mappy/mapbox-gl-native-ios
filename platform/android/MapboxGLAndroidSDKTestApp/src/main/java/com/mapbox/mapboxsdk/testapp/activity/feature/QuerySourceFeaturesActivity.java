@@ -64,7 +64,7 @@ public class QuerySourceFeaturesActivity extends AppCompatActivity {
           }
 
           @Override
-          public void isNotSimpleTouch() {
+          public void isNotSimpleTouch(boolean isMarkerTouch) {
 
           }
         });

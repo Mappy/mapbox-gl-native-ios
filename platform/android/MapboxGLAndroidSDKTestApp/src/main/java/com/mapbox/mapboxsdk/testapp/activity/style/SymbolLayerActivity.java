@@ -107,7 +107,7 @@ public class SymbolLayerActivity extends AppCompatActivity implements MapboxMap.
   }
 
   @Override
-  public void isNotSimpleTouch() {
+  public void isNotSimpleTouch(boolean isMarkerTouch) {
 
   }
 
