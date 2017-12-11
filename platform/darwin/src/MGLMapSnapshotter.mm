@@ -61,6 +61,7 @@ const CGFloat MGLSnapshotterMinimumPixelSize = 64;
 @implementation MGLMapSnapshot {
     mbgl::MapSnapshotter::PointForFn _pointForFn;
 }
+
 - (instancetype)initWithImage:(nullable MGLImage *)image scale:(CGFloat)scale pointForFn:(mbgl::MapSnapshotter::PointForFn)pointForFn
 {
     self = [super init];
@@ -88,6 +89,7 @@ const CGFloat MGLSnapshotterMinimumPixelSize = 64;
     std::shared_ptr<mbgl::ThreadPool> _mbglThreadPool;
     std::unique_ptr<mbgl::MapSnapshotter> _mbglMapSnapshotter;
     std::unique_ptr<mbgl::Actor<mbgl::MapSnapshotter::Callback>> _snapshotCallback;
+    NS_ARRAY_OF(MGLAttributionInfo *) *_attributionInfo;
 }
 
 - (instancetype)initWithOptions:(MGLMapSnapshotOptions *)options
@@ -167,14 +169,7 @@ const CGFloat MGLSnapshotterMinimumPixelSize = 64;
                 [infos growArrayByAddingAttributionInfosFromArray:tileSetInfos];
             }
             
-            CGSize attributionBackgroundSize = CGSizeMake(10, 0);
-            for (MGLAttributionInfo *info in infos) {
-                if (info.isFeedbackLink) {
-                    continue;
-                }
-                attributionBackgroundSize.width += [info.title size].width + 10;
-                attributionBackgroundSize.height = MAX([info.title size].height, attributionBackgroundSize.height);
-            }
+            _attributionInfo = infos;
             
             if (mbglError) {
                 NSString *description = @(mbgl::util::toString(mbglError).c_str());
@@ -198,11 +193,29 @@ const CGFloat MGLSnapshotterMinimumPixelSize = 64;
                 dispatch_queue_t workQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
                 dispatch_async(workQueue, ^{
 #if TARGET_OS_IPHONE
-                    UIImage *logoImage = [UIImage imageNamed:@"mapbox" inBundle:[NSBundle mgl_frameworkBundle] compatibleWithTraitCollection:nil];
+                    MGLAttributionInfoStyle attributionInfoStyle = MGLAttributionInfoStyleLong;
+                    for (NSUInteger styleValue = MGLAttributionInfoStyleLong; styleValue >= MGLAttributionInfoStyleShort; styleValue--) {
+                        attributionInfoStyle = (MGLAttributionInfoStyle)styleValue;
+                        CGSize attributionSize = [self attributionSizeWithLogoStyle:attributionInfoStyle sourceAttributionStyle:attributionInfoStyle];
+                        if (attributionSize.width <= mglImage.size.width) {
+                            break;
+                        }
+                    }
+                    
+                    UIImage *logoImage = [self logoImageWithStyle:attributionInfoStyle];
+                    CGSize attributionBackgroundSize = [self attributionTextSizeWithStyle:attributionInfoStyle];
                     
                     CGRect logoImageRect = CGRectMake(MGLLogoImagePosition.x, mglImage.size.height - (MGLLogoImagePosition.y + logoImage.size.height), logoImage.size.width, logoImage.size.height);
-                    CGRect attributionBackgroundFrame = CGRectMake(mglImage.size.width - 10 - attributionBackgroundSize.width,
-                                                                   logoImageRect.origin.y + (logoImageRect.size.height / 2) - (attributionBackgroundSize.height / 2) + 1,
+                    CGPoint attributionOrigin = CGPointMake(mglImage.size.width - 10 - attributionBackgroundSize.width,
+                                                            logoImageRect.origin.y + (logoImageRect.size.height / 2) - (attributionBackgroundSize.height / 2) + 1);
+                    if (!logoImage) {
+                        CGSize defaultLogoSize = [self mapboxLongStyleLogo].size;
+                        logoImageRect = CGRectMake(0, mglImage.size.height - (MGLLogoImagePosition.y + defaultLogoSize.height), 0, defaultLogoSize.height);
+                        attributionOrigin = CGPointMake(10, logoImageRect.origin.y + (logoImageRect.size.height / 2) - (attributionBackgroundSize.height / 2) + 1);
+                    }
+                    
+                    CGRect attributionBackgroundFrame = CGRectMake(attributionOrigin.x,
+                                                                   attributionOrigin.y,
                                                                    attributionBackgroundSize.width,
                                                                    attributionBackgroundSize.height);
                     CGPoint attributionTextPosition = CGPointMake(attributionBackgroundFrame.origin.x + 10,
@@ -231,20 +244,39 @@ const CGFloat MGLSnapshotterMinimumPixelSize = 64;
                     
                     [blurredAttributionBackground drawInRect:attributionBackgroundFrame];
                     
-                    [self drawAttributionText:infos origin:attributionTextPosition];
+                    [self drawAttributionTextWithStyle:attributionInfoStyle origin:attributionTextPosition];
                     
                     UIImage *compositedImage = UIGraphicsGetImageFromCurrentImageContext();
                     
                     UIGraphicsEndImageContext();
 #else
-                    NSImage *logoImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mgl_frameworkBundle] pathForResource:@"mapbox" ofType:@"pdf"]];
-                    NSImage *sourceImage = mglImage;
-                    
                     NSSize targetSize = NSMakeSize(self.options.size.width, self.options.size.height);
                     NSRect targetFrame = NSMakeRect(0, 0, targetSize.width, targetSize.height);
+                    
+                    MGLAttributionInfoStyle attributionInfoStyle = MGLAttributionInfoStyleLong;
+                    for (NSUInteger styleValue = MGLAttributionInfoStyleLong; styleValue >= MGLAttributionInfoStyleShort; styleValue--) {
+                        attributionInfoStyle = (MGLAttributionInfoStyle)styleValue;
+                        CGSize attributionSize = [self attributionSizeWithLogoStyle:attributionInfoStyle sourceAttributionStyle:attributionInfoStyle];
+                        if (attributionSize.width <= mglImage.size.width) {
+                            break;
+                        }
+                    }
+                    
+                    NSImage *logoImage = [self logoImageWithStyle:attributionInfoStyle];
+                    CGSize attributionBackgroundSize = [self attributionTextSizeWithStyle:attributionInfoStyle];
+                    NSImage *sourceImage = mglImage;
+                    
                     CGRect logoImageRect = CGRectMake(MGLLogoImagePosition.x, MGLLogoImagePosition.y, logoImage.size.width, logoImage.size.height);
-                    CGRect attributionBackgroundFrame = CGRectMake(targetFrame.size.width - 10 - attributionBackgroundSize.width,
-                                                                   MGLLogoImagePosition.y + 1,
+                    CGPoint attributionOrigin = CGPointMake(targetFrame.size.width - 10 - attributionBackgroundSize.width,
+                                                            MGLLogoImagePosition.y + 1);
+                    if (!logoImage) {
+                        CGSize defaultLogoSize = [self mapboxLongStyleLogo].size;
+                        logoImageRect = CGRectMake(0, MGLLogoImagePosition.y, 0, defaultLogoSize.height);
+                        attributionOrigin = CGPointMake(10, attributionOrigin.y);
+                    }
+                    
+                    CGRect attributionBackgroundFrame = CGRectMake(attributionOrigin.x,
+                                                                   attributionOrigin.y,
                                                                    attributionBackgroundSize.width,
                                                                    attributionBackgroundSize.height);
                     CGPoint attributionTextPosition = CGPointMake(attributionBackgroundFrame.origin.x + 10,
@@ -261,7 +293,9 @@ const CGFloat MGLSnapshotterMinimumPixelSize = 64;
 
                     [sourceImageRep drawInRect: targetFrame];
                     
-                    [logoImage drawInRect:logoImageRect];
+                    if (logoImage) {
+                        [logoImage drawInRect:logoImageRect];
+                    }
                     
                     NSBitmapImageRep *attributionBackground = [[NSBitmapImageRep alloc] initWithFocusedViewRect:attributionBackgroundFrame];
                     
@@ -271,7 +305,7 @@ const CGFloat MGLSnapshotterMinimumPixelSize = 64;
 
                     [blurredAttributionBackground drawInRect:attributionBackgroundFrame];
                     
-                    [self drawAttributionText:infos origin:attributionTextPosition];
+                    [self drawAttributionTextWithStyle:attributionInfoStyle origin:attributionTextPosition];
                     
                     [compositedImage unlockFocus];
                     
@@ -290,15 +324,16 @@ const CGFloat MGLSnapshotterMinimumPixelSize = 64;
     });
 }
 
-- (void)drawAttributionText:(NSArray *)attributionInfo origin:(CGPoint)origin
+- (void)drawAttributionTextWithStyle:(MGLAttributionInfoStyle)attributionInfoStyle origin:(CGPoint)origin
 {
-    for (MGLAttributionInfo *info in attributionInfo) {
+    for (MGLAttributionInfo *info in _attributionInfo) {
         if (info.isFeedbackLink) {
             continue;
         }
-        [info.title drawAtPoint:origin];
+        NSAttributedString *attribution = [info titleWithStyle:attributionInfoStyle];
+        [attribution drawAtPoint:origin];
         
-        origin.x += [info.title size].width + 10;
+        origin.x += [attribution size].width + 10;
     }
 }
 
@@ -321,14 +356,79 @@ const CGFloat MGLSnapshotterMinimumPixelSize = 64;
     
     CIContext *ctx = [CIContext contextWithOptions:nil];
     CGImageRef cgimg = [ctx createCGImage:blurredImage fromRect:[backgroundImage extent]];
+    MGLImage *image;
     
 #if TARGET_OS_IPHONE
-    
-    return [UIImage imageWithCGImage:cgimg];
+    image = [UIImage imageWithCGImage:cgimg];
 #else
-    
-    return [[NSImage alloc] initWithCGImage:cgimg size:[backgroundImage extent].size];
+    image = [[NSImage alloc] initWithCGImage:cgimg size:[backgroundImage extent].size];
 #endif
+    CGImageRelease(cgimg);
+    return image;
+}
+
+- (MGLImage *)logoImageWithStyle:(MGLAttributionInfoStyle)style
+{
+    MGLImage *logoImage;
+    switch (style) {
+        case MGLAttributionInfoStyleLong:
+            logoImage = [self mapboxLongStyleLogo];
+            break;
+        case MGLAttributionInfoStyleMedium:
+#if TARGET_OS_IPHONE
+            logoImage = [UIImage imageNamed:@"mapbox_helmet" inBundle:[NSBundle mgl_frameworkBundle] compatibleWithTraitCollection:nil];
+#else
+            logoImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mgl_frameworkBundle] pathForResource:@"mapbox_helmet" ofType:@"pdf"]];
+#endif
+            break;
+        case MGLAttributionInfoStyleShort:
+            logoImage = nil;
+            break;
+    }
+    return logoImage;
+}
+
+- (MGLImage *)mapboxLongStyleLogo
+{
+    MGLImage *logoImage;
+#if TARGET_OS_IPHONE
+    logoImage =[UIImage imageNamed:@"mapbox" inBundle:[NSBundle mgl_frameworkBundle] compatibleWithTraitCollection:nil];
+#else
+    logoImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mgl_frameworkBundle] pathForResource:@"mapbox" ofType:@"pdf"]];
+#endif
+    return logoImage;
+}
+
+- (CGSize)attributionSizeWithLogoStyle:(MGLAttributionInfoStyle)logoStyle sourceAttributionStyle:(MGLAttributionInfoStyle)attributionStyle
+{
+    MGLImage *logoImage = [self logoImageWithStyle:logoStyle];
+    
+    CGSize attributionBackgroundSize = [self attributionTextSizeWithStyle:attributionStyle];
+    
+    CGSize attributionSize = CGSizeZero;
+    
+    if (logoImage) {
+        attributionSize.width = MGLLogoImagePosition.x + logoImage.size.width + 10;
+    }
+    attributionSize.width = attributionSize.width + 10 + attributionBackgroundSize.width + 10;
+    attributionSize.height = MAX(logoImage.size.height, attributionBackgroundSize.height);
+    
+    return attributionSize;
+}
+
+- (CGSize)attributionTextSizeWithStyle:(MGLAttributionInfoStyle)attributionStyle
+{
+    CGSize attributionBackgroundSize = CGSizeMake(10, 0);
+    for (MGLAttributionInfo *info in _attributionInfo) {
+        if (info.isFeedbackLink) {
+            continue;
+        }
+        CGSize attributionSize = [info titleWithStyle:attributionStyle].size;
+        attributionBackgroundSize.width += attributionSize.width + 10;
+        attributionBackgroundSize.height = MAX(attributionSize.height, attributionBackgroundSize.height);
+    }
+    
+    return attributionBackgroundSize;
 }
 
 - (void)cancel

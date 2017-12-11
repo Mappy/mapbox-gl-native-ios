@@ -1,5 +1,13 @@
 # Changelog for Mapbox macOS SDK
 
+## v0.6.1
+
+### Annotations
+* Fixed an issue that could cause triggering `-[MGLMapViewDelegate mapView:didSelectAnnotation:]` when taping next to a `MGLAnnotationImage` annotation. ([#10538](https://github.com/mapbox/mapbox-gl-native/pull/10538))
+
+### Packaging
+* Renamed this SDK from Mapbox macOS SDK to Mapbox Maps SDK for macOS. ([#10610](https://github.com/mapbox/mapbox-gl-native/pull/10610))
+
 ## v0.6.0
 
 ### Networking and storage
@@ -33,6 +41,7 @@
 ### Other changes
 
 * Added a Bulgarian localization. ([#10309](https://github.com/mapbox/mapbox-gl-native/pull/10309))
+* Fixed distortion in the logo view on macOS 10.13 High Sierra. ([#10606](https://github.com/mapbox/mapbox-gl-native/pull/10606))
 * Fixed an issue that could cause line label rendering glitches when the line geometry is projected to a point behind the plane of the camera. ([#9865](https://github.com/mapbox/mapbox-gl-native/pull/9865))
 * Fixed an issue that could cause a crash when using `-[MGLMapView flyToCamera:completionHandler:]` and related methods with zoom levels at or near the maximum value. ([#9381](https://github.com/mapbox/mapbox-gl-native/pull/9381))
 

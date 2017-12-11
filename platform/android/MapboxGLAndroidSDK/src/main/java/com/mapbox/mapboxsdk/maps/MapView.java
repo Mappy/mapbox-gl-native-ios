@@ -368,6 +368,10 @@ public class MapView extends FrameLayout {
     if (mapboxMap != null) {
       mapboxMap.onStart();
     }
+
+    if (mapRenderer != null) {
+      mapRenderer.onStart();
+    }
   }
 
   /**
@@ -399,19 +403,28 @@ public class MapView extends FrameLayout {
       // map was destroyed before it was started
       mapboxMap.onStop();
     }
+
+    if (mapRenderer != null) {
+      mapRenderer.onStop();
+    }
+
     ConnectivityReceiver.instance(getContext()).deactivate();
     FileSource.getInstance(getContext()).deactivate();
   }
 
   /**
-   * You must call this method from the parent's Activity#onDestroy() or Fragment#onDestroy().
+   * You must call this method from the parent's Activity#onDestroy() or Fragment#onDestroyView().
    */
   @UiThread
   public void onDestroy() {
     destroyed = true;
     mapCallback.clearOnMapReadyCallbacks();
-    nativeMapView.destroy();
-    nativeMapView = null;
+
+    if (nativeMapView != null) {
+      // null when destroying an activity programmatically mapbox-navigation-android/issues/503
+      nativeMapView.destroy();
+      nativeMapView = null;
+    }
 
     if (mapRenderer != null) {
       mapRenderer.onDestroy();

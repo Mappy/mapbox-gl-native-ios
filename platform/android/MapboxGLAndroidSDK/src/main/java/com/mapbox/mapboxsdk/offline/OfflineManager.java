@@ -156,8 +156,8 @@ public class OfflineManager {
    *
    * @param callback the callback to be invoked
    */
-  public void listOfflineRegions(@NonNull
-                                 final ListOfflineRegionsCallback callback) {
+  public void listOfflineRegions(@NonNull final ListOfflineRegionsCallback callback) {
+    fileSource.activate();
     listOfflineRegions(fileSource, new ListOfflineRegionsCallback() {
 
       @Override
@@ -165,6 +165,7 @@ public class OfflineManager {
         getHandler().post(new Runnable() {
           @Override
           public void run() {
+            fileSource.deactivate();
             callback.onList(offlineRegions);
           }
         });
@@ -175,6 +176,7 @@ public class OfflineManager {
         getHandler().post(new Runnable() {
           @Override
           public void run() {
+            fileSource.deactivate();
             callback.onError(error);
           }
         });
@@ -252,6 +254,7 @@ public class OfflineManager {
   /**
    * Changing or bypassing this limit without permission from Mapbox is prohibited
    * by the Mapbox Terms of Service.
+   *
    * @param limit the new tile count limit.
    */
   public native void setOfflineMapboxTileCountLimit(long limit);

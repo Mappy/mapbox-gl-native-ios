@@ -1975,7 +1975,7 @@ public:
 
 - (void)showAttribution:(__unused id)sender
 {
-    NSString *title = NSLocalizedStringWithDefaultValue(@"SDK_NAME", nil, nil, @"Mapbox iOS SDK", @"Action sheet title");
+    NSString *title = NSLocalizedStringWithDefaultValue(@"SDK_NAME", nil, nil, @"Mapbox Maps SDK for iOS", @"Action sheet title");
     UIAlertController *attributionController = [UIAlertController alertControllerWithTitle:title
                                                                                    message:nil
                                                                             preferredStyle:UIAlertControllerStyleActionSheet];
@@ -2932,6 +2932,7 @@ public:
 
 - (void)setMinimumZoomLevel:(double)minimumZoomLevel
 {
+    _mbglMap->setMinZoom(minimumZoomLevel);
 }
 
 - (double)minimumZoomLevel
@@ -4056,7 +4057,7 @@ public:
             }
             else
             {
-                if ([annotation isKindOfClass:[MGLShape class]])
+                if ([annotation isKindOfClass:[MGLMultiPoint class]])
                 {
                     return false;
                 }
