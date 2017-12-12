@@ -50,12 +50,22 @@ public final class Mapbox {
    */
   @UiThread
   public static synchronized Mapbox getInstance(@NonNull Context context, @NonNull String accessToken) {
+    return getInstance(context, accessToken, true);
+  }
+  /*
+    Mappy modif
+   */
+  @UiThread
+  public static synchronized Mapbox getInstance(@NonNull Context context, @NonNull String accessToken, boolean initWithLocalLocation) {
     if (INSTANCE == null) {
       Context appContext = context.getApplicationContext();
-      LocationEngineProvider locationEngineProvider = new LocationEngineProvider(context);
-      LocationEngine locationEngine = locationEngineProvider.obtainBestLocationEngineAvailable();
+      LocationEngine locationEngine = null;
+      if(initWithLocalLocation) {
+        LocationEngineProvider locationEngineProvider = new LocationEngineProvider(context);
+        locationEngine = locationEngineProvider.obtainBestLocationEngineAvailable();
+        locationEngine.setPriority(LocationEnginePriority.NO_POWER);
+      }
       INSTANCE = new Mapbox(appContext, accessToken, locationEngine);
-      locationEngine.setPriority(LocationEnginePriority.NO_POWER);
 
       if(ENABLE_METRICS_ON_MAPPY) {
         try {
@@ -168,8 +178,10 @@ public final class Mapbox {
     return INSTANCE.locationEngine;
   }
 
-  public static void setLocationSource(LocationSource  locSource) {
-    INSTANCE.locationEngine = locSource;
+  public static void setLocationSource(LocationEngine  locSource) {
+    if(INSTANCE!=null){
+      INSTANCE.locationEngine = locSource;
+    }
   }
 
 }
