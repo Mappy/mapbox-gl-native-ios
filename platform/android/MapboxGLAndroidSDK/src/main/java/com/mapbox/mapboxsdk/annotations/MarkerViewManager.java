@@ -7,6 +7,7 @@ import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.util.LongSparseArray;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -101,6 +102,7 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
 
   @Override
   public void onMapChanged(@MapView.MapChange int change) {
+    Log.d("MarkerViewManager", "TTT onMapChanged isWaitingForRenderInvoke="+isWaitingForRenderInvoke);
     if (isWaitingForRenderInvoke && change == MapView.DID_FINISH_RENDERING_FRAME_FULLY_RENDERED) {
       isWaitingForRenderInvoke = false;
       invalidateViewMarkersInVisibleRegion();
@@ -122,6 +124,8 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
    * @param waitingForRenderInvoke true if waiting for next render event
    */
   public void setWaitingForRenderInvoke(boolean waitingForRenderInvoke) {
+    Log.d("MarkerViewManager", "TTT setWaitingForRenderInvoke waitingForRenderInvoke="+waitingForRenderInvoke+"/"+isWaitingForRenderInvoke);
+
     isWaitingForRenderInvoke = waitingForRenderInvoke;
   }
 
@@ -530,12 +534,13 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
     RectF mapViewRect = new RectF(0, 0, markerViewContainer.getWidth(), markerViewContainer.getHeight());
     List<MarkerView> markers = mapboxMap.getMarkerViewsInRect(mapViewRect);
     View convertView;
-
+    Log.d("MarkerViewManager", "TTT marker view size = "+markers.size()+" mapViewRect="+mapViewRect);
     // remove old markers
     Iterator<MarkerView> iterator = markerViewMap.keySet().iterator();
     while (iterator.hasNext()) {
       MarkerView marker = iterator.next();
       if (!markers.contains(marker)) {
+        Log.d("MarkerViewManager", "TTT remove old marker veiw");
         // remove marker
         convertView = markerViewMap.get(marker);
         for (MapboxMap.MarkerViewAdapter adapter : markerViewAdapters) {
