@@ -5,6 +5,7 @@ import android.graphics.RectF;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.util.LongSparseArray;
+import android.util.Log;
 
 import com.mapbox.mapboxsdk.annotations.Annotation;
 import com.mapbox.mapboxsdk.annotations.BaseMarkerOptions;
@@ -132,8 +133,12 @@ class MarkerContainer implements Markers {
     if (onMarkerViewAddedListener != null) {
       markerViewManager.addOnMarkerViewAddedListener(marker, onMarkerViewAddedListener);
     }
-    markerViewManager.setEnabled(true);
-    markerViewManager.setWaitingForRenderInvoke(true);
+
+    //MAPPY Modif
+    markerViewManager.setForUpdate();
+    //markerViewManager.setEnabled(true);
+    //markerViewManager.setWaitingForRenderInvoke(true);
+
     return marker;
   }
 
@@ -169,6 +174,8 @@ class MarkerContainer implements Markers {
       rectangle.bottom / pixelRatio);
 
     long[] ids = nativeMapView.queryPointAnnotations(rect);
+
+
 
     List<Long> idsList = new ArrayList<>(ids.length);
     for (long id : ids) {

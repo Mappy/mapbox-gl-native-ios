@@ -52,7 +52,6 @@ public class MarkerViewLayout extends FrameLayout {
 
     @Override
     protected int getChildDrawingOrder(int childCount, int drawOrder) {
-        Log.d("MarkerViewLayout","TTT markerViewManager==null? "+(markerViewManager==null)+" childCount="+childCount+" drawOrder="+drawOrder);
         if(markerViewManager==null){
             return 0;
         }
