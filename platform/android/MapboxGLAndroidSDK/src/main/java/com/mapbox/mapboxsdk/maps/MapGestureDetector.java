@@ -339,16 +339,6 @@ final class MapGestureDetector {
     return false;
   }
 
-<<<<<<< HEAD
-  public void onMarkerViewTouch(MotionEvent motionEvent) {
-    if(onMapClickListener!=null){
-        onMapClickListener.isNotSimpleTouch(true);
-    }
-  }
-
-
-=======
->>>>>>> mapbox_release_5.3
   /**
    * Responsible for handling one finger gestures.
    */
