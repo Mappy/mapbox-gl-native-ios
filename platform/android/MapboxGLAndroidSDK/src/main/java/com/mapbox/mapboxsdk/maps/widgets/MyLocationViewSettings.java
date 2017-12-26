@@ -147,6 +147,7 @@ public class MyLocationViewSettings {
         myLocationView.getContext(),
         savedInstanceState.getByteArray(MapboxConstants.STATE_LOCATION_VIEW_BACKGROUND_DRAWABLE)
       ),
+      null,
       savedInstanceState.getIntArray(MapboxConstants.STATE_LOCATION_VIEW_BACKGROUND_OFFSET)
     );
     setBackgroundTintColor(savedInstanceState.getInt(MapboxConstants.STATE_LOCATION_VIEW_BACKGROUND_TINT_COLOR));
