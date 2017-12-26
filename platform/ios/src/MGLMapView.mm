@@ -887,8 +887,10 @@ public:
         // compass view
         [self removeConstraints:self.compassViewConstraints];
         [self.compassViewConstraints removeAllObjects];
-        [self.compassViewConstraints addObject:[self.compassView.topAnchor constraintEqualToAnchor:safeAreaLayoutGuide.topAnchor
-                                                                                          constant:5.0 + self.contentInset.top]];
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpartial-availability"
+            [self.compassViewConstraints addObject:[self.compassView.topAnchor constraintEqualToSystemSpacingBelowAnchor:safeAreaLayoutGuide.topAnchor multiplier:1]];
+#pragma clang diagnostic pop
         [self.compassViewConstraints addObject:[safeAreaLayoutGuide.rightAnchor constraintEqualToAnchor:self.compassView.rightAnchor
                                                                                           constant:8.0 + self.contentInset.right]];
         [self addConstraints:self.compassViewConstraints];
@@ -896,8 +898,10 @@ public:
         // scale bar view
         [self removeConstraints:self.scaleBarConstraints];
         [self.scaleBarConstraints removeAllObjects];
-        [self.scaleBarConstraints addObject:[self.scaleBar.topAnchor constraintEqualToAnchor:safeAreaLayoutGuide.topAnchor
-                                                                                    constant:5.0 + self.contentInset.top]];
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpartial-availability"
+        [self.scaleBarConstraints addObject:[self.scaleBar.topAnchor constraintEqualToSystemSpacingBelowAnchor:safeAreaLayoutGuide.topAnchor multiplier:1]];
+#pragma clang diagnostic pop
         [self.scaleBarConstraints addObject:[self.scaleBar.leftAnchor constraintEqualToAnchor:safeAreaLayoutGuide.leftAnchor
                                                                                      constant:8.0 + self.contentInset.left]];
         [self addConstraints:self.scaleBarConstraints];
@@ -1051,7 +1055,7 @@ public:
     }
 
     // Compass, logo and attribution button constraints needs to be updated.
-    [self setNeedsLayout];
+    [self setNeedsUpdateConstraints];
 }
 
 /// Returns the frame of inset content within the map view.

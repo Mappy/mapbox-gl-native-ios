@@ -3,7 +3,6 @@ package com.mapbox.mapboxsdk.maps;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Parcel;
@@ -20,6 +19,7 @@ import android.view.Gravity;
 import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
+import com.mapbox.mapboxsdk.utils.BitmapUtils;
 import com.mapbox.mapboxsdk.utils.ColorUtils;
 
 import java.util.Arrays;
@@ -83,6 +83,7 @@ public class MapboxMapOptions implements Parcelable {
   private float myLocationAccuracyThreshold;
   private boolean prefetchesTiles = true;
   private boolean zMediaOverlay = false;
+  private String localIdeographFontFamily;
 
   private String apiBaseUrl;
 
@@ -158,19 +159,7 @@ public class MapboxMapOptions implements Parcelable {
     textureMode = in.readByte() != 0;
     prefetchesTiles = in.readByte() != 0;
     zMediaOverlay = in.readByte() != 0;
-  }
-
-  static Bitmap getBitmapFromDrawable(Drawable drawable) {
-    if (drawable instanceof BitmapDrawable) {
-      return ((BitmapDrawable) drawable).getBitmap();
-    } else {
-      Bitmap bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(),
-        Bitmap.Config.ARGB_8888);
-      Canvas canvas = new Canvas(bitmap);
-      drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-      drawable.draw(canvas);
-      return bitmap;
-    }
+    localIdeographFontFamily = in.readString();
   }
 
   /**
@@ -305,6 +294,8 @@ public class MapboxMapOptions implements Parcelable {
         typedArray.getBoolean(R.styleable.mapbox_MapView_mapbox_enableTilePrefetch, true));
       mapboxMapOptions.renderSurfaceOnTop(
         typedArray.getBoolean(R.styleable.mapbox_MapView_mapbox_enableZMediaOverlay, false));
+      mapboxMapOptions.localIdeographFontFamily(
+        typedArray.getString(R.styleable.mapbox_MapView_mapbox_localIdeographFontFamily));
     } finally {
       typedArray.recycle();
     }
@@ -750,6 +741,21 @@ public class MapboxMapOptions implements Parcelable {
   }
 
   /**
+   * Set the font family for generating glyphs locally for ideographs in the ‘CJK Unified Ideographs’
+   * and ‘Hangul Syllables’ ranges.
+   *
+   * The font family argument is passed to {@link android.graphics.Typeface#create(String, int)}.
+   * Default system fonts are defined in '/system/etc/fonts.xml'
+   *
+   * @param fontFamily font family for local ideograph generation.
+   * @return This
+   */
+  public MapboxMapOptions localIdeographFontFamily(String fontFamily) {
+    this.localIdeographFontFamily = fontFamily;
+    return this;
+  }
+
+  /**
    * Check whether tile pre-fetching is enabled.
    *
    * @return true if enabled
@@ -1104,6 +1110,16 @@ public class MapboxMapOptions implements Parcelable {
     return textureMode;
   }
 
+  /**
+   * Returns the font-family for locally overriding generation of glyphs in the
+   * ‘CJK Unified Ideographs’ and ‘Hangul Syllables’ ranges.
+   *
+   * @return Local ideograph font family name.
+   */
+  public String getLocalIdeographFontFamily() {
+    return localIdeographFontFamily;
+  }
+
   public static final Parcelable.Creator<MapboxMapOptions> CREATOR = new Parcelable.Creator<MapboxMapOptions>() {
     public MapboxMapOptions createFromParcel(Parcel in) {
       return new MapboxMapOptions(in);
@@ -1129,7 +1145,7 @@ public class MapboxMapOptions implements Parcelable {
     dest.writeIntArray(compassMargins);
     dest.writeByte((byte) (fadeCompassFacingNorth ? 1 : 0));
     dest.writeParcelable(compassImage != null
-      ? getBitmapFromDrawable(compassImage) : null, flags);
+      ? BitmapUtils.getBitmapFromDrawable(compassImage) : null, flags);
 
     dest.writeByte((byte) (logoEnabled ? 1 : 0));
     dest.writeInt(logoGravity);
@@ -1153,11 +1169,11 @@ public class MapboxMapOptions implements Parcelable {
     dest.writeByte((byte) (myLocationEnabled ? 1 : 0));
 
     dest.writeParcelable(myLocationForegroundDrawable != null
-      ? getBitmapFromDrawable(myLocationForegroundDrawable) : null, flags);
+      ? BitmapUtils.getBitmapFromDrawable(myLocationForegroundDrawable) : null, flags);
     dest.writeParcelable(myLocationForegroundBearingDrawable != null
-      ? getBitmapFromDrawable(myLocationForegroundBearingDrawable) : null, flags);
+      ? BitmapUtils.getBitmapFromDrawable(myLocationForegroundBearingDrawable) : null, flags);
     dest.writeParcelable(myLocationBackgroundDrawable != null
-      ? getBitmapFromDrawable(myLocationBackgroundDrawable) : null, flags);
+      ? BitmapUtils.getBitmapFromDrawable(myLocationBackgroundDrawable) : null, flags);
     dest.writeInt(myLocationForegroundTintColor);
     dest.writeInt(myLocationBackgroundTintColor);
     dest.writeIntArray(myLocationBackgroundPadding);
@@ -1170,6 +1186,7 @@ public class MapboxMapOptions implements Parcelable {
     dest.writeByte((byte) (textureMode ? 1 : 0));
     dest.writeByte((byte) (prefetchesTiles ? 1 : 0));
     dest.writeByte((byte) (zMediaOverlay ? 1 : 0));
+    dest.writeString(localIdeographFontFamily);
   }
 
   @Override
@@ -1299,6 +1316,9 @@ public class MapboxMapOptions implements Parcelable {
     if (zMediaOverlay != options.zMediaOverlay) {
       return false;
     }
+    if (localIdeographFontFamily != options.localIdeographFontFamily) {
+      return false;
+    }
 
     return false;
   }
@@ -1348,6 +1368,7 @@ public class MapboxMapOptions implements Parcelable {
     result = 31 * result + (style != null ? style.hashCode() : 0);
     result = 31 * result + (prefetchesTiles ? 1 : 0);
     result = 31 * result + (zMediaOverlay ? 1 : 0);
+    result = 31 * result + (localIdeographFontFamily != null ? localIdeographFontFamily.hashCode() : 0);
     return result;
   }
 }

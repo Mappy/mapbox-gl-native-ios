@@ -211,6 +211,7 @@ public class OfflineManager {
     }
 
     ConnectivityReceiver.instance(context).activate();
+    FileSource.getInstance(context).activate();
     createOfflineRegion(fileSource, definition, metadata, new CreateOfflineRegionCallback() {
 
       @Override
@@ -219,6 +220,7 @@ public class OfflineManager {
           @Override
           public void run() {
             ConnectivityReceiver.instance(context).deactivate();
+            FileSource.getInstance(context).deactivate();
             callback.onCreate(offlineRegion);
           }
         });
@@ -230,6 +232,7 @@ public class OfflineManager {
           @Override
           public void run() {
             ConnectivityReceiver.instance(context).deactivate();
+            FileSource.getInstance(context).deactivate();
             callback.onError(error);
           }
         });

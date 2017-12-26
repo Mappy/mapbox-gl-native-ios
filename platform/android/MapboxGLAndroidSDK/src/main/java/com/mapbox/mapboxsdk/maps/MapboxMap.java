@@ -137,6 +137,7 @@ public final class MapboxMap {
     outState.putString(MapboxConstants.STATE_STYLE_URL, nativeMapView.getStyleUrl());
     trackingSettings.onSaveInstanceState(outState);
     uiSettings.onSaveInstanceState(outState);
+    myLocationViewSettings.onSaveInstanceState(outState);
   }
 
   /**
@@ -147,6 +148,7 @@ public final class MapboxMap {
   void onRestoreInstanceState(Bundle savedInstanceState) {
     final CameraPosition cameraPosition = savedInstanceState.getParcelable(MapboxConstants.STATE_CAMERA_POSITION);
 
+    myLocationViewSettings.onRestoreInstanceState(savedInstanceState);
     uiSettings.onRestoreInstanceState(savedInstanceState);
     trackingSettings.onRestoreInstanceState(savedInstanceState);
 
@@ -711,19 +713,21 @@ public final class MapboxMap {
    * @param callback the callback to be invoked when an animation finishes or is canceled
    */
   public final void moveCamera(final CameraUpdate update, final MapboxMap.CancelableCallback callback) {
-    new Handler().post(new Runnable() {
-      @Override
-      public void run() {
-        transform.moveCamera(MapboxMap.this, update, callback);
-        // MapChange.REGION_DID_CHANGE_ANIMATED is not called for `jumpTo`
-        // invalidate camera position to provide OnCameraChange event.
-        invalidateCameraPosition();
+    transform.moveCamera(MapboxMap.this, update, callback);
+    // MapChange.REGION_DID_CHANGE_ANIMATED is not called for `jumpTo`
+    // invalidate camera position to provide OnCameraChange event.
+    invalidateCameraPosition();
 
-        if (callback != null) {
-          callback.onFinish();
+    if (callback != null) {
+      new Handler().post(new Runnable() {
+        @Override
+        public void run() {
+          if (callback != null) {
+            callback.onFinish();
+          }
         }
-      }
-    });
+      });
+    }
   }
 
   /**
@@ -847,12 +851,7 @@ public final class MapboxMap {
     if (durationMs <= 0) {
       throw new IllegalArgumentException("Null duration passed into easeCamera");
     }
-    new Handler().post(new Runnable() {
-      @Override
-      public void run() {
-        transform.easeCamera(MapboxMap.this, update, durationMs, easingInterpolator, callback, isDismissable);
-      }
-    });
+    transform.easeCamera(MapboxMap.this, update, durationMs, easingInterpolator, callback, isDismissable);
   }
 
   /**
@@ -922,12 +921,8 @@ public final class MapboxMap {
     if (durationMs <= 0) {
       throw new IllegalArgumentException("Null duration passed into animageCamera");
     }
-    new Handler().post(new Runnable() {
-      @Override
-      public void run() {
-        transform.animateCamera(MapboxMap.this, update, durationMs, callback);
-      }
-    });
+
+    transform.animateCamera(MapboxMap.this, update, durationMs, callback);
   }
 
   /**
@@ -1921,9 +1916,34 @@ public final class MapboxMap {
    *
    * @param listener The callback that's invoked when the map is scrolled.
    *                 To unset the callback, use null.
+   *
+   * @deprecated Use {@link #addOnScrollListener(OnScrollListener)} instead.
    */
+  @Deprecated
   public void setOnScrollListener(@Nullable OnScrollListener listener) {
-    onRegisterTouchListener.onRegisterScrollListener(listener);
+    onRegisterTouchListener.onSetScrollListener(listener);
+  }
+
+  /**
+   * Adds a callback that's invoked when the map is scrolled.
+   *
+   * @param listener The callback that's invoked when the map is scrolled.
+   *                 To unset the callback, use null.
+   *
+   */
+  public void addOnScrollListener(@Nullable OnScrollListener listener) {
+    onRegisterTouchListener.onAddScrollListener(listener);
+  }
+
+  /**
+   * Removes a callback that's invoked when the map is scrolled.
+   *
+   * @param listener The callback that's invoked when the map is scrolled.
+   *                 To unset the callback, use null.
+   *
+   */
+  public void removeOnScrollListener(@Nullable OnScrollListener listener) {
+    onRegisterTouchListener.onRemoveScrollListener(listener);
   }
 
   /**
@@ -1931,9 +1951,32 @@ public final class MapboxMap {
    *
    * @param listener The callback that's invoked when the map is flinged.
    *                 To unset the callback, use null.
+   *
+   * @deprecated Use {@link #addOnFlingListener(OnFlingListener)} instead.
    */
+  @Deprecated
   public void setOnFlingListener(@Nullable OnFlingListener listener) {
-    onRegisterTouchListener.onRegisterFlingListener(listener);
+    onRegisterTouchListener.onSetFlingListener(listener);
+  }
+
+  /**
+   * Adds a callback that's invoked when the map is flinged.
+   *
+   * @param listener The callback that's invoked when the map is flinged.
+   *                 To unset the callback, use null.
+   */
+  public void addOnFlingListener(@Nullable OnFlingListener listener) {
+    onRegisterTouchListener.onAddFlingListener(listener);
+  }
+
+  /**
+   * Removes a callback that's invoked when the map is flinged.
+   *
+   * @param listener The callback that's invoked when the map is flinged.
+   *                 To unset the callback, use null.
+   */
+  public void removeOnFlingListener(@Nullable OnFlingListener listener) {
+    onRegisterTouchListener.onRemoveFlingListener(listener);
   }
 
   /**
@@ -1941,9 +1984,32 @@ public final class MapboxMap {
    *
    * @param listener The callback that's invoked when the user clicks on the map view.
    *                 To unset the callback, use null.
+   *
+   * @deprecated Use {@link #addOnMapClickListener(OnMapClickListener)} instead.
    */
+  @Deprecated
   public void setOnMapClickListener(@Nullable OnMapClickListener listener) {
-    onRegisterTouchListener.onRegisterMapClickListener(listener);
+    onRegisterTouchListener.onSetMapClickListener(listener);
+  }
+
+  /**
+   * Adds a callback that's invoked when the user clicks on the map view.
+   *
+   * @param listener The callback that's invoked when the user clicks on the map view.
+   *                 To unset the callback, use null.
+   */
+  public void addOnMapClickListener(@Nullable OnMapClickListener listener) {
+    onRegisterTouchListener.onAddMapClickListener(listener);
+  }
+
+  /**
+   * Removes a callback that's invoked when the user clicks on the map view.
+   *
+   * @param listener The callback that's invoked when the user clicks on the map view.
+   *                 To unset the callback, use null.
+   */
+  public void removeOnMapClickListener(@Nullable OnMapClickListener listener) {
+    onRegisterTouchListener.onRemoveMapClickListener(listener);
   }
 
   /**
@@ -1951,9 +2017,32 @@ public final class MapboxMap {
    *
    * @param listener The callback that's invoked when the user long clicks on the map view.
    *                 To unset the callback, use null.
+   *
+   * @deprecated Use {@link #addOnMapLongClickListener(OnMapLongClickListener)} instead.
    */
+  @Deprecated
   public void setOnMapLongClickListener(@Nullable OnMapLongClickListener listener) {
-    onRegisterTouchListener.onRegisterMapLongClickListener(listener);
+    onRegisterTouchListener.onSetMapLongClickListener(listener);
+  }
+
+  /**
+   * Adds a callback that's invoked when the user long clicks on the map view.
+   *
+   * @param listener The callback that's invoked when the user long clicks on the map view.
+   *                 To unset the callback, use null.
+   */
+  public void addOnMapLongClickListener(@Nullable OnMapLongClickListener listener) {
+    onRegisterTouchListener.onAddMapLongClickListener(listener);
+  }
+
+  /**
+   * Removes a callback that's invoked when the user long clicks on the map view.
+   *
+   * @param listener The callback that's invoked when the user long clicks on the map view.
+   *                 To unset the callback, use null.
+   */
+  public void removeOnMapLongClickListener(@Nullable OnMapLongClickListener listener) {
+    onRegisterTouchListener.onRemoveMapLongClickListener(listener);
   }
 
   /**
@@ -2331,27 +2420,34 @@ public final class MapboxMap {
     void onFpsChanged(double fps);
   }
 
-  //Mappy modifs
-  public void onMarkerViewTouch(MotionEvent motionEvent) {
-    if(onRegisterTouchListener != null){
-      onRegisterTouchListener.onMarkerViewTouch(motionEvent);
-    }
-  }
-
   /**
    * Interface definition for a callback to be invoked when a user registers an listener that is
    * related to touch and click events.
    */
   interface OnRegisterTouchListener {
-    void onRegisterMapClickListener(OnMapClickListener listener);
+    void onSetMapClickListener(OnMapClickListener listener);
 
-    void onRegisterMapLongClickListener(OnMapLongClickListener listener);
+    void onAddMapClickListener(OnMapClickListener listener);
 
-    void onRegisterScrollListener(OnScrollListener listener);
+    void onRemoveMapClickListener(OnMapClickListener listener);
 
-    void onRegisterFlingListener(OnFlingListener listener);
+    void onSetMapLongClickListener(OnMapLongClickListener listener);
 
-    void onMarkerViewTouch(MotionEvent motionEvent);
+    void onAddMapLongClickListener(OnMapLongClickListener listener);
+
+    void onRemoveMapLongClickListener(OnMapLongClickListener listener);
+
+    void onSetScrollListener(OnScrollListener listener);
+
+    void onAddScrollListener(OnScrollListener listener);
+
+    void onRemoveScrollListener(OnScrollListener listener);
+
+    void onSetFlingListener(OnFlingListener listener);
+
+    void onAddFlingListener(OnFlingListener listener);
+
+    void onRemoveFlingListener(OnFlingListener listener);
   }
 
   /**
