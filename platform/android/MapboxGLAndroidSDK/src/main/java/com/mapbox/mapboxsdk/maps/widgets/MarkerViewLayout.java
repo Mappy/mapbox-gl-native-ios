@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.logging.Logger;
 
+@Deprecated
 public class MarkerViewLayout extends FrameLayout {
 
     private MarkerViewManager markerViewManager;

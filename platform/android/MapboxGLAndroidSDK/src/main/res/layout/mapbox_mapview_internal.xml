@@ -15,19 +15,19 @@
         android:layout_height="match_parent"
         android:contentDescription="@string/mapbox_myLocationViewContentDescription"/>
 
-    <!---FIXME or REMOVE ME @see ANMA-4395 FrameLayout
-        android:id="@+id/markerViewContainer"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@android:color/transparent"
-        android:contentDescription="@null"/-->
-
-    <com.mapbox.mapboxsdk.maps.widgets.MarkerViewLayout
+    <FrameLayout
         android:id="@+id/markerViewContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@android:color/transparent"
         android:contentDescription="@null"/>
+
+    <!--com.mapbox.mapboxsdk.maps.widgets.MarkerViewLayout
+        android:id="@+id/markerViewContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/transparent"
+        android:contentDescription="@null"/-->
 
     <com.mapbox.mapboxsdk.maps.widgets.CompassView
         android:id="@+id/compassView"
