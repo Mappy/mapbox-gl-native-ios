@@ -1,6 +1,7 @@
 package com.mapbox.mapboxsdk.maps.renderer.egl;
 
 import android.opengl.GLSurfaceView;
+import android.os.Build;
 import android.support.annotation.NonNull;
 
 import java.util.ArrayList;
@@ -288,6 +289,20 @@ public class EGLConfigChooser implements GLSurfaceView.EGLConfigChooser {
    * Detect if we are in emulator.
    */
   private boolean inEmulator() {
-    return System.getProperty("ro.kernel.qemu") != null;
+    return System.getProperty("ro.kernel.qemu") != null || isGenymotionEmulator()|| buildModelContainsEmulatorHints();
+  }
+
+  private boolean isGenymotionEmulator() {
+    String buildManufacturer = Build.MANUFACTURER;
+    return buildManufacturer != null &&
+            (buildManufacturer.contains("Genymotion") || buildManufacturer.equals("unknown"));
+  }
+
+  private boolean buildModelContainsEmulatorHints() {
+    String buildModel = Build.MODEL;
+    return buildModel.startsWith("sdk")
+            || "google_sdk".equals(buildModel)
+            || buildModel.contains("Emulator")
+            || buildModel.contains("Android SDK");
   }
 }
