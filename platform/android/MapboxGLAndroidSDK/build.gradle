@@ -48,8 +48,6 @@ android {
     compileSdkVersion project.ext.compileSdkVersion
     buildToolsVersion project.ext.buildToolsVersion
 
-    publishNonDefault true
-
     defaultConfig {
         minSdkVersion project.ext.minSdkVersion
         targetSdkVersion project.ext.targetSdkVersion
@@ -97,6 +95,7 @@ android {
                     arguments "-DMASON_PLATFORM=android"
                     arguments "-DNodeJS_EXECUTABLE=" + project.ext.node
                     arguments "-Dnpm_EXECUTABLE=" + project.ext.npm
+                    arguments "-DCMAKE_BUILD_TYPE=Release"
 
                     // Enable ccache if the user has installed it.
                     if (project.ext.ccache?.trim()) {
