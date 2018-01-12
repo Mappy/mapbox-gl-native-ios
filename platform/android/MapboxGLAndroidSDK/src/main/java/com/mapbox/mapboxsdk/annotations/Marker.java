@@ -60,6 +60,11 @@ public class Marker extends Annotation {
     this(baseMarkerOptions.position, baseMarkerOptions.icon, baseMarkerOptions.title, baseMarkerOptions.snippet);
   }
 
+  //Mappy modif
+  public Marker(BaseMarkerOptions baseMarkerOptions, int zOrder) {
+    this(baseMarkerOptions.position, baseMarkerOptions.icon, baseMarkerOptions.title, baseMarkerOptions.snippet, zOrder);
+  }
+
   Marker(BaseMarkerViewOptions baseMarkerViewOptions) {
     this(baseMarkerViewOptions.position, baseMarkerViewOptions.icon,
       baseMarkerViewOptions.title, baseMarkerViewOptions.snippet, baseMarkerViewOptions.zOrder);

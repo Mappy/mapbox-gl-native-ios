@@ -19,14 +19,18 @@ print "minSdkVersion "+project.ext.minSdkVersion.toInteger()+"\n"
 print "targetSdkVersion "+project.ext.targetSdkVersion.toInteger()+"\n"
 
 dependencies {
+    //Mappy modifs
     compile project.ext.dep.supportAnnotations
-    compile project.ext.dep.supportV4
+    compile project.ext.dep.supportFragmentV4
     compile project.ext.dep.supportDesign
     compile project.ext.dep.timber
     compile project.ext.dep.okhttp3
     compile(project.ext.dep.lost) {
-        exclude group: 'com.google.guava'
+        exclude group: 'com.android.support'
     }
+    testCompile project.ext.dep.junit
+    testCompile project.ext.dep.mockito
+    testCompile project.ext.dep.robolectric
 
     // Mapbox Android Services (GeoJSON support)
     compile(project.ext.dep.mapboxJavaGeoJSON) {
@@ -36,14 +40,13 @@ dependencies {
     // Mapbox Android Services (Telemetry support)
     compile(project.ext.dep.mapboxAndroidTelemetry) {
         transitive = true
+        exclude group: 'com.android.support'
     }
 }
 
 android {
     compileSdkVersion project.ext.compileSdkVersion
     buildToolsVersion project.ext.buildToolsVersion
-
-    publishNonDefault true
 
     defaultConfig {
         minSdkVersion project.ext.minSdkVersion
@@ -59,11 +62,14 @@ android {
     // to invoke the Java tests. When we explicitly specify an ABI of 'none', no native dependencies are
     // added. When another ABI is specified explicitly, we're just going to build that ABI. In all other
     // cases, all ABIs are built.
-    // When invoking from the command line, set `-Pmapbox.abis=...` to only build the desired architectures.
+    //
+    // When invoking from the command line or to override the device default, set `-Pmapbox.abis=...` to
+    // only build the desired architectures.
+    //
     // When building from Android Studio, gradle.properties sets `android.buildOnlyTargetAbi=true` so that
     // only the architecture for the device you're running on gets built.
     def abi = 'all'
-    if (!project.hasProperty('android.injected.invoked.from.ide')) {
+    if (!project.hasProperty('android.injected.invoked.from.ide') || project.hasProperty("mapbox.abis")) {
         // Errors when the user invokes Gradle from the command line and didn't set mapbox.abis
         abi = project.getProperty("mapbox.abis")
     }
@@ -89,6 +95,7 @@ android {
                     arguments "-DMASON_PLATFORM=android"
                     arguments "-DNodeJS_EXECUTABLE=" + project.ext.node
                     arguments "-Dnpm_EXECUTABLE=" + project.ext.npm
+                    arguments "-DCMAKE_BUILD_TYPE=Release"
 
                     // Enable ccache if the user has installed it.
                     if (project.ext.ccache?.trim()) {
@@ -136,8 +143,16 @@ android {
     }
 
     lintOptions {
+        disable 'MissingTranslation', 'TypographyQuotes'
+        baseline file("lint-baseline-local.xml")
         checkAllWarnings true
-        warningsAsErrors true
+        warningsAsErrors false
+    }
+
+    testOptions {
+        unitTests{
+            returnDefaultValues = true
+        }
     }
 
     buildTypes {
@@ -171,3 +186,5 @@ configurations {
 apply from: 'gradle-javadoc.gradle'
 apply from: 'gradle-publish.gradle'
 apply from: 'gradle-checkstyle.gradle'
+apply from: 'gradle-tests-staticblockremover.gradle'
+apply from: '../gradle-lint.gradle'

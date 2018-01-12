@@ -4,6 +4,7 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.os.Build;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 import android.widget.FrameLayout;
 
@@ -11,7 +12,9 @@ import com.mapbox.mapboxsdk.annotations.MarkerViewManager;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.logging.Logger;
 
+@Deprecated
 public class MarkerViewLayout extends FrameLayout {
 
     private MarkerViewManager markerViewManager;
@@ -50,6 +53,9 @@ public class MarkerViewLayout extends FrameLayout {
 
     @Override
     protected int getChildDrawingOrder(int childCount, int drawOrder) {
+        if(markerViewManager==null){
+            return 0;
+        }
         Collection<View> collectionSorted = markerViewManager.getSortedViews();
         if (collectionSorted == null || drawOrder > collectionSorted.size()) {
             return 0;

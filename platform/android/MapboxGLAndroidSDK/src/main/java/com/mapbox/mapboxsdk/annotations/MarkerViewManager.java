@@ -7,6 +7,7 @@ import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.util.LongSparseArray;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -36,19 +37,22 @@ import java.util.Map;
  * <p>
  * This class is responsible for managing a {@link MarkerView} item.
  * </p>
+ * @deprecated Use a {@link com.mapbox.mapboxsdk.style.layers.SymbolLayer} instead. An example of converting Android
+ * SDK views to be used as a symbol see https://github.com/mapbox/mapbox-gl-native/blob/68f32bc104422207c64da8d90e8411b138d87f04/platform/android/MapboxGLAndroidSDKTestApp/src/main/java/com/mapbox/mapboxsdk/testapp/activity/style/SymbolGeneratorActivity.java
  */
+@Deprecated
 public class MarkerViewManager implements MapView.OnMapChangedListener {
 
   private final ViewGroup markerViewContainer;
   private final ViewTreeObserver.OnPreDrawListener markerViewPreDrawObserver =
-    new ViewTreeObserver.OnPreDrawListener() {
-      @Override
-      public boolean onPreDraw() {
-        invalidateViewMarkersInVisibleRegion();
-        markerViewContainer.getViewTreeObserver().removeOnPreDrawListener(markerViewPreDrawObserver);
-        return false;
-      }
-    };
+          new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+              invalidateViewMarkersInVisibleRegion();
+              markerViewContainer.getViewTreeObserver().removeOnPreDrawListener(markerViewPreDrawObserver);
+              return false;
+            }
+          };
   private final Map<MarkerView, View> markerViewMap = new HashMap<>();
   private final LongSparseArray<OnMarkerViewAddedListener> markerViewAddedListenerMap = new LongSparseArray<>();
   private final List<MapboxMap.MarkerViewAdapter> markerViewAdapters = new ArrayList<>();
@@ -59,20 +63,13 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
 
   private boolean enabled;
   private long updateTime;
+  private long updateTimeForAddMarkerView;//Mappy modif
   private MapboxMap.OnMarkerViewClickListener onMarkerViewClickListener;
   private boolean isWaitingForRenderInvoke;
 
   //Mappy modif
   boolean markerViewSortedModified = true;
   private Collection<View> markerViewSortedCoolection;
-  private View.OnTouchListener mOnMarkerViewTouchListener = new View.OnTouchListener() {
-    @Override
-    public boolean onTouch(View view, MotionEvent motionEvent) {
-      mapboxMap.onMarkerViewTouch(motionEvent);
-      return false;
-    }
-  };
-
 
   /**
    * Creates an instance of MarkerViewManager.
@@ -83,7 +80,7 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
     this.markerViewContainer = container;
 
     //Mappy modifs
-    if(markerViewContainer instanceof MarkerViewLayout){
+    if (markerViewContainer instanceof MarkerViewLayout) {
       ((MarkerViewLayout) this.markerViewContainer).setMarkerViewManager(this);
     }
 
@@ -99,8 +96,11 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
   @Override
   public void onMapChanged(@MapView.MapChange int change) {
     if (isWaitingForRenderInvoke && change == MapView.DID_FINISH_RENDERING_FRAME_FULLY_RENDERED) {
-      isWaitingForRenderInvoke = false;
-      invalidateViewMarkersInVisibleRegion();
+      long currentTime = SystemClock.elapsedRealtime();
+      if (currentTime >= updateTimeForAddMarkerView){
+        isWaitingForRenderInvoke = false;
+        invalidateViewMarkersInVisibleRegion();
+      }
     }
   }
 
@@ -119,6 +119,7 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
    * @param waitingForRenderInvoke true if waiting for next render event
    */
   public void setWaitingForRenderInvoke(boolean waitingForRenderInvoke) {
+
     isWaitingForRenderInvoke = waitingForRenderInvoke;
   }
 
@@ -397,15 +398,15 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
     return markerViewMap.get(marker);
   }
 
-    //Mappy modifs
-    public Collection<View> getSortedViews() {
-      if (markerViewSortedCoolection == null || markerViewSortedModified) {
-        java.util.TreeMap<MarkerView, View> markerViewSortedTreeMap = new java.util.TreeMap(markerViewMap);
-        markerViewSortedCoolection = markerViewSortedTreeMap.values();
-        markerViewSortedModified = false;
-      }
-        return markerViewSortedCoolection;
+  //Mappy modifs
+  public Collection<View> getSortedViews() {
+    if (markerViewSortedCoolection == null || markerViewSortedModified) {
+      java.util.TreeMap<MarkerView, View> markerViewSortedTreeMap = new java.util.TreeMap(markerViewMap);
+      markerViewSortedCoolection = markerViewSortedTreeMap.values();
+      markerViewSortedModified = false;
     }
+    return markerViewSortedCoolection;
+  }
 
 
   /**
@@ -512,6 +513,13 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
     }
   }
 
+  public void setForUpdate() {
+
+    setEnabled(true);
+    setWaitingForRenderInvoke(true);
+    updateTimeForAddMarkerView = SystemClock.elapsedRealtime() + 150;
+  }
+
   public void notifyUpdatedZOrder(){
     markerViewSortedModified = true;
   }
@@ -527,7 +535,6 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
     RectF mapViewRect = new RectF(0, 0, markerViewContainer.getWidth(), markerViewContainer.getHeight());
     List<MarkerView> markers = mapboxMap.getMarkerViewsInRect(mapViewRect);
     View convertView;
-
     // remove old markers
     Iterator<MarkerView> iterator = markerViewMap.keySet().iterator();
     while (iterator.hasNext()) {
@@ -563,8 +570,6 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
             convertView = (View) adapter.getViewReusePool().acquire();
             final View adaptedView = adapter.getView(marker, convertView, markerViewContainer);
             if (adaptedView != null) {
-              //Mappy modif
-              adaptedView.setOnTouchListener(mOnMarkerViewTouchListener);
               adaptedView.setRotationX(marker.getTilt());
               adaptedView.setRotation(marker.getRotation());
               adaptedView.setAlpha(marker.getAlpha());
