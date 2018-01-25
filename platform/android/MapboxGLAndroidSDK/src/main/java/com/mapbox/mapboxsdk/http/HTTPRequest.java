@@ -183,7 +183,7 @@ class HTTPRequest implements Callback {
     String errorMessage = e.getMessage() != null ? e.getMessage() : "Error processing the request";
     int type = getFailureType(e);
 
-    if (logEnabled) {
+    if (logEnabled && call != null && call.request() != null) {
       String requestUrl = call.request().url().toString();
       logFailure(type, errorMessage, requestUrl);
     }
@@ -251,5 +251,9 @@ class HTTPRequest implements Callback {
 
   static void enablePrintRequestUrlOnFailure(boolean enabled) {
     logRequestUrl = enabled;
+  }
+
+  static void setOKHttpClient(OkHttpClient client) {
+    mClient = client;
   }
 }

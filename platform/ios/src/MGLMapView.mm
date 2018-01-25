@@ -755,7 +755,7 @@ public:
                                          toItem:viewController.topLayoutGuide
                                       attribute:NSLayoutAttributeBottom
                                      multiplier:1.0
-                                       constant:5.0]];
+                                       constant:8.0]];
     }
     [self.compassViewConstraints addObject:
      [NSLayoutConstraint constraintWithItem:self.compassView
@@ -764,7 +764,7 @@ public:
                                      toItem:self
                                   attribute:NSLayoutAttributeTop
                                  multiplier:1.0
-                                   constant:5.0 + self.contentInset.top]];
+                                   constant:8.0 + self.contentInset.top]];
     
     [self.compassViewConstraints addObject:
      [NSLayoutConstraint constraintWithItem:self
@@ -773,7 +773,7 @@ public:
                                      toItem:self.compassView
                                   attribute:NSLayoutAttributeTrailing
                                  multiplier:1.0
-                                   constant:5.0 + self.contentInset.right]];
+                                   constant:8.0 + self.contentInset.right]];
     
     [containerView addConstraints:self.compassViewConstraints];
     
@@ -790,7 +790,7 @@ public:
                                          toItem:viewController.topLayoutGuide
                                       attribute:NSLayoutAttributeBottom
                                      multiplier:1.0
-                                       constant:5.0]];
+                                       constant:8.0]];
     }
     [self.scaleBarConstraints addObject:
      [NSLayoutConstraint constraintWithItem:self.scaleBar
@@ -799,7 +799,7 @@ public:
                                      toItem:self
                                   attribute:NSLayoutAttributeTop
                                  multiplier:1.0
-                                   constant:5.0 + self.contentInset.top]];
+                                   constant:8.0 + self.contentInset.top]];
     [self.scaleBarConstraints addObject:
      [NSLayoutConstraint constraintWithItem:self.scaleBar
                                   attribute:NSLayoutAttributeLeft
@@ -833,7 +833,7 @@ public:
                                      toItem:self.logoView
                                   attribute:NSLayoutAttributeBaseline
                                  multiplier:1
-                                   constant:8 + self.contentInset.bottom]];
+                                   constant:8.0 + self.contentInset.bottom]];
     [self.logoViewConstraints addObject:
      [NSLayoutConstraint constraintWithItem:self.logoView
                                   attribute:NSLayoutAttributeLeading
@@ -857,7 +857,7 @@ public:
                                          toItem:self.attributionButton
                                       attribute:NSLayoutAttributeBaseline
                                      multiplier:1
-                                       constant:8 + self.contentInset.bottom]];
+                                       constant:8.0 + self.contentInset.bottom]];
     }
     [self.attributionButtonConstraints addObject:
      [NSLayoutConstraint constraintWithItem:self
@@ -866,7 +866,7 @@ public:
                                      toItem:self.attributionButton
                                   attribute:NSLayoutAttributeBaseline
                                  multiplier:1
-                                   constant:8 + self.contentInset.bottom]];
+                                   constant:8.0 + self.contentInset.bottom]];
     
     [self.attributionButtonConstraints addObject:
      [NSLayoutConstraint constraintWithItem:self
@@ -875,29 +875,20 @@ public:
                                      toItem:self.attributionButton
                                   attribute:NSLayoutAttributeTrailing
                                  multiplier:1
-                                   constant:8 + self.contentInset.right]];
+                                   constant:8.0 + self.contentInset.right]];
     [containerView addConstraints:self.attributionButtonConstraints];
 }
 
 - (void)updateConstraints
 {
-    
-// If compiling with the iOS 11+ SDK
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000
     // If safeAreaLayoutGuide API exists
-    if ( [self respondsToSelector:@selector(safeAreaLayoutGuide)] ) {
-        
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wpartial-availability"
+    if (@available(iOS 11.0, *)) {
         UILayoutGuide *safeAreaLayoutGuide = self.safeAreaLayoutGuide;
-#pragma clang diagnostic pop
+
         // compass view
         [self removeConstraints:self.compassViewConstraints];
         [self.compassViewConstraints removeAllObjects];
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wpartial-availability"
-            [self.compassViewConstraints addObject:[self.compassView.topAnchor constraintEqualToSystemSpacingBelowAnchor:safeAreaLayoutGuide.topAnchor multiplier:1]];
-#pragma clang diagnostic pop
+        [self.compassViewConstraints addObject:[self constraintForYAxisAnchor:self.compassView.topAnchor belowAnchor:safeAreaLayoutGuide.topAnchor]];
         [self.compassViewConstraints addObject:[safeAreaLayoutGuide.rightAnchor constraintEqualToAnchor:self.compassView.rightAnchor
                                                                                           constant:8.0 + self.contentInset.right]];
         [self addConstraints:self.compassViewConstraints];
@@ -905,10 +896,7 @@ public:
         // scale bar view
         [self removeConstraints:self.scaleBarConstraints];
         [self.scaleBarConstraints removeAllObjects];
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wpartial-availability"
-        [self.scaleBarConstraints addObject:[self.scaleBar.topAnchor constraintEqualToSystemSpacingBelowAnchor:safeAreaLayoutGuide.topAnchor multiplier:1]];
-#pragma clang diagnostic pop
+        [self.scaleBarConstraints addObject:[self constraintForYAxisAnchor:self.scaleBar.topAnchor belowAnchor:safeAreaLayoutGuide.topAnchor]];
         [self.scaleBarConstraints addObject:[self.scaleBar.leftAnchor constraintEqualToAnchor:safeAreaLayoutGuide.leftAnchor
                                                                                      constant:8.0 + self.contentInset.left]];
         [self addConstraints:self.scaleBarConstraints];
@@ -916,8 +904,7 @@ public:
         // logo view
         [self removeConstraints:self.logoViewConstraints];
         [self.logoViewConstraints removeAllObjects];
-        [self.logoViewConstraints addObject:[safeAreaLayoutGuide.bottomAnchor constraintEqualToAnchor:self.logoView.bottomAnchor
-                                                                                             constant:8.0 + self.contentInset.bottom]];
+        [self.logoViewConstraints addObject:[self constraintForYAxisAnchor:safeAreaLayoutGuide.bottomAnchor belowAnchor:self.logoView.bottomAnchor]];
         [self.logoViewConstraints addObject:[self.logoView.leftAnchor constraintEqualToAnchor:safeAreaLayoutGuide.leftAnchor
                                                                                      constant:8.0 + self.contentInset.left]];
         [self addConstraints:self.logoViewConstraints];
@@ -925,19 +912,24 @@ public:
         // attribution button
         [self removeConstraints:self.attributionButtonConstraints];
         [self.attributionButtonConstraints removeAllObjects];
-        [self.attributionButtonConstraints addObject:[safeAreaLayoutGuide.bottomAnchor constraintEqualToAnchor:self.attributionButton.bottomAnchor
-                                                                                                      constant:8.0 + self.contentInset.bottom]];
+        [self.attributionButtonConstraints addObject:[self constraintForYAxisAnchor:safeAreaLayoutGuide.bottomAnchor belowAnchor:self.attributionButton.bottomAnchor]];
         [self.attributionButtonConstraints addObject:[safeAreaLayoutGuide.rightAnchor constraintEqualToAnchor:self.attributionButton.rightAnchor
                                                                                                constant:8.0 + self.contentInset.right]];
         [self addConstraints:self.attributionButtonConstraints];
     } else {
         [self updateConstraintsPreiOS11];
     }
-#else
-    [self updateConstraintsPreiOS11];
-#endif
     
     [super updateConstraints];
+}
+
+- (NSLayoutConstraint *)constraintForYAxisAnchor:(NSLayoutYAxisAnchor *)yAxisAnchor belowAnchor:(NSLayoutYAxisAnchor *)anchor
+{
+    if (@available(iOS 11.0, *)) {
+        return [yAxisAnchor constraintEqualToSystemSpacingBelowAnchor:anchor multiplier:1];
+    } else {
+        return nil;
+    }
 }
 
 - (BOOL)isOpaque

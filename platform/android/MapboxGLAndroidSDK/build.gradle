@@ -150,7 +150,7 @@ android {
     }
 
     testOptions {
-        unitTests{
+        unitTests {
             returnDefaultValues = true
         }
     }
