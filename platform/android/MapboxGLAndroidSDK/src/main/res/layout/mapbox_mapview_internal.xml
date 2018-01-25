@@ -8,13 +8,6 @@
         android:contentDescription="@null"
         android:visibility="gone"/>
 
-    <!-- MAPPY : Fix "cherry-picked" MapBox -->
-    <com.mapbox.mapboxsdk.maps.widgets.MyLocationView
-        android:id="@+id/userLocationView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:contentDescription="@string/mapbox_myLocationViewContentDescription"/>
-
     <FrameLayout
         android:id="@+id/markerViewContainer"
         android:layout_width="match_parent"
@@ -22,12 +15,12 @@
         android:background="@android:color/transparent"
         android:contentDescription="@null"/>
 
-    <!--com.mapbox.mapboxsdk.maps.widgets.MarkerViewLayout
-        android:id="@+id/markerViewContainer"
+    <com.mapbox.mapboxsdk.maps.widgets.MyLocationView
+        android:id="@+id/userLocationView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@android:color/transparent"
-        android:contentDescription="@null"/-->
+        android:contentDescription="@string/mapbox_myLocationViewContentDescription"/>
+
 
     <com.mapbox.mapboxsdk.maps.widgets.CompassView
         android:id="@+id/compassView"

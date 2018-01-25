@@ -920,6 +920,11 @@ public class MapView extends FrameLayout {
     }
 
     @Override
+    public void onSetNotSimpleTouchListener(MapboxMap.OnNotSimpleTouchListener listener) {
+      mapGestureDetector.setOnNotSimpleTouchListener(listener);
+    }
+
+    @Override
     public void onSetMapLongClickListener(MapboxMap.OnMapLongClickListener listener) {
       mapGestureDetector.setOnMapLongClickListener(listener);
     }

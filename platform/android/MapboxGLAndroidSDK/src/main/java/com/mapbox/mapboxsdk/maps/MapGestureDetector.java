@@ -58,6 +58,7 @@ final class MapGestureDetector {
   private MapboxMap.OnMapClickListener onMapClickListener;
   private MapboxMap.OnMapLongClickListener onMapLongClickListener;
   private MapboxMap.OnFlingListener onFlingListener;
+  private MapboxMap.OnNotSimpleTouchListener onNotSimpleTouchListener;
   private MapboxMap.OnScrollListener onScrollListener;
 
   // new map touch API
@@ -99,21 +100,21 @@ final class MapGestureDetector {
     this.uiSettings = uiSettings;
     this.trackingSettings = trackingSettings;
 
-    //Mappy modifs
-    final MyLocationView myLocationView = trackingSettings.getMyLocationView();
-       myLocationView.setOnTouchListener(new View.OnTouchListener() {
-          @Override
-          public boolean onTouch(View view, MotionEvent motionEvent) {
-              if(onMapClickListener!=null){
-                PointF tapPoint = new PointF(motionEvent.getX(), motionEvent.getY());
-                RectF myLocationViewDrawRect = myLocationView.getDrawRect();
-                if (myLocationViewDrawRect != null && myLocationViewDrawRect.contains(tapPoint.x, tapPoint.y)) {
-                  onMapClickListener.isNotSimpleTouch(true);
-                }
-              }
-              return false;
-          }
-      });
+//    //Mappy modifs
+//    final MyLocationView myLocationView = trackingSettings.getMyLocationView();
+//       myLocationView.setOnTouchListener(new View.OnTouchListener() {
+//          @Override
+//          public boolean onTouch(View view, MotionEvent motionEvent) {
+//              if(onMapClickListener!=null){
+//                PointF tapPoint = new PointF(motionEvent.getX(), motionEvent.getY());
+//                RectF myLocationViewDrawRect = myLocationView.getDrawRect();
+//                if (myLocationViewDrawRect != null && myLocationViewDrawRect.contains(tapPoint.x, tapPoint.y)) {
+//                  onMapClickListener.isNotSimpleTouch(true);
+//                }
+//              }
+//              return false;
+//          }
+//      });
 
     this.cameraChangeDispatcher = cameraChangeDispatcher;
 
@@ -196,8 +197,8 @@ final class MapGestureDetector {
     }
 
     //Mappy modif
-    if(event.getPointerCount() > 1 && onMapClickListener!=null){
-      onMapClickListener.isNotSimpleTouch(false);
+    if(event.getPointerCount() > 1 && onNotSimpleTouchListener!=null){
+      onNotSimpleTouchListener.isNotSimpleTouch(false);
     }
 
     // Check two finger gestures first
@@ -485,8 +486,8 @@ final class MapGestureDetector {
     @Override
     public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
       //Mappy modifs
-      if(onMapClickListener != null){
-        onMapClickListener.isNotSimpleTouch(false);
+      if(onNotSimpleTouchListener != null){
+        onNotSimpleTouchListener.isNotSimpleTouch(false);
       }
 
       if (!trackingSettings.isScrollGestureCurrentlyEnabled()) {
@@ -965,6 +966,10 @@ final class MapGestureDetector {
 
   void addOnMapClickListener(MapboxMap.OnMapClickListener onMapClickListener) {
     onMapClickListenerList.add(onMapClickListener);
+  }
+
+  public void setOnNotSimpleTouchListener(MapboxMap.OnNotSimpleTouchListener onNotSimpleTouchListener) {
+    this.onNotSimpleTouchListener = onNotSimpleTouchListener;
   }
 
   void removeOnMapClickListener(MapboxMap.OnMapClickListener onMapClickListener) {
