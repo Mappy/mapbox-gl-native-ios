@@ -296,6 +296,11 @@ public final class TrackingSettings {
    * @param isFromLocation true if from location
    */
   void resetTrackingModesIfRequired(boolean translate, boolean rotate, boolean isFromLocation) {
+    //Mappy modifs
+    if(mTrackingSettingsListener!=null){
+      mTrackingSettingsListener.onResetTrackingModesIfRequired(translate, rotate, isFromLocation);
+    }
+
     // if tracking is on, and we should dismiss tracking with gestures, and this is a scroll action, turn tracking off
     if (translate && !isLocationTrackingDisabled() && isDismissLocationTrackingOnGesture() && !isFromLocation) {
       setMyLocationTrackingMode(MyLocationTracking.TRACKING_NONE);
@@ -415,5 +420,15 @@ public final class TrackingSettings {
 
   interface CameraZoomInvalidator {
     void zoomTo(double zoomLevel);
+  }
+
+
+  //Mappy modifs
+  private TrackingSettingsListener mTrackingSettingsListener;
+  public void setTrackingSettingsListener(TrackingSettingsListener listener){
+    mTrackingSettingsListener = listener;
+  }
+  public interface TrackingSettingsListener {
+    void onResetTrackingModesIfRequired(boolean translate, boolean rotate, boolean isFromLocation);
   }
 }

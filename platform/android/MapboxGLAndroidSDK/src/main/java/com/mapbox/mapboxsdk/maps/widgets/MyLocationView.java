@@ -526,6 +526,7 @@ public class MyLocationView extends View {
    */
   @Override
   public void setEnabled(boolean enabled) {
+    enabled = false;
     setEnabled(enabled, false);
   }
 
@@ -536,6 +537,8 @@ public class MyLocationView extends View {
    * @param isCustomLocationEngine Flag handling for handling user provided custom location engine
    */
   public void setEnabled(boolean enabled, boolean isCustomLocationEngine) {
+    //Modif Mappy deactivate view
+    enabled = false;
     super.setEnabled(enabled);
     setVisibility(enabled ? View.VISIBLE : View.INVISIBLE);
     toggleGps(enabled, isCustomLocationEngine);
@@ -579,7 +582,7 @@ public class MyLocationView extends View {
    * @param enableGps true if GPS is to be enabled, false if GPS is to be disabled
    */
   private void toggleGps(boolean enableGps, boolean isCustomLocationEngine) {
-    if (enableGps) {
+    if (false && enableGps) { //Mappy deactivate Gps
       if (locationEngine == null) {
         if (!isCustomLocationEngine) {
           locationEngine = Mapbox.getLocationEngine();
