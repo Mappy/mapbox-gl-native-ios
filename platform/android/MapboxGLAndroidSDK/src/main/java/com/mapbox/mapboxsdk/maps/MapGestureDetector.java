@@ -785,9 +785,11 @@ final class MapGestureDetector {
       // Also is zoom already started, don't rotate
       float angle = detector.getRotationDegreesDelta();
       if (Math.abs(angle) >= ROTATE_INVOKE_ANGLE) {
-        MapboxTelemetry.getInstance().pushEvent(MapboxEventWrapper.buildMapClickEvent(
-          getLocationFromGesture(detector.getFocusX(), detector.getFocusY()),
-          MapboxEvent.GESTURE_ROTATION_START, transform));
+        if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
+          MapboxTelemetry.getInstance().pushEvent(MapboxEventWrapper.buildMapClickEvent(
+                  getLocationFromGesture(detector.getFocusX(), detector.getFocusY()),
+                  MapboxEvent.GESTURE_ROTATION_START, transform));
+        }
         started = true;
       }
 
@@ -956,9 +958,11 @@ final class MapGestureDetector {
       if (!tiltGestureOccurred && ((totalDelta > 10.0f) || (totalDelta < -10.0f))) {
         tiltGestureOccurred = true;
         beginTime = detector.getEventTime();
-        MapboxTelemetry.getInstance().pushEvent(MapboxEventWrapper.buildMapClickEvent(
-          getLocationFromGesture(detector.getFocusX(), detector.getFocusY()),
-          MapboxEvent.GESTURE_PITCH_START, transform));
+        if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
+          MapboxTelemetry.getInstance().pushEvent(MapboxEventWrapper.buildMapClickEvent(
+                  getLocationFromGesture(detector.getFocusX(), detector.getFocusY()),
+                  MapboxEvent.GESTURE_PITCH_START, transform));
+        }
       }
 
       if (!tiltGestureOccurred) {
