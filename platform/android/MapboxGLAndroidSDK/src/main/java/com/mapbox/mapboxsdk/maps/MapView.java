@@ -217,6 +217,11 @@ public class MapView extends FrameLayout {
     // notify Map object about current connectivity state
     nativeMapView.setReachability(ConnectivityReceiver.instance(context).isConnected(context));
 
+    //Mappy modifs
+    if(mapBoxMapCreatedListener != null){
+      mapBoxMapCreatedListener.onMapBoxMapCreatedListener(mapboxMap);
+    }
+
     // initialise MapboxMap
     if (savedInstanceState == null) {
       mapboxMap.initialise(context, mapboxMapOptions);
@@ -1096,4 +1101,12 @@ public class MapView extends FrameLayout {
         nativeMapView.cancelTransitions();
     }
 
+    //Mappy modifs
+  public interface OnMapBoxMapCreatedListener{
+      void onMapBoxMapCreatedListener(MapboxMap mapboxMap);
+  }
+  private OnMapBoxMapCreatedListener mapBoxMapCreatedListener;
+  public void setMapBoxMapCreatedListener(OnMapBoxMapCreatedListener mapBoxMapCreatedListener){
+      this.mapBoxMapCreatedListener = mapBoxMapCreatedListener;
+  }
 }
