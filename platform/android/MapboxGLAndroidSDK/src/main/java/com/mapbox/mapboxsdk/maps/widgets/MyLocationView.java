@@ -1,6 +1,7 @@
 package com.mapbox.mapboxsdk.maps.widgets;
 
 import android.animation.ValueAnimator;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Camera;
 import android.graphics.Canvas;
@@ -37,7 +38,6 @@ import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.constants.MyBearingTracking;
 import com.mapbox.mapboxsdk.constants.MyLocationTracking;
 import com.mapbox.mapboxsdk.geometry.LatLng;
-import com.mapbox.mapboxsdk.location.LocationSource;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.Projection;
 import com.mapbox.services.android.telemetry.location.LocationEngine;
@@ -53,7 +53,11 @@ import timber.log.Timber;
  * <p>
  * Use {@link MyLocationViewSettings} to manipulate the state of this view.
  * </p>
+ *
+ * @deprecated use location layer plugin from
+ * https://github.com/mapbox/mapbox-plugins-android/tree/master/plugins/locationlayer instead.
  */
+@Deprecated
 public class MyLocationView extends View {
 
   private static final int UNDEFINED_TINT_COLOR = -1;
@@ -70,12 +74,13 @@ public class MyLocationView extends View {
 
   private LatLng latLng;
   private Location location;
-  private LocationEngine locationSource;
+  private LocationEngine locationEngine;
   private long locationUpdateTimestamp;
   private float previousDirection;
 
   private float accuracy;
   private Paint accuracyPaint;
+  private float accuracyThreshold;
 
   private ValueAnimator locationChangeAnimator;
   private ValueAnimator accuracyAnimator;
@@ -169,8 +174,9 @@ public class MyLocationView extends View {
     mWindowManager = (WindowManager) context.getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
   }
 
-  public void init(LocationSource locationSource) {
-    this.locationSource = locationSource;
+  @Deprecated
+  public void init(LocationEngine locationSource) {
+    this.locationEngine = locationSource;
   }
 
   /**
@@ -493,8 +499,8 @@ public class MyLocationView extends View {
     }
 
     if (userLocationListener != null) {
-      locationSource.removeLocationEngineListener(userLocationListener);
-      locationSource = null;
+      locationEngine.removeLocationEngineListener(userLocationListener);
+      locationEngine = null;
       userLocationListener = null;
     }
   }
@@ -530,12 +536,12 @@ public class MyLocationView extends View {
    * Set the enabled state, for internal use only.
    *
    * @param enabled                The value to set the state to
-   * @param isCustomLocationSource Flag handling for handling user provided custom location source
+   * @param isCustomLocationEngine Flag handling for handling user provided custom location engine
    */
-  public void setEnabled(boolean enabled, boolean isCustomLocationSource) {
+  public void setEnabled(boolean enabled, boolean isCustomLocationEngine) {
     super.setEnabled(enabled);
     setVisibility(enabled ? View.VISIBLE : View.INVISIBLE);
-    toggleGps(enabled, isCustomLocationSource);
+    toggleGps(enabled, isCustomLocationEngine);
   }
 
   /**
@@ -575,39 +581,40 @@ public class MyLocationView extends View {
    *
    * @param enableGps true if GPS is to be enabled, false if GPS is to be disabled
    */
-  private void toggleGps(boolean enableGps, boolean isCustomLocationSource) {
+  private void toggleGps(boolean enableGps, boolean isCustomLocationEngine) {
     if (enableGps) {
-      if (locationSource == null) {
-        if (!isCustomLocationSource) {
-          locationSource = Mapbox.getLocationSource();
+      if (locationEngine == null) {
+        if (!isCustomLocationEngine) {
+          locationEngine = Mapbox.getLocationEngine();
         } else {
           return;
         }
       }
 
-      // Set an initial location if one available
-      Location lastLocation = locationSource.getLastLocation();
+      //Mappy modif: Set an initial location if one available
+      Location lastLocation = locationEngine.getLastLocation();
 
       if (lastLocation != null) {
         setLocation(lastLocation);
       }
 
       if (userLocationListener == null) {
-        userLocationListener = new GpsLocationListener(this, locationSource);
+        userLocationListener = new GpsLocationListener(this, locationEngine);
       }
 
-      locationSource.addLocationEngineListener(userLocationListener);
-      locationSource.setPriority(LocationEnginePriority.HIGH_ACCURACY);
-      locationSource.activate();
+      locationEngine.addLocationEngineListener(userLocationListener);
+      locationEngine.setPriority(LocationEnginePriority.HIGH_ACCURACY);
+      locationEngine.activate();
     } else {
-      if (locationSource == null) {
+      if (locationEngine == null) {
         return;
       }
       // Disable location and user dot
       location = null;
-      locationSource.removeLocationEngineListener(userLocationListener);
-      locationSource.removeLocationUpdates();
-      locationSource.deactivate();
+      locationEngine.removeLocationEngineListener(userLocationListener);
+      locationEngine.removeLocationUpdates();
+      locationEngine.deactivate();
+      restoreLocationEngine();
     }
   }
 
@@ -650,6 +657,16 @@ public class MyLocationView extends View {
   }
 
   /**
+   * Set accuracy circle threshold. Circle won't be displayed if accuracy is below set value.
+   * For internal use only.
+   *
+   * @param accuracyThreshold Value below which circle won't be displayed
+   */
+  public void setAccuracyThreshold(float accuracyThreshold) {
+    this.accuracyThreshold = accuracyThreshold;
+  }
+
+  /**
    * Set the bearing tracking mode, for internal use only.
    *
    * @param myBearingTrackingMode The bearing tracking mode
@@ -682,8 +699,7 @@ public class MyLocationView extends View {
     if (location != null) {
       if (myLocationTrackingMode == MyLocationTracking.TRACKING_FOLLOW) {
         // center map directly
-        mapboxMap.easeCamera(CameraUpdateFactory.newLatLng(new LatLng(location)), 0, false /*linear interpolator*/,
-          null, true);
+        mapboxMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(location)));
       } else {
         // do not use interpolated location from tracking mode
         latLng = null;
@@ -783,13 +799,13 @@ public class MyLocationView extends View {
   /**
    * Set the location source from which location updates are received, for internal use only.
    *
-   * @param locationSource The location source to receive updates from
+   * @param locationEngine The location engine to receive updates from
    */
-  public void setLocationSource(LocationEngine locationSource) {
+  public void setLocationSource(LocationEngine locationEngine) {
     toggleGps(false);
-    this.locationSource = locationSource;
+    this.locationEngine = locationEngine;
     this.userLocationListener = null;
-    setEnabled(isEnabled(), locationSource != null);
+    setEnabled(isEnabled(), locationEngine != null);
   }
 
   private void applyDrawableTint(Drawable drawable, @ColorInt int color) {
@@ -812,6 +828,11 @@ public class MyLocationView extends View {
     }
   }
 
+  private void restoreLocationEngine() {
+    locationEngine.setPriority(LocationEnginePriority.LOW_POWER);
+    locationEngine.activate();
+  }
+
   private static class GpsLocationListener implements LocationEngineListener {
 
     private WeakReference<MyLocationView> userLocationView;
@@ -822,6 +843,7 @@ public class MyLocationView extends View {
       locationSource = new WeakReference<>(locationEngine);
     }
 
+    @SuppressLint("MissingPermission")
     @Override
     public void onConnected() {
       MyLocationView locationView = userLocationView.get();
@@ -1035,10 +1057,11 @@ public class MyLocationView extends View {
         accuracyAnimator.end();
       }
 
-      accuracyAnimator = ValueAnimator.ofFloat(accuracy, location.getAccuracy());
+      float newAccuracy = location.getAccuracy() >= accuracyThreshold ? location.getAccuracy() : 0f;
+      accuracyAnimator = ValueAnimator.ofFloat(accuracy, newAccuracy);
       accuracyAnimator.setDuration(750);
       accuracyAnimator.start();
-      accuracy = location.getAccuracy();
+      accuracy = newAccuracy;
     }
 
     abstract void invalidate();
@@ -1084,13 +1107,12 @@ public class MyLocationView extends View {
       // accuracy
       updateAccuracy(location);
 
-      if (locationChangeAnimationEnabled) {
+      if (locationChangeAnimationEnabled && animationDuration > 0) {
         // ease to new camera position with a linear interpolator
         mapboxMap.easeCamera(CameraUpdateFactory.newCameraPosition(builder.build()), animationDuration, false, null,
           true);
       } else {
-        mapboxMap.easeCamera(CameraUpdateFactory.newCameraPosition(builder.build()), 0, false, null,
-          true);
+        mapboxMap.moveCamera(CameraUpdateFactory.newCameraPosition(builder.build()));
       }
     }
 
