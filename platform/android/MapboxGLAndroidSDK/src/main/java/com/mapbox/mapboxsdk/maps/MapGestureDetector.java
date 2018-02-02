@@ -14,7 +14,6 @@ import android.support.v4.view.animation.FastOutSlowInInterpolator;
 import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
-import android.view.View;
 import android.view.VelocityTracker;
 import android.view.ViewConfiguration;
 
@@ -200,8 +199,15 @@ final class MapGestureDetector {
     }
 
     //Mappy modif
-    if(event.getPointerCount() > 1 && onNotSimpleTouchListener!=null){
-      onNotSimpleTouchListener.isNotSimpleTouch(false);
+    if(onNotSimpleTouchListener!=null){
+      if(event.getPointerCount() > 1){
+        onNotSimpleTouchListener.isNotSimpleTouch(false);
+      } else {
+        PointF tapPoint = new PointF(event.getX(), event.getY());
+        if (!onNotSimpleTouchListener.isSimpleTouchCheck(projection.fromScreenLocation(tapPoint))) {
+          onNotSimpleTouchListener.isNotSimpleTouch(false);
+        }
+      }
     }
 
     // Check two finger gestures first

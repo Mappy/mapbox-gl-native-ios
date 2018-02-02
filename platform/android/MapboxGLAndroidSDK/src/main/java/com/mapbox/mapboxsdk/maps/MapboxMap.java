@@ -13,7 +13,6 @@ import android.support.annotation.Nullable;
 import android.support.annotation.UiThread;
 import android.support.v4.util.Pools;
 import android.text.TextUtils;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -2469,6 +2468,13 @@ public final class MapboxMap {
      * @param isMarkerTouch true if touch is above a marker
      */
     void isNotSimpleTouch(boolean isMarkerTouch);
+
+    /**
+     * Implement this methode if you need a customer not simple touche check
+     * @return  the check oprater result
+     * @param point
+     */
+    boolean isSimpleTouchCheck(LatLng point);
   }
 
   /**
