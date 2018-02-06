@@ -2474,7 +2474,7 @@ public final class MapboxMap {
      * @return  the check oprater result
      * @param point
      */
-    boolean isSimpleTouchCheck(LatLng point);
+    boolean simpleTouchCheck(LatLng point);
   }
 
   /**

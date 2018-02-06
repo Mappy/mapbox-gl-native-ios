@@ -204,7 +204,7 @@ final class MapGestureDetector {
         onNotSimpleTouchListener.isNotSimpleTouch(false);
       } else {
         PointF tapPoint = new PointF(event.getX(), event.getY());
-        if (!onNotSimpleTouchListener.isSimpleTouchCheck(projection.fromScreenLocation(tapPoint))) {
+        if (!onNotSimpleTouchListener.simpleTouchCheck(projection.fromScreenLocation(tapPoint))) {
           onNotSimpleTouchListener.isNotSimpleTouch(false);
         }
       }
