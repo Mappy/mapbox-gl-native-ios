@@ -32,6 +32,7 @@ final class Transform implements MapView.OnMapChangedListener {
   private final MarkerViewManager markerViewManager;
   private final TrackingSettings trackingSettings;
   private final MyLocationView myLocationView;
+  private final Handler handler = new Handler();
 
   private CameraPosition cameraPosition;
   private MapboxMap.CancelableCallback cameraCancelableCallback;
@@ -83,7 +84,7 @@ final class Transform implements MapView.OnMapChangedListener {
     if (change == REGION_DID_CHANGE_ANIMATED) {
       updateCameraPosition(invalidateCameraPosition());
       if (cameraCancelableCallback != null) {
-        new Handler().post(new Runnable() {
+        handler.post(new Runnable() {
           @Override
           public void run() {
             if (cameraCancelableCallback != null) {
@@ -99,7 +100,7 @@ final class Transform implements MapView.OnMapChangedListener {
   }
 
   @UiThread
-  final void moveCamera(MapboxMap mapboxMap, CameraUpdate update, MapboxMap.CancelableCallback callback) {
+  final void moveCamera(MapboxMap mapboxMap, CameraUpdate update, final MapboxMap.CancelableCallback callback) {
     CameraPosition cameraPosition = update.getCameraPosition(mapboxMap);
     //if (cameraPosition!= null && !cameraPosition.equals(this.cameraPosition)) {
     if (isValidCameraPosition(cameraPosition)) {
@@ -108,6 +109,15 @@ final class Transform implements MapView.OnMapChangedListener {
       cameraChangeDispatcher.onCameraMoveStarted(OnCameraMoveStartedListener.REASON_API_ANIMATION);
       mapView.jumpTo(cameraPosition.bearing, cameraPosition.target, cameraPosition.tilt, cameraPosition.zoom);
       cameraChangeDispatcher.onCameraIdle();
+      invalidateCameraPosition();
+      handler.post(new Runnable() {
+        @Override
+        public void run() {
+          if (callback != null) {
+            callback.onFinish();
+          }
+        }
+      });
     }
   }
 
@@ -183,16 +193,15 @@ final class Transform implements MapView.OnMapChangedListener {
 
     // notify animateCamera and easeCamera about cancelling
     if (cameraCancelableCallback != null) {
+      final MapboxMap.CancelableCallback callback = cameraCancelableCallback;
       cameraChangeDispatcher.onCameraIdle();
-      new Handler().post(new Runnable() {
+      handler.post(new Runnable() {
         @Override
         public void run() {
-          if (cameraCancelableCallback != null) {
-            cameraCancelableCallback.onCancel();
-            cameraCancelableCallback = null;
-          }
+          callback.onCancel();
         }
       });
+      cameraCancelableCallback = null;
     }
 
     // cancel ongoing transitions
@@ -232,7 +241,7 @@ final class Transform implements MapView.OnMapChangedListener {
 
     if (cameraPosition != null) {
       int newZoom = (int) Math.round(cameraPosition.zoom + (zoomIn ? 1 : -1));
-      setZoom(newZoom, focalPoint, MapboxConstants.ANIMATION_DURATION);
+      setZoom(newZoom, focalPoint, MapboxConstants.ANIMATION_DURATION, false);
     } else {
       // we are not transforming, notify about being idle
       cameraChangeDispatcher.onCameraIdle();
@@ -243,7 +252,7 @@ final class Transform implements MapView.OnMapChangedListener {
     CameraPosition cameraPosition = invalidateCameraPosition();
     if (cameraPosition != null) {
       int newZoom = (int) Math.round(cameraPosition.zoom + zoomAddition);
-      setZoom(newZoom, focalPoint, duration);
+      setZoom(newZoom, focalPoint, duration, false);
     } else {
       // we are not transforming, notify about being idle
       cameraChangeDispatcher.onCameraIdle();
@@ -251,16 +260,18 @@ final class Transform implements MapView.OnMapChangedListener {
   }
 
   void setZoom(double zoom, @NonNull PointF focalPoint) {
-    setZoom(zoom, focalPoint, 0);
+    setZoom(zoom, focalPoint, 0, false);
   }
 
-  void setZoom(double zoom, @NonNull PointF focalPoint, long duration) {
+  void setZoom(double zoom, @NonNull PointF focalPoint, long duration, final boolean isAnimator) {
     if (mapView != null) {
       mapView.addOnMapChangedListener(new MapView.OnMapChangedListener() {
         @Override
         public void onMapChanged(int change) {
           if (change == MapView.REGION_DID_CHANGE_ANIMATED) {
-            cameraChangeDispatcher.onCameraIdle();
+            if (!isAnimator) {
+              cameraChangeDispatcher.onCameraIdle();
+            }
             mapView.removeOnMapChangedListener(this);
           }
         }

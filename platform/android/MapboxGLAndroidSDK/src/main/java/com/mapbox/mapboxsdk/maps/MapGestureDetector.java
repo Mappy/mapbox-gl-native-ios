@@ -14,7 +14,6 @@ import android.support.v4.view.animation.FastOutSlowInInterpolator;
 import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
-import android.view.View;
 import android.view.VelocityTracker;
 import android.view.ViewConfiguration;
 
@@ -32,6 +31,7 @@ import com.mapbox.services.android.telemetry.utils.TelemetryUtils;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import static com.mapbox.mapboxsdk.maps.MapboxMap.OnCameraMoveStartedListener.REASON_API_ANIMATION;
 import static com.mapbox.mapboxsdk.maps.MapboxMap.OnCameraMoveStartedListener.REASON_API_GESTURE;
 
 /**
@@ -58,6 +58,7 @@ final class MapGestureDetector {
   private MapboxMap.OnMapClickListener onMapClickListener;
   private MapboxMap.OnMapLongClickListener onMapLongClickListener;
   private MapboxMap.OnFlingListener onFlingListener;
+  private MapboxMap.OnNotSimpleTouchListener onNotSimpleTouchListener;
   private MapboxMap.OnScrollListener onScrollListener;
 
   // new map touch API
@@ -82,8 +83,10 @@ final class MapGestureDetector {
 
   private boolean scaleGestureOccurred;
   private boolean recentScaleGestureOccurred;
-  private boolean scaleAnimating;
   private long scaleBeginTime;
+
+  private boolean scaleAnimating;
+  private boolean rotateAnimating;
 
   private VelocityTracker velocityTracker;
   private boolean wasZoomingIn;
@@ -99,21 +102,21 @@ final class MapGestureDetector {
     this.uiSettings = uiSettings;
     this.trackingSettings = trackingSettings;
 
-    //Mappy modifs
-    final MyLocationView myLocationView = trackingSettings.getMyLocationView();
-       myLocationView.setOnTouchListener(new View.OnTouchListener() {
-          @Override
-          public boolean onTouch(View view, MotionEvent motionEvent) {
-              if(onMapClickListener!=null){
-                PointF tapPoint = new PointF(motionEvent.getX(), motionEvent.getY());
-                RectF myLocationViewDrawRect = myLocationView.getDrawRect();
-                if (myLocationViewDrawRect != null && myLocationViewDrawRect.contains(tapPoint.x, tapPoint.y)) {
-                  onMapClickListener.isNotSimpleTouch(true);
-                }
-              }
-              return false;
-          }
-      });
+//    //Mappy modifs
+//    final MyLocationView myLocationView = trackingSettings.getMyLocationView();
+//       myLocationView.setOnTouchListener(new View.OnTouchListener() {
+//          @Override
+//          public boolean onTouch(View view, MotionEvent motionEvent) {
+//              if(onMapClickListener!=null){
+//                PointF tapPoint = new PointF(motionEvent.getX(), motionEvent.getY());
+//                RectF myLocationViewDrawRect = myLocationView.getDrawRect();
+//                if (myLocationViewDrawRect != null && myLocationViewDrawRect.contains(tapPoint.x, tapPoint.y)) {
+//                  onMapClickListener.isNotSimpleTouch(true);
+//                }
+//              }
+//              return false;
+//          }
+//      });
 
     this.cameraChangeDispatcher = cameraChangeDispatcher;
 
@@ -196,8 +199,15 @@ final class MapGestureDetector {
     }
 
     //Mappy modif
-    if(event.getPointerCount() > 1 && onMapClickListener!=null){
-      onMapClickListener.isNotSimpleTouch(false);
+    if(onNotSimpleTouchListener!=null){
+      if(event.getPointerCount() > 1){
+        onNotSimpleTouchListener.isNotSimpleTouch(false);
+      } else {
+        PointF tapPoint = new PointF(event.getX(), event.getY());
+        if (!onNotSimpleTouchListener.simpleTouchCheck(projection.fromScreenLocation(tapPoint))) {
+          onNotSimpleTouchListener.isNotSimpleTouch(false);
+        }
+      }
     }
 
     // Check two finger gestures first
@@ -267,7 +277,10 @@ final class MapGestureDetector {
                     getLocationFromGesture(event.getX(), event.getY()), transform));
           }
           scrollGestureOccurred = false;
-          cameraChangeDispatcher.onCameraIdle();
+
+          if (!scaleAnimating && !rotateAnimating) {
+            cameraChangeDispatcher.onCameraIdle();
+          }
         }
 
         twoTap = false;
@@ -378,13 +391,12 @@ final class MapGestureDetector {
             // Zoom in on gesture
             transform.zoom(true, new PointF(e.getX(), e.getY()));
           }
+          if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
+            MapboxTelemetry.getInstance().pushEvent(MapboxEventWrapper.buildMapClickEvent(
+                    getLocationFromGesture(e.getX(), e.getY()),
+                    MapboxEvent.GESTURE_DOUBLETAP, transform));
+          }
           break;
-      }
-
-      if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
-          MapboxTelemetry.getInstance().pushEvent(MapboxEventWrapper.buildMapClickEvent(
-                  getLocationFromGesture(e.getX(), e.getY()),
-                  MapboxEvent.GESTURE_DOUBLETAP, transform));
       }
 
       return true;
@@ -486,8 +498,8 @@ final class MapGestureDetector {
     @Override
     public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
       //Mappy modifs
-      if(onMapClickListener != null){
-        onMapClickListener.isNotSimpleTouch(false);
+      if(onNotSimpleTouchListener != null){
+        onNotSimpleTouchListener.isNotSimpleTouch(false);
       }
 
       if (!trackingSettings.isScrollGestureCurrentlyEnabled()) {
@@ -676,7 +688,6 @@ final class MapGestureDetector {
         return;
       }
 
-
       if (rotateGestureOccurred || quickZoom) {
         reset();
         return;
@@ -718,13 +729,23 @@ final class MapGestureDetector {
 
         @Override
         public void onAnimationUpdate(ValueAnimator animation) {
-          transform.setZoom((Float) animation.getAnimatedValue(), scalePointBegin);
+          transform.setZoom((Float) animation.getAnimatedValue(), scalePointBegin, 0, true);
         }
       });
       animator.addListener(new AnimatorListenerAdapter() {
+
+        @Override
+        public void onAnimationStart(Animator animation) {
+          cameraChangeDispatcher.onCameraMoveStarted(REASON_API_ANIMATION);
+        }
+
+        @Override
+        public void onAnimationCancel(Animator animation) {
+          reset();
+        }
+
         @Override
         public void onAnimationEnd(Animator animation) {
-          super.onAnimationEnd(animation);
           reset();
         }
       });
@@ -743,7 +764,6 @@ final class MapGestureDetector {
 
     private long beginTime = 0;
     private boolean started = false;
-    private boolean animating = false;
 
     // Called when two fingers first touch the screen
     @Override
@@ -771,9 +791,11 @@ final class MapGestureDetector {
       // Also is zoom already started, don't rotate
       float angle = detector.getRotationDegreesDelta();
       if (Math.abs(angle) >= ROTATE_INVOKE_ANGLE) {
-        MapboxTelemetry.getInstance().pushEvent(MapboxEventWrapper.buildMapClickEvent(
-          getLocationFromGesture(detector.getFocusX(), detector.getFocusY()),
-          MapboxEvent.GESTURE_ROTATION_START, transform));
+        if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
+          MapboxTelemetry.getInstance().pushEvent(MapboxEventWrapper.buildMapClickEvent(
+                  getLocationFromGesture(detector.getFocusX(), detector.getFocusY()),
+                  MapboxEvent.GESTURE_ROTATION_START, transform));
+        }
         started = true;
       }
 
@@ -814,9 +836,9 @@ final class MapGestureDetector {
       }
 
       double angularVelocity = calculateVelocityVector(detector);
-      if (Math.abs(angularVelocity) > 0.001 && rotateGestureOccurred && !animating) {
+      if (Math.abs(angularVelocity) > 0.001 && rotateGestureOccurred && !rotateAnimating) {
         animateRotateVelocity();
-      } else if (!animating) {
+      } else if (!rotateAnimating) {
         reset();
       }
     }
@@ -824,12 +846,16 @@ final class MapGestureDetector {
     private void reset() {
       beginTime = 0;
       started = false;
-      animating = false;
+      rotateAnimating = false;
       rotateGestureOccurred = false;
+
+      if (!twoTap) {
+        cameraChangeDispatcher.onCameraIdle();
+      }
     }
 
     private void animateRotateVelocity() {
-      animating = true;
+      rotateAnimating = true;
       double currentRotation = transform.getRawBearing();
       double rotateAdditionDegrees = calculateVelocityInDegrees();
       createAnimator(currentRotation, rotateAdditionDegrees).start();
@@ -872,9 +898,19 @@ final class MapGestureDetector {
         }
       });
       animator.addListener(new AnimatorListenerAdapter() {
+
+        @Override
+        public void onAnimationStart(Animator animation) {
+          cameraChangeDispatcher.onCameraMoveStarted(REASON_API_ANIMATION);
+        }
+
+        @Override
+        public void onAnimationCancel(Animator animation) {
+          reset();
+        }
+
         @Override
         public void onAnimationEnd(Animator animation) {
-          super.onAnimationEnd(animation);
           reset();
         }
       });
@@ -928,9 +964,11 @@ final class MapGestureDetector {
       if (!tiltGestureOccurred && ((totalDelta > 10.0f) || (totalDelta < -10.0f))) {
         tiltGestureOccurred = true;
         beginTime = detector.getEventTime();
-        MapboxTelemetry.getInstance().pushEvent(MapboxEventWrapper.buildMapClickEvent(
-          getLocationFromGesture(detector.getFocusX(), detector.getFocusY()),
-          MapboxEvent.GESTURE_PITCH_START, transform));
+        if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
+          MapboxTelemetry.getInstance().pushEvent(MapboxEventWrapper.buildMapClickEvent(
+                  getLocationFromGesture(detector.getFocusX(), detector.getFocusY()),
+                  MapboxEvent.GESTURE_PITCH_START, transform));
+        }
       }
 
       if (!tiltGestureOccurred) {
@@ -966,6 +1004,10 @@ final class MapGestureDetector {
 
   void addOnMapClickListener(MapboxMap.OnMapClickListener onMapClickListener) {
     onMapClickListenerList.add(onMapClickListener);
+  }
+
+  public void setOnNotSimpleTouchListener(MapboxMap.OnNotSimpleTouchListener onNotSimpleTouchListener) {
+    this.onNotSimpleTouchListener = onNotSimpleTouchListener;
   }
 
   void removeOnMapClickListener(MapboxMap.OnMapClickListener onMapClickListener) {

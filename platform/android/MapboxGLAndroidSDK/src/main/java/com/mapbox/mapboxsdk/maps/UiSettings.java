@@ -6,6 +6,7 @@ import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.PointF;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.ColorInt;
 import android.support.annotation.NonNull;
@@ -90,6 +91,8 @@ public final class UiSettings {
     saveLogo(outState);
     saveAttribution(outState);
     saveZoomControl(outState);
+    saveDeselectMarkersOnTap(outState);
+    saveFocalPoint(outState);
   }
 
   void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
@@ -98,6 +101,8 @@ public final class UiSettings {
     restoreLogo(savedInstanceState);
     restoreAttribution(savedInstanceState);
     restoreZoomControl(savedInstanceState);
+    restoreDeselectMarkersOnTap(savedInstanceState);
+    restoreFocalPoint(savedInstanceState);
   }
 
   private void initialiseGestures(MapboxMapOptions options) {
@@ -782,6 +787,14 @@ public final class UiSettings {
     return doubleTapGestureChangeAllowed;
   }
 
+  private void restoreDeselectMarkersOnTap(Bundle savedInstanceState) {
+    setDeselectMarkersOnTap(savedInstanceState.getBoolean(MapboxConstants.STATE_DESELECT_MARKER_ON_TAP));
+  }
+
+  private void saveDeselectMarkersOnTap(Bundle outState) {
+    outState.putBoolean(MapboxConstants.STATE_DESELECT_MARKER_ON_TAP, isDeselectMarkersOnTap());
+  }
+
   /**
    * Gets whether the markers are automatically deselected (and therefore, their infowindows
    * closed) when a map tap is detected.
@@ -861,6 +874,17 @@ public final class UiSettings {
     setDoubleTapGesturesEnabled(enabled);
   }
 
+  private void saveFocalPoint(Bundle outState) {
+    outState.putParcelable(MapboxConstants.STATE_USER_FOCAL_POINT, getFocalPoint());
+  }
+
+  private void restoreFocalPoint(Bundle savedInstanceState) {
+    PointF pointF = savedInstanceState.getParcelable(MapboxConstants.STATE_USER_FOCAL_POINT);
+    if (pointF != null) {
+      setFocalPoint(pointF);
+    }
+  }
+
   /**
    * Sets the focal point used as center for a gesture
    *
@@ -925,7 +949,7 @@ public final class UiSettings {
     initMargins[2] = right;
     initMargins[3] = bottom;
 
-    // convert inital margins with padding
+    // convert initial margins with padding
     int[] contentPadding = projection.getContentPadding();
     FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) view.getLayoutParams();
     left += contentPadding[0];
@@ -933,6 +957,13 @@ public final class UiSettings {
     right += contentPadding[2];
     bottom += contentPadding[3];
     layoutParams.setMargins(left, top, right, bottom);
+
+    // support RTL
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+      layoutParams.setMarginStart(left);
+      layoutParams.setMarginEnd(right);
+    }
+
     view.setLayoutParams(layoutParams);
   }
 }

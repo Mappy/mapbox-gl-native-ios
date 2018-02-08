@@ -76,6 +76,7 @@ public class MapView extends FrameLayout {
   private NativeMapView nativeMapView;
   private MapboxMapOptions mapboxMapOptions;
   private boolean destroyed;
+  private boolean hasSurface;
 
   private MyLocationView myLocationView;
   private CompassView compassView;
@@ -304,49 +305,42 @@ public class MapView extends FrameLayout {
       mapRenderer = new TextureViewMapRenderer(getContext(), textureView, options.getLocalIdeographFontFamily()) {
         @Override
         protected void onSurfaceCreated(GL10 gl, EGLConfig config) {
-          MapView.this.post(new Runnable() {
-            @Override
-            public void run() {
-              // Initialise only once
-              if (mapboxMap == null) {
-                initialiseMap();
-                mapboxMap.onStart();
-              }
-            }
-          });
-
+          initRenderSurface();
           super.onSurfaceCreated(gl, config);
         }
       };
+
       addView(textureView, 0);
     } else {
       GLSurfaceView glSurfaceView = (GLSurfaceView) findViewById(R.id.surfaceView);
       glSurfaceView.setZOrderMediaOverlay(mapboxMapOptions.getRenderSurfaceOnTop());
-
       mapRenderer = new GLSurfaceViewMapRenderer(getContext(), glSurfaceView, options.getLocalIdeographFontFamily()) {
         @Override
         public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-          MapView.this.post(new Runnable() {
-            @Override
-            public void run() {
-              // Initialise only once
-              if (mapboxMap == null) {
-                initialiseMap();
-                mapboxMap.onStart();
-              }
-            }
-          });
-
+          initRenderSurface();
           super.onSurfaceCreated(gl, config);
         }
       };
 
       glSurfaceView.setVisibility(View.VISIBLE);
-
     }
 
     nativeMapView = new NativeMapView(this, mapRenderer);
     nativeMapView.resizeView(getMeasuredWidth(), getMeasuredHeight());
+  }
+
+  private void initRenderSurface() {
+    hasSurface = true;
+    post(new Runnable() {
+      @Override
+      public void run() {
+        // Initialise only when not destroyed and only once
+        if (!destroyed && mapboxMap == null) {
+          initialiseMap();
+          mapboxMap.onStart();
+        }
+      }
+    });
   }
 
   /**
@@ -425,7 +419,7 @@ public class MapView extends FrameLayout {
     destroyed = true;
     mapCallback.clearOnMapReadyCallbacks();
 
-    if (nativeMapView != null) {
+    if (nativeMapView != null && hasSurface) {
       // null when destroying an activity programmatically mapbox-navigation-android/issues/503
       nativeMapView.destroy();
       nativeMapView = null;
@@ -930,6 +924,11 @@ public class MapView extends FrameLayout {
     @Override
     public void onRemoveMapClickListener(MapboxMap.OnMapClickListener listener) {
       mapGestureDetector.removeOnMapClickListener(listener);
+    }
+
+    @Override
+    public void onSetNotSimpleTouchListener(MapboxMap.OnNotSimpleTouchListener listener) {
+      mapGestureDetector.setOnNotSimpleTouchListener(listener);
     }
 
     @Override

@@ -31,10 +31,16 @@ import okhttp3.Response;
 import okhttp3.internal.Util;
 import timber.log.Timber;
 
+import static android.util.Log.DEBUG;
+import static android.util.Log.INFO;
+import static android.util.Log.WARN;
+
 class HTTPRequest implements Callback {
 
   private static OkHttpClient mClient = new OkHttpClient.Builder().dispatcher(getDispatcher()).build();
   private static boolean logEnabled = true;
+  private static boolean logRequestUrl = false;
+
   private String USER_AGENT_STRING = null;
 
   private static final int CONNECTION_ERROR = 0;
@@ -110,7 +116,7 @@ class HTTPRequest implements Callback {
       mCall = mClient.newCall(mRequest);
       mCall.enqueue(this);
     } catch (Exception exception) {
-      onFailure(exception);
+      handleFailure(mCall, exception);
     }
   }
 
@@ -147,7 +153,7 @@ class HTTPRequest implements Callback {
     try {
       body = response.body().bytes();
     } catch (IOException ioException) {
-      onFailure(ioException);
+      onFailure(call, ioException);
       // throw ioException;
       return;
     } finally {
@@ -170,29 +176,16 @@ class HTTPRequest implements Callback {
 
   @Override
   public void onFailure(Call call, IOException e) {
-    onFailure(e);
+    handleFailure(call, e);
   }
 
-  private void onFailure(Exception e) {
-    int type = PERMANENT_ERROR;
-    if ((e instanceof NoRouteToHostException) || (e instanceof UnknownHostException) || (e instanceof SocketException)
-      || (e instanceof ProtocolException) || (e instanceof SSLException)) {
-      type = CONNECTION_ERROR;
-    } else if ((e instanceof InterruptedIOException)) {
-      type = TEMPORARY_ERROR;
-    }
-
+  private void handleFailure(Call call, Exception e) {
     String errorMessage = e.getMessage() != null ? e.getMessage() : "Error processing the request";
+    int type = getFailureType(e);
 
-    if (logEnabled) {
-      if (type == TEMPORARY_ERROR) {
-        Timber.d("Request failed due to a temporary error: %s", errorMessage);
-      } else if (type == CONNECTION_ERROR) {
-        Timber.i("Request failed due to a connection error: %s", errorMessage);
-      } else {
-        // PERMANENT_ERROR
-        Timber.w("Request failed due to a permanent error: %s", errorMessage);
-      }
+    if (logEnabled && call != null && call.request() != null) {
+      String requestUrl = call.request().url().toString();
+      logFailure(type, errorMessage, requestUrl);
     }
 
     mLock.lock();
@@ -200,6 +193,26 @@ class HTTPRequest implements Callback {
       nativeOnFailure(type, errorMessage);
     }
     mLock.unlock();
+  }
+
+  private int getFailureType(Exception e) {
+    if ((e instanceof NoRouteToHostException) || (e instanceof UnknownHostException) || (e instanceof SocketException)
+      || (e instanceof ProtocolException) || (e instanceof SSLException)) {
+      return CONNECTION_ERROR;
+    } else if ((e instanceof InterruptedIOException)) {
+      return TEMPORARY_ERROR;
+    }
+    return PERMANENT_ERROR;
+  }
+
+  private void logFailure(int type, String errorMessage, String requestUrl) {
+    Timber.log(
+      type == TEMPORARY_ERROR ? DEBUG : type == CONNECTION_ERROR ? INFO : WARN,
+      "Request failed due to a %s error: %s %s",
+      type == TEMPORARY_ERROR ? "temporary" : type == CONNECTION_ERROR ? "connection" : "permanent",
+      errorMessage,
+      logRequestUrl ? requestUrl : ""
+    );
   }
 
   private String getUserAgent() {
@@ -234,5 +247,13 @@ class HTTPRequest implements Callback {
 
   static void enableLog(boolean enabled) {
     logEnabled = enabled;
+  }
+
+  static void enablePrintRequestUrlOnFailure(boolean enabled) {
+    logRequestUrl = enabled;
+  }
+
+  static void setOKHttpClient(OkHttpClient client) {
+    mClient = client;
   }
 }
