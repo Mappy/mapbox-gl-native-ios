@@ -80,11 +80,6 @@ public class DynamicInfoWindowAdapterActivity extends AppCompatActivity implemen
           });
         }
       }
-
-      @Override
-      public void isNotSimpleTouch(boolean isMarkerTouch) {
-
-      }
     });
 
     // Focus on Paris

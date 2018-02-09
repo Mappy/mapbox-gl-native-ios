@@ -86,11 +86,6 @@ public class SymbolGeneratorActivity extends AppCompatActivity implements OnMapR
             Toast.LENGTH_LONG).show();
         }
       }
-
-      //Mappy modif
-      @Override
-      public void isNotSimpleTouch(boolean isMarkerTouch) {
-      }
     });
   }
 

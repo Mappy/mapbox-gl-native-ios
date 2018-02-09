@@ -6,7 +6,6 @@ import android.graphics.PointF;
 import android.graphics.RectF;
 import android.location.Location;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.annotation.FloatRange;
 import android.support.annotation.IntRange;
 import android.support.annotation.NonNull;
@@ -14,7 +13,6 @@ import android.support.annotation.Nullable;
 import android.support.annotation.UiThread;
 import android.support.v4.util.Pools;
 import android.text.TextUtils;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -714,20 +712,6 @@ public final class MapboxMap {
    */
   public final void moveCamera(final CameraUpdate update, final MapboxMap.CancelableCallback callback) {
     transform.moveCamera(MapboxMap.this, update, callback);
-    // MapChange.REGION_DID_CHANGE_ANIMATED is not called for `jumpTo`
-    // invalidate camera position to provide OnCameraChange event.
-    invalidateCameraPosition();
-
-    if (callback != null) {
-      new Handler().post(new Runnable() {
-        @Override
-        public void run() {
-          if (callback != null) {
-            callback.onFinish();
-          }
-        }
-      });
-    }
   }
 
   /**
@@ -2012,6 +1996,11 @@ public final class MapboxMap {
     onRegisterTouchListener.onRemoveMapClickListener(listener);
   }
 
+  // Mappy modifs
+  public void setOnNotSimpleTouchListener(@Nullable OnNotSimpleTouchListener listener) {
+    onRegisterTouchListener.onSetNotSimpleTouchListener(listener);
+  }
+
   /**
    * Sets a callback that's invoked when the user long clicks on the map view.
    *
@@ -2431,6 +2420,9 @@ public final class MapboxMap {
 
     void onRemoveMapClickListener(OnMapClickListener listener);
 
+    // Mappy modifs
+    void onSetNotSimpleTouchListener(OnNotSimpleTouchListener listener);
+
     void onSetMapLongClickListener(OnMapLongClickListener listener);
 
     void onAddMapLongClickListener(OnMapLongClickListener listener);
@@ -2462,13 +2454,27 @@ public final class MapboxMap {
      * @param point The projected map coordinate the user clicked on.
      */
     void onMapClick(@NonNull LatLng point);
+  }
 
-    //Mappy modifs
+  //Mappy modifs
+  /**
+   * Interface definition for a callback to be invoked when the triggered touch is not a simple map touch.
+   *
+   * @see MapboxMap#setOnMapClickListener(OnMapClickListener)
+   */
+  public interface OnNotSimpleTouchListener {
     /**
      * Called when the user touch on the map view and do a complex gesture.
      * @param isMarkerTouch true if touch is above a marker
      */
     void isNotSimpleTouch(boolean isMarkerTouch);
+
+    /**
+     * Implement this methode if you need a customer not simple touche check
+     * @return  the check oprater result
+     * @param point
+     */
+    boolean simpleTouchCheck(LatLng point);
   }
 
   /**

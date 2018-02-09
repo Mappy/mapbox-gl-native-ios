@@ -77,11 +77,6 @@ public class QueryRenderedFeaturesPropertiesActivity extends AppCompatActivity {
             marker = mapboxMap.addMarker(new CustomMarkerOptions().position(point).features(features));
             mapboxMap.selectMarker(marker);
           }
-
-          @Override
-          public void isNotSimpleTouch(boolean isMarkerTouch) {
-
-          }
         });
       }
     });
