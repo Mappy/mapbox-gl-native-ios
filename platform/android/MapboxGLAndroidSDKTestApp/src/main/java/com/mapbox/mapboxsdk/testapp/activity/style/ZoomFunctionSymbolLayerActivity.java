@@ -145,11 +145,6 @@ public class ZoomFunctionSymbolLayerActivity extends AppCompatActivity {
           Timber.e("No features found");
         }
       }
-
-      //Mappy modif
-      @Override
-      public void isNotSimpleTouch(boolean isMarkerTouch) {
-      }
     });
   }
 

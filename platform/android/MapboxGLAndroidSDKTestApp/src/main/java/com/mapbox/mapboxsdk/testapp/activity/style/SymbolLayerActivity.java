@@ -106,11 +106,6 @@ public class SymbolLayerActivity extends AppCompatActivity implements MapboxMap.
     }
   }
 
-  @Override
-  public void isNotSimpleTouch(boolean isMarkerTouch) {
-
-  }
-
   private void toggleTextSize() {
     SymbolLayer layer = mapboxMap.getLayerAs(MARKER_LAYER);
     layer.setProperties(layer.getTextSize().getValue() > 10 ? textSize(10f) : textSize(20f));
