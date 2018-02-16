@@ -47,11 +47,6 @@ public class MaxMinZoomActivity extends AppCompatActivity implements OnMapReadyC
           }
         });
       }
-
-      @Override
-      public void isNotSimpleTouch(boolean isMarkerTouch) {
-
-      }
     });
   }
 
