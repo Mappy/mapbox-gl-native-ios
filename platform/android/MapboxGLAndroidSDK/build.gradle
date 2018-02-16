@@ -1,4 +1,5 @@
 apply plugin: 'com.android.library'
+apply plugin: 'maven' //for mappy
 
 apply from: '../configuration.gradle'
 apply from: '../dependencies.gradle'
@@ -181,6 +182,14 @@ def getGitRevision() {
 configurations {
     all*.exclude group: 'commons-logging', module: 'commons-logging'
     all*.exclude group: 'commons-collections', module: 'commons-collections'
+}
+
+uploadArchives() { //for mappy
+    repositories {
+        mavenDeployer {
+            repository(url: "file://${System.env.MAVEN}")
+        }
+    }
 }
 
 //apply from: 'gradle-javadoc.gradle'
