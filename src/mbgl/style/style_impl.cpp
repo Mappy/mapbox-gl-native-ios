@@ -53,6 +53,11 @@ void Style::Impl::loadURL(const std::string& url_) {
     url = url_;
 
     styleRequest = fileSource.request(Resource::style(url), [this](Response res) {
+        // Don't allow a loaded, mutated style to be overwritten with a new version.
+        if (mutated && loaded) {
+            return;
+        }
+
         if (res.error) {
             const std::string message = "loading style failed: " + res.error->message;
             Log::Error(Event::Setup, message.c_str());
