@@ -6,6 +6,8 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.PointF;
 import android.os.Handler;
+import android.graphics.RectF;
+import android.location.Location;
 import android.support.annotation.Nullable;
 import android.view.InputDevice;
 import android.view.MotionEvent;
@@ -26,7 +28,11 @@ import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
 import com.mapbox.mapboxsdk.geometry.LatLng;
-import com.mapbox.mapboxsdk.utils.MathUtils;
+
+import com.almeros.android.multitouch.gesturedetectors.RotateGestureDetector;
+import com.almeros.android.multitouch.gesturedetectors.ShoveGestureDetector;
+import com.almeros.android.multitouch.gesturedetectors.TwoFingerGestureDetector;
+import com.mapbox.mapboxsdk.Mapbox;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -52,6 +58,7 @@ final class MapGestureDetector {
   private MapboxMap.OnMapClickListener onMapClickListener;
   private MapboxMap.OnMapLongClickListener onMapLongClickListener;
   private MapboxMap.OnFlingListener onFlingListener;
+  private MapboxMap.OnNotSimpleTouchListener onNotSimpleTouchListener;
   private MapboxMap.OnScrollListener onScrollListener;
 
   // new map touch API
@@ -214,8 +221,19 @@ final class MapGestureDetector {
       return false;
     }
 
-    boolean result = gesturesManager.onTouchEvent(motionEvent);
+    //Mappy modif
+    if (onNotSimpleTouchListener != null){
+      if (event.getPointerCount() > 1){
+        onNotSimpleTouchListener.isNotSimpleTouch(false);
+      } else {
+        PointF tapPoint = new PointF(event.getX(), event.getY());
+        if (!onNotSimpleTouchListener.simpleTouchCheck(projection.fromScreenLocation(tapPoint))) {
+          onNotSimpleTouchListener.isNotSimpleTouch(false);
+        }
+      }
+    }
 
+    boolean result = gesturesManager.onTouchEvent(motionEvent);
     switch (motionEvent.getActionMasked()) {
       case MotionEvent.ACTION_DOWN:
         cancelAnimators();
@@ -223,7 +241,6 @@ final class MapGestureDetector {
         break;
       case MotionEvent.ACTION_UP:
         transform.setGestureInProgress(false);
-
         // Start all awaiting velocity animations
         animationsTimeoutHandler.removeCallbacksAndMessages(null);
         for (Animator animator : scheduledAnimators) {
@@ -334,7 +351,21 @@ final class MapGestureDetector {
     @Override
     public boolean onSingleTapConfirmed(MotionEvent motionEvent) {
       PointF tapPoint = new PointF(motionEvent.getX(), motionEvent.getY());
-      boolean tapHandled = annotationManager.onTap(tapPoint);
+      boolean tapHandled = false;
+
+      Location myLocation = trackingSettings.getMyLocation();
+      MyLocationView myLocationView = trackingSettings.getMyLocationView();
+      if (myLocation != null && myLocationView.myLocationViewClickListener != null) {
+        RectF myLocationViewDrawRect = myLocationView.getDrawRect();
+        if (myLocationViewDrawRect != null && myLocationViewDrawRect.contains(tapPoint.x, tapPoint.y)) {
+          myLocationView.myLocationViewClickListener.onMyLocationViewClicked(myLocation);
+          tapHandled = true;
+        }
+      }
+
+      if (!tapHandled) {
+        tapHandled = annotationManager.onTap(tapPoint);
+      }
 
       if (!tapHandled) {
         if (uiSettings.isDeselectMarkersOnTap()) {
@@ -344,8 +375,9 @@ final class MapGestureDetector {
 
         notifyOnMapClickListeners(tapPoint);
       }
-
-      sendTelemetryEvent(Telemetry.SINGLE_TAP, new PointF(motionEvent.getX(), motionEvent.getY()));
+      if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
+          sendTelemetryEvent(Telemetry.SINGLE_TAP, new PointF(motionEvent.getX(), motionEvent.getY()));
+      }
 
       return true;
     }
@@ -375,9 +407,9 @@ final class MapGestureDetector {
         }
 
         zoomInAnimated(zoomFocalPoint, false);
-
-        sendTelemetryEvent(Telemetry.DOUBLE_TAP, new PointF(motionEvent.getX(), motionEvent.getY()));
-
+        if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
+          sendTelemetryEvent(Telemetry.DOUBLE_TAP, new PointF(motionEvent.getX(), motionEvent.getY()));
+        }
         return true;
       }
       return super.onDoubleTapEvent(motionEvent);
@@ -438,7 +470,9 @@ final class MapGestureDetector {
       }
 
       transform.cancelTransitions();
-      sendTelemetryEvent(Telemetry.PAN, detector.getFocalPoint());
+      if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
+        sendTelemetryEvent(Telemetry.PAN, detector.getFocalPoint());
+      }
       notifyOnMoveBeginListeners(detector);
       return true;
     }
@@ -452,6 +486,11 @@ final class MapGestureDetector {
 
         // Scroll the map
         transform.moveBy(-distanceX, -distanceY, 0 /*no duration*/);
+
+        //Mappy modifs
+        if (onNotSimpleTouchListener != null) {
+          onNotSimpleTouchListener.isNotSimpleTouch(false);
+        }
 
         notifyOnScrollListeners();
         notifyOnMoveListeners(detector);
@@ -1037,6 +1076,10 @@ final class MapGestureDetector {
 
   void addOnMapClickListener(MapboxMap.OnMapClickListener onMapClickListener) {
     onMapClickListenerList.add(onMapClickListener);
+  }
+
+  public void setOnNotSimpleTouchListener(MapboxMap.OnNotSimpleTouchListener onNotSimpleTouchListener) {
+    this.onNotSimpleTouchListener = onNotSimpleTouchListener;
   }
 
   void removeOnMapClickListener(MapboxMap.OnMapClickListener onMapClickListener) {

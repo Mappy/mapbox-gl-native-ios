@@ -1217,6 +1217,11 @@ public final class MapboxMap {
     annotationManager.updateMarker(updatedMarker, this);
   }
 
+  @UiThread
+  public void notifyUpdatedZOrder(){
+    annotationManager.getMarkerViewManager().notifyUpdatedZOrder();
+  }
+
   /**
    * Adds a polyline to this map.
    *
@@ -1236,7 +1241,20 @@ public final class MapboxMap {
    */
   @NonNull
   public List<Polyline> addPolylines(@NonNull List<PolylineOptions> polylineOptionsList) {
-    return annotationManager.addPolylines(polylineOptionsList, this);
+    return annotationManager.addPolylines(polylineOptionsList, this, false);
+  }
+
+  /**
+   * Adds multiple polylines to this map.
+   *
+   * @param polylineOptionsList A list of polyline options objects that defines how to render the polylines.
+   * @param withWhiteStroke     add the polylines with the white stroke or not
+   * @return A list of the {@code Polyline}s that were added to the map.
+   */
+  @UiThread
+  @NonNull
+  public List<Polyline> addPolylines(@NonNull List<PolylineOptions> polylineOptionsList, boolean withWhiteStroke) {
+    return annotationManager.addPolylines(polylineOptionsList, this, withWhiteStroke);
   }
 
   /**
@@ -1970,6 +1988,11 @@ public final class MapboxMap {
     onGesturesManagerInteractionListener.onRemoveMapClickListener(listener);
   }
 
+  // Mappy modifs
+  public void setOnNotSimpleTouchListener(@Nullable OnNotSimpleTouchListener listener) {
+    onRegisterTouchListener.onSetNotSimpleTouchListener(listener);
+  }
+
   /**
    * Sets a callback that's invoked when the user long clicks on the map view.
    *
@@ -2320,6 +2343,9 @@ public final class MapboxMap {
 
     void onRemoveMapClickListener(OnMapClickListener listener);
 
+    // Mappy modifs
+    void onSetNotSimpleTouchListener(OnNotSimpleTouchListener listener);
+
     void onSetMapLongClickListener(OnMapLongClickListener listener);
 
     void onAddMapLongClickListener(OnMapLongClickListener listener);
@@ -2376,6 +2402,27 @@ public final class MapboxMap {
     void onMapClick(@NonNull LatLng point);
   }
 
+  //Mappy modifs
+  /**
+   * Interface definition for a callback to be invoked when the triggered touch is not a simple map touch.
+   *
+   * @see MapboxMap#setOnMapClickListener(OnMapClickListener)
+   */
+  public interface OnNotSimpleTouchListener {
+    /**
+     * Called when the user touch on the map view and do a complex gesture.
+     * @param isMarkerTouch true if touch is above a marker
+     */
+    void isNotSimpleTouch(boolean isMarkerTouch);
+
+    /**
+     * Implement this methode if you need a customer not simple touche check
+     * @return  the check oprater result
+     * @param point
+     */
+    boolean simpleTouchCheck(LatLng point);
+  }
+
   /**
    * Interface definition for a callback to be invoked when the user long clicks on the map view.
    *
@@ -2399,7 +2446,7 @@ public final class MapboxMap {
     /**
      * Called when the user clicks on a marker.
      *
-     * @param marker The marker the user clicked on.
+     * @param marker The clicked marker.
      * @return If true the listener has consumed the event and the info window will not be shown.
      */
     boolean onMarkerClick(@NonNull Marker marker);

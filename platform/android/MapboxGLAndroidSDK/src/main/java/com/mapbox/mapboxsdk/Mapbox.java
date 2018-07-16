@@ -24,6 +24,7 @@ import timber.log.Timber;
  */
 @UiThread
 public final class Mapbox {
+  public static final boolean ENABLE_METRICS_ON_MAPPY = false;
 
   @SuppressLint("StaticFieldLeak")
   private static Mapbox INSTANCE;
@@ -46,7 +47,8 @@ public final class Mapbox {
     if (INSTANCE == null) {
       Context appContext = context.getApplicationContext();
       INSTANCE = new Mapbox(appContext, accessToken);
-      if (isAccessTokenValid(accessToken)) {
+      // Mappy modif
+      if (ENABLE_METRICS_ON_MAPPY && isAccessTokenValid(accessToken)) {
         initializeTelemetry();
       }
       ConnectivityReceiver.instance(appContext);

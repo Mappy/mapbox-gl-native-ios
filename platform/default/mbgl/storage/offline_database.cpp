@@ -550,6 +550,13 @@ bool OfflineDatabase::putTile(const Resource::TileData& tile,
 
     return true;
 }
+    
+void OfflineDatabase::deleteAllTilesAndStyles(void) {
+    db->exec("DELETE FROM tiles");
+	db->exec("DELETE FROM resources");
+    db->exec("VACUUM");
+}
+
 
 std::vector<OfflineRegion> OfflineDatabase::listRegions() {
     mapbox::sqlite::Query query{ getStatement("SELECT id, definition, description FROM regions") };

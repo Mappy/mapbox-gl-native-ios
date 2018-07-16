@@ -2,6 +2,7 @@ package com.mapbox.mapboxsdk.offline;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
@@ -72,6 +73,7 @@ public class OfflineManager {
    * OfflineRegion in the database or an error message otherwise.
    */
   public interface CreateOfflineRegionCallback {
+
     /**
      * Receives the newly created offline region.
      *
@@ -130,6 +132,11 @@ public class OfflineManager {
     }
 
     return instance;
+  }
+
+  public static synchronized boolean isAvailable() {
+    //Log.d("OffLineManager"," isAvailable="+(instance != null || FileSource.isAvailable()));
+    return instance != null || FileSource.isAvailable();
   }
 
   private Handler getHandler() {
@@ -233,6 +240,10 @@ public class OfflineManager {
     });
   }
 
+    public void cleanAmbientCache() {
+        cleanAmbientCache(fileSource);
+    }
+
   /**
    * Validates if the offline region definition bounds is valid for an offline region download.
    *
@@ -260,5 +271,7 @@ public class OfflineManager {
 
   private native void createOfflineRegion(FileSource fileSource, OfflineRegionDefinition definition,
                                           byte[] metadata, CreateOfflineRegionCallback callback);
+
+    private native void cleanAmbientCache(FileSource fileSource);
 
 }

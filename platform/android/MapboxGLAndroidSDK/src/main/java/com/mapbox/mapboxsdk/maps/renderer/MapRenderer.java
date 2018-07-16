@@ -87,10 +87,14 @@ public abstract class MapRenderer implements MapRendererScheduler {
 
   @CallSuper
   protected void onDrawFrame(GL10 gl) {
-    nativeRender();
+    try {
+      nativeRender();
 
-    if (onFpsChangedListener != null) {
-      updateFps();
+      if (onFpsChangedListener != null) {
+        updateFps();
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
     }
   }
 

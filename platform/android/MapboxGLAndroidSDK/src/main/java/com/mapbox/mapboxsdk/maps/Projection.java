@@ -92,15 +92,31 @@ public class Projection {
    */
   @NonNull
   public VisibleRegion getVisibleRegion() {
-    float left = 0;
-    float right = nativeMapView.getWidth();
-    float top = 0;
-    float bottom = nativeMapView.getHeight();
+    // Mappy modif
+    return getVisibleRegion(0, 0, 0, 0);
+  }
 
-    LatLng topLeft = fromScreenLocation(new PointF(left, top));
-    LatLng topRight = fromScreenLocation(new PointF(right, top));
-    LatLng bottomRight = fromScreenLocation(new PointF(right, bottom));
-    LatLng bottomLeft = fromScreenLocation(new PointF(left, bottom));
+  /**
+   * Mappy modif
+   * Gets a projection of the viewing frustum for converting between screen coordinates and
+   * geo-latitude/longitude coordinates.
+   *
+   * @return The projection of the viewing frustum in its current state.
+   */
+  public VisibleRegion getVisibleRegion(int additionalPaddingLeft, int additionalPaddingTop, int additionalPaddingRight, int additionalPaddingBottom) {
+    float left = contentPadding[0] + additionalPaddingLeft;
+    float right = nativeMapView.getWidth() - contentPadding[2] - additionalPaddingRight;
+    float top = contentPadding[1] + additionalPaddingTop;
+    float bottom = nativeMapView.getHeight() - contentPadding[3] - additionalPaddingBottom;
+
+    final PointF pixels = new PointF(left, top);
+    LatLng topLeft = fromScreenLocation(pixels);
+    pixels.set(right, top);
+    LatLng topRight = fromScreenLocation(pixels);
+    pixels.set(right, bottom);
+    LatLng bottomRight = fromScreenLocation(pixels);
+    pixels.set(left, bottom);
+    LatLng bottomLeft = fromScreenLocation(pixels);
 
     // Map can be rotated, find correct LatLngBounds that encompasses the visible region (that might be rotated)
     List<LatLng> boundsPoints = new ArrayList<>();
@@ -111,7 +127,7 @@ public class Projection {
 
     // order so that two most northern point are put first
     while ((boundsPoints.get(0).getLatitude() < boundsPoints.get(3).getLatitude())
-      || (boundsPoints.get(1).getLatitude() < boundsPoints.get(2).getLatitude())) {
+            || (boundsPoints.get(1).getLatitude() < boundsPoints.get(2).getLatitude())) {
       LatLng first = boundsPoints.remove(0);
       boundsPoints.add(first);
     }
@@ -134,16 +150,16 @@ public class Projection {
     // if it does not go over the date line
     if (secondLon > fourthLon && firstLon < thridLon)  {
       return new VisibleRegion(topLeft, topRight, bottomLeft, bottomRight,
-        LatLngBounds.from(north,
-          secondLon > thridLon ? secondLon : thridLon,
-          south,
-          firstLon < fourthLon ? firstLon : fourthLon));
+              LatLngBounds.from(north,
+                      secondLon > thridLon ? secondLon : thridLon,
+                      south,
+                      firstLon < fourthLon ? firstLon : fourthLon));
     } else {
       return new VisibleRegion(topLeft, topRight, bottomLeft, bottomRight,
-        LatLngBounds.from(north,
-          secondLon < thridLon ? secondLon : thridLon,
-          south,
-          firstLon > fourthLon ? firstLon : fourthLon));
+              LatLngBounds.from(north,
+                      secondLon < thridLon ? secondLon : thridLon,
+                      south,
+                      firstLon > fourthLon ? firstLon : fourthLon));
     }
   }
 

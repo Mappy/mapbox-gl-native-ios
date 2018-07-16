@@ -29,6 +29,8 @@ import com.mapbox.android.telemetry.Event;
 import com.mapbox.android.telemetry.MapEventFactory;
 import com.mapbox.android.telemetry.MapboxTelemetry;
 import com.mapbox.mapboxsdk.BuildConfig;
+
+import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.annotations.Annotation;
 import com.mapbox.mapboxsdk.annotations.MarkerViewManager;
@@ -202,6 +204,11 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
     // notify Map object about current connectivity state
     nativeMapView.setReachability(ConnectivityReceiver.instance(context).isConnected(context));
 
+    //Mappy modifs
+    if(mapBoxMapCreatedListener != null){
+      mapBoxMapCreatedListener.onMapBoxMapCreatedListener(mapboxMap);
+    }
+
     // initialise MapboxMap
     if (savedInstanceState == null) {
       mapboxMap.initialise(context, mapboxMapOptions);
@@ -271,12 +278,14 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
   @UiThread
   public void onCreate(@Nullable Bundle savedInstanceState) {
     if (savedInstanceState == null) {
-      MapboxTelemetry telemetry = Telemetry.obtainTelemetry();
-      AppUserTurnstile turnstileEvent = new AppUserTurnstile(BuildConfig.MAPBOX_SDK_IDENTIFIER,
-        BuildConfig.MAPBOX_SDK_VERSION);
-      telemetry.push(turnstileEvent);
-      MapEventFactory mapEventFactory = new MapEventFactory();
-      telemetry.push(mapEventFactory.createMapLoadEvent(Event.Type.MAP_LOAD));
+      if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
+        MapboxTelemetry telemetry = Telemetry.obtainTelemetry();
+        AppUserTurnstile turnstileEvent = new AppUserTurnstile(BuildConfig.MAPBOX_SDK_IDENTIFIER,
+                BuildConfig.MAPBOX_SDK_VERSION);
+        telemetry.push(turnstileEvent);
+        MapEventFactory mapEventFactory = new MapEventFactory();
+        telemetry.push(mapEventFactory.createMapLoadEvent(Event.Type.MAP_LOAD));
+      }
     } else if (savedInstanceState.getBoolean(MapboxConstants.STATE_HAS_SAVED_STATE)) {
       this.savedInstanceState = savedInstanceState;
     }
@@ -436,6 +445,8 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
 
     if (event.getAction() == MotionEvent.ACTION_DOWN) {
       mapZoomButtonController.setVisible(true);
+        /* Mappy : on touch down, stop map inertia */
+        cancelTransitions();
     }
     return mapGestureDetector.onTouchEvent(event) || super.onTouchEvent(event);
   }
@@ -975,6 +986,11 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
     }
 
     @Override
+    public void onSetNotSimpleTouchListener(MapboxMap.OnNotSimpleTouchListener listener) {
+      mapGestureDetector.setOnNotSimpleTouchListener(listener);
+    }
+
+    @Override
     public void onSetMapLongClickListener(MapboxMap.OnMapLongClickListener listener) {
       mapGestureDetector.setOnMapLongClickListener(listener);
     }
@@ -1188,5 +1204,14 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
         defaultDialogManager.onClick(v);
       }
     }
+  }
+
+  //Mappy modifs
+  public interface OnMapBoxMapCreatedListener{
+      void onMapBoxMapCreatedListener(MapboxMap mapboxMap);
+  }
+  private OnMapBoxMapCreatedListener mapBoxMapCreatedListener;
+  public void setMapBoxMapCreatedListener(OnMapBoxMapCreatedListener mapBoxMapCreatedListener){
+      this.mapBoxMapCreatedListener = mapBoxMapCreatedListener;
   }
 }

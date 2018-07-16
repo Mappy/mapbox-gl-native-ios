@@ -285,7 +285,8 @@ public:
     BOOL _delegateHasStrokeColorsForShapeAnnotations;
     BOOL _delegateHasFillColorsForShapeAnnotations;
     BOOL _delegateHasLineWidthsForShapeAnnotations;
-
+	BOOL _delegateHasWhiteStrokeForShapeAnnotations;
+    
     MGLCompassDirectionFormatter *_accessibilityCompassFormatter;
     NSArray<id <MGLFeature>> *_visiblePlaceFeatures;
     NSArray<id <MGLFeature>> *_visibleRoadFeatures;
@@ -706,6 +707,7 @@ public:
     _delegateHasStrokeColorsForShapeAnnotations = [_delegate respondsToSelector:@selector(mapView:strokeColorForShapeAnnotation:)];
     _delegateHasFillColorsForShapeAnnotations = [_delegate respondsToSelector:@selector(mapView:fillColorForPolygonAnnotation:)];
     _delegateHasLineWidthsForShapeAnnotations = [_delegate respondsToSelector:@selector(mapView:lineWidthForPolylineAnnotation:)];
+	_delegateHasWhiteStrokeForShapeAnnotations = [_delegate respondsToSelector:@selector(mapView:whiteStrokeForPolylineAnnotation:)];
 }
 
 - (void)didReceiveMemoryWarning
@@ -3850,6 +3852,15 @@ public:
         return [self.delegate mapView:self lineWidthForPolylineAnnotation:(MGLPolyline *)annotation];
     }
     return 3.0;
+}
+
+- (BOOL)whiteStrokeForPolylineAnnotation:(MGLPolyline *)annotation
+{
+	if (_delegateHasWhiteStrokeForShapeAnnotations)
+	{
+		return [self.delegate mapView:self whiteStrokeForPolylineAnnotation:annotation];
+	}
+	return NO;
 }
 
 - (void)installAnnotationImage:(MGLAnnotationImage *)annotationImage

@@ -69,7 +69,7 @@ void BackgroundLayer::setMaxZoom(float maxZoom) {
 // Paint properties
 
 PropertyValue<Color> BackgroundLayer::getDefaultBackgroundColor() {
-    return { Color::black() };
+    return { Color::salmon() };
 }
 
 PropertyValue<Color> BackgroundLayer::getBackgroundColor() const {

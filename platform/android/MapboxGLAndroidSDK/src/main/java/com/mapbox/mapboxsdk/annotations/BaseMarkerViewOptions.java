@@ -35,6 +35,10 @@ public abstract class BaseMarkerViewOptions<U extends MarkerView, T extends Base
   protected boolean selected;
   protected float alpha = 1.0f;
 
+  //Mappy modif
+  protected int zOrder;
+  public float zIndex;
+
   /**
    * Default constructor
    */
@@ -95,6 +99,17 @@ public abstract class BaseMarkerViewOptions<U extends MarkerView, T extends Base
     this.flat = flat;
     return getThis();
   }
+
+    /**
+     * Set the zOrder of the MarkerView
+     *
+     * @param zOrder the zOrder of the MarkerView
+     * @return the object for which the method was called
+     */
+    public T zOrder(int zOrder) {
+        this.zOrder = zOrder;
+        return getThis();
+    }
 
   /**
    * Set the anchor of the {@link MarkerView}.
@@ -161,6 +176,17 @@ public abstract class BaseMarkerViewOptions<U extends MarkerView, T extends Base
     return getThis();
   }
 
+    /**
+     * Set the z index of the MarkerView.
+     *
+     * @param zIndex the z index value
+     * @return the object for which the method was called
+     */
+    public T zIndex(float zIndex){
+        this.zIndex = zIndex;
+        return getThis();
+    }
+
   /**
    * Get the geographical location of the {@link MarkerView}.
    *
@@ -196,6 +222,15 @@ public abstract class BaseMarkerViewOptions<U extends MarkerView, T extends Base
   public Icon getIcon() {
     return icon;
   }
+
+    /**
+     * Get the zOrder of the MarkerView.
+     *
+     * @return the zOrder
+     */
+    public int getZOrder() {
+        return zOrder;
+    }
 
   /**
    * Get the flat state of the {@link MarkerView}.
@@ -282,4 +317,12 @@ public abstract class BaseMarkerViewOptions<U extends MarkerView, T extends Base
    * @return the MarkerView created from this builder.
    */
   public abstract U getMarker();
+
+    /**
+     * Get the zIndex of the MarkerView
+     * @return the z index value
+     */
+    public float getzIndex() {
+        return zIndex;
+    }
 }

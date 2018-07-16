@@ -114,7 +114,7 @@ struct TextField : DataDrivenLayoutProperty<std::string> {
 
 struct TextFont : DataDrivenLayoutProperty<std::vector<std::string>> {
     static constexpr const char * key = "text-font";
-    static std::vector<std::string> defaultValue() { return { "Open Sans Regular", "Arial Unicode MS Regular" }; }
+    static std::vector<std::string> defaultValue() { return { "DejaVu Sans Condensed" }; }
 };
 
 struct TextSize : DataDrivenLayoutProperty<float> {

@@ -50,6 +50,7 @@ public:
     OfflineRegionMetadata updateMetadata(const int64_t regionID, const OfflineRegionMetadata&);
 
     void deleteRegion(OfflineRegion&&);
+    void deleteAllTilesAndStyles(void);
 
     // Return value is (response, stored size)
     optional<std::pair<Response, uint64_t>> getRegionResource(int64_t regionID, const Resource&);

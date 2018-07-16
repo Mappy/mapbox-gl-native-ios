@@ -37,6 +37,10 @@ public:
     void render();
     void setFramebufferObject(quint32 fbo, const QSize& size);
 
+#if QT_VERSION >= 0x050000
+    void updateFramebufferBinding(QOpenGLFramebufferObject *);
+#endif
+
     mbgl::EdgeInsets margins;
     std::unique_ptr<mbgl::Map> mapObj;
 

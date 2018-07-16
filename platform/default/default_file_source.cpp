@@ -175,6 +175,11 @@ public:
         offlineDatabase->put(resource, response);
     }
 
+    //Mappy modif
+    void cleanAmbientCache(void) {
+        offlineDatabase->deleteAllTilesAndStyles();
+    }
+
 private:
     OfflineDownload& getDownload(int64_t regionID) {
         auto it = downloads.find(regionID);
@@ -285,6 +290,11 @@ void DefaultFileSource::getOfflineRegionStatus(OfflineRegion& region, std::funct
 
 void DefaultFileSource::setOfflineMapboxTileCountLimit(uint64_t limit) const {
     impl->actor().invoke(&Impl::setOfflineMapboxTileCountLimit, limit);
+}
+
+//Mappy modif
+void DefaultFileSource::cleanAmbientCache(void) {
+    impl->actor().invoke(&Impl::cleanAmbientCache);
 }
 
 void DefaultFileSource::pause() {

@@ -7,7 +7,9 @@ import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.util.LongSparseArray;
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -17,9 +19,14 @@ import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
+
 import com.mapbox.mapboxsdk.utils.AnimatorUtils;
 
 import java.util.ArrayList;
+import java.util.Collection;
+
+import com.mapbox.mapboxsdk.maps.widgets.MarkerViewLayout;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -38,14 +45,14 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
 
   private final ViewGroup markerViewContainer;
   private final ViewTreeObserver.OnPreDrawListener markerViewPreDrawObserver =
-    new ViewTreeObserver.OnPreDrawListener() {
-      @Override
-      public boolean onPreDraw() {
-        invalidateViewMarkersInVisibleRegion();
-        markerViewContainer.getViewTreeObserver().removeOnPreDrawListener(markerViewPreDrawObserver);
-        return false;
-      }
-    };
+          new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+              invalidateViewMarkersInVisibleRegion();
+              markerViewContainer.getViewTreeObserver().removeOnPreDrawListener(markerViewPreDrawObserver);
+              return false;
+            }
+          };
   private final Map<MarkerView, View> markerViewMap = new HashMap<>();
   private final LongSparseArray<OnMarkerViewAddedListener> markerViewAddedListenerMap = new LongSparseArray<>();
   private final List<MapboxMap.MarkerViewAdapter> markerViewAdapters = new ArrayList<>();
@@ -56,8 +63,13 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
 
   private boolean enabled;
   private long updateTime;
+  private long updateTimeForAddMarkerView;//Mappy modif
   private MapboxMap.OnMarkerViewClickListener onMarkerViewClickListener;
   private boolean isWaitingForRenderInvoke;
+
+  //Mappy modif
+  boolean markerViewSortedModified = true;
+  private Collection<View> markerViewSortedCoolection;
 
   /**
    * Creates an instance of MarkerViewManager.
@@ -66,6 +78,12 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
    */
   public MarkerViewManager(@NonNull ViewGroup container) {
     this.markerViewContainer = container;
+
+    //Mappy modifs
+    if (markerViewContainer instanceof MarkerViewLayout) {
+      ((MarkerViewLayout) this.markerViewContainer).setMarkerViewManager(this);
+    }
+
     this.markerViewAdapters.add(new ImageMarkerViewAdapter(container.getContext()));
   }
 
@@ -78,8 +96,11 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
   @Override
   public void onMapChanged(@MapView.MapChange int change) {
     if (isWaitingForRenderInvoke && change == MapView.DID_FINISH_RENDERING_FRAME_FULLY_RENDERED) {
-      isWaitingForRenderInvoke = false;
-      invalidateViewMarkersInVisibleRegion();
+      long currentTime = SystemClock.elapsedRealtime();
+      if (currentTime >= updateTimeForAddMarkerView){
+        isWaitingForRenderInvoke = false;
+        invalidateViewMarkersInVisibleRegion();
+      }
     }
   }
 
@@ -98,6 +119,7 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
    * @param waitingForRenderInvoke true if waiting for next render event
    */
   public void setWaitingForRenderInvoke(boolean waitingForRenderInvoke) {
+
     isWaitingForRenderInvoke = waitingForRenderInvoke;
   }
 
@@ -220,8 +242,11 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
 
         // animate visibility
         if (marker.isVisible() && convertView.getVisibility() == View.GONE) {
+
           animateVisible(marker, true);
         }
+
+        marker.onViewPositionUpdated();
       }
     }
   }
@@ -252,8 +277,9 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
   public void updateIcon(@NonNull MarkerView markerView) {
     View convertView = markerViewMap.get(markerView);
     if (convertView != null && convertView instanceof ImageView) {
-      ((ImageView) convertView).setImageBitmap(markerView.getIcon().getBitmap());
       markerView.invalidate();
+      ((ImageView) convertView).setImageBitmap(markerView.getIcon().getBitmap());
+      convertView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
     }
   }
 
@@ -372,6 +398,17 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
     return markerViewMap.get(marker);
   }
 
+  //Mappy modifs
+  public Collection<View> getSortedViews() {
+    if (markerViewSortedCoolection == null || markerViewSortedModified) {
+      java.util.TreeMap<MarkerView, View> markerViewSortedTreeMap = new java.util.TreeMap(markerViewMap);
+      markerViewSortedCoolection = markerViewSortedTreeMap.values();
+      markerViewSortedModified = false;
+    }
+    return markerViewSortedCoolection;
+  }
+
+
   /**
    * Get the view adapter for a marker.
    *
@@ -405,9 +442,11 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
     if (viewHolder != null && marker != null) {
       for (final MapboxMap.MarkerViewAdapter<?> adapter : markerViewAdapters) {
         if (adapter.getMarkerClass().equals(marker.getClass())) {
+          ((ImageView) viewHolder).setImageBitmap(null);
           if (adapter.prepareViewForReuse(marker, viewHolder)) {
             // reset offset for reuse
             marker.setOffset(MapboxConstants.UNMEASURED, MapboxConstants.UNMEASURED);
+            marker.invalidate();
             adapter.releaseView(viewHolder);
           }
         }
@@ -415,6 +454,7 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
     }
     marker.setMapboxMap(null);
     markerViewMap.remove(marker);
+    markerViewSortedModified = true;
   }
 
   /**
@@ -473,6 +513,17 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
     }
   }
 
+  public void setForUpdate() {
+
+    setEnabled(true);
+    setWaitingForRenderInvoke(true);
+    updateTimeForAddMarkerView = SystemClock.elapsedRealtime() + 150;
+  }
+
+  public void notifyUpdatedZOrder(){
+    markerViewSortedModified = true;
+  }
+
   /**
    * Invalidate the ViewMarkers found in the viewport.
    * <p>
@@ -480,11 +531,10 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
    * ones for each found Marker in the changed viewport.
    * </p>
    */
-  public void invalidateViewMarkersInVisibleRegion() {
+  private void invalidateViewMarkersInVisibleRegion() {
     RectF mapViewRect = new RectF(0, 0, markerViewContainer.getWidth(), markerViewContainer.getHeight());
     List<MarkerView> markers = mapboxMap.getMarkerViewsInRect(mapViewRect);
     View convertView;
-
     // remove old markers
     Iterator<MarkerView> iterator = markerViewMap.keySet().iterator();
     while (iterator.hasNext()) {
@@ -496,7 +546,15 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
           if (adapter.getMarkerClass().equals(marker.getClass())) {
             adapter.prepareViewForReuse(marker, convertView);
             adapter.releaseView(convertView);
+            markerViewSortedModified = true;
             iterator.remove();
+
+              //mappy
+              OnMarkerViewAddedListener onViewAddedListener = markerViewAddedListenerMap.get(marker.getId());
+              if (onViewAddedListener != null) {
+                  onViewAddedListener.onViewRemoved(marker);
+              }
+              //mappy
           }
         }
       }
@@ -526,6 +584,7 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
               }
 
               marker.setMapboxMap(mapboxMap);
+              markerViewSortedModified = true;
               markerViewMap.put(marker, adaptedView);
               if (convertView == null) {
                 adaptedView.setVisibility(View.GONE);
@@ -537,15 +596,17 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
             OnMarkerViewAddedListener onViewAddedListener = markerViewAddedListenerMap.get(marker.getId());
             if (onViewAddedListener != null) {
               onViewAddedListener.onViewAdded(marker);
-              markerViewAddedListenerMap.remove(marker.getId());
+                //removed for mappy
+//              markerViewAddedListenerMap.remove(marker.getId());
             }
           }
         }
       }
     }
 
-    // clear map, don't keep references to MarkerView listeners that are not found in the bounds of the map.
-    markerViewAddedListenerMap.clear();
+//    // removed for mappy
+//    // clear map, don't keep references to MarkerView listeners that are not found in the bounds of the map.
+//    markerViewAddedListenerMap.clear();
 
     // trigger update to make newly added ViewMarker visible,
     // these would only be updated when the map is moved.
@@ -628,6 +689,11 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
     markerViewAddedListenerMap.put(markerView.getId(), onMarkerViewAddedListener);
   }
 
+  // for mappy
+  public void removeOnMarkerViewAddedListener(MarkerView markerView) {
+    markerViewAddedListenerMap.remove(markerView.getId());
+  }
+
   /**
    * Default MarkerViewAdapter used for base class of MarkerView to adapt a MarkerView to
    * an ImageView.
@@ -655,6 +721,10 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
       }
       viewHolder.imageView.setImageBitmap(marker.getIcon().getBitmap());
       viewHolder.imageView.setContentDescription(marker.getTitle());
+      convertView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+      if (!marker.isSelected()) {
+        convertView.clearAnimation();
+      }
       return convertView;
     }
 
@@ -678,5 +748,22 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
      * @param markerView The MarkerView the View was added for
      */
     void onViewAdded(@NonNull MarkerView markerView);
+
+      /**
+       * for mappy
+       * Invoked when the View of a MarkerView has been removed from the Map.
+       * @param markerView The MarkerView the View was removed from
+       */
+      void onViewRemoved(@NonNull MarkerView markerView);
   }
+
+    //MAPPY: needed to
+    public interface OnMarkerViewAddedListenerWithControl extends OnMarkerViewAddedListener{
+
+        /**
+         * to verify if the listener is still valid or not
+         *
+         */
+        boolean isMarkerExist();
+    }
 }

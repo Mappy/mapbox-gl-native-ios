@@ -1,7 +1,12 @@
 package com.mapbox.mapboxsdk.annotations;
 
+
+import android.graphics.PointF;
+import android.graphics.RectF;
 import android.support.annotation.FloatRange;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.view.View;
 
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
@@ -109,6 +114,11 @@ public class MarkerView extends Marker {
     this.anchorU = u;
     this.anchorV = v;
     setOffset(-1, -1);
+    //Mappy modif
+    if (markerViewManager != null) {
+      markerViewManager.setWaitingForRenderInvoke(true);
+      markerViewManager.update();
+    }
   }
 
   /**
@@ -402,9 +412,22 @@ public class MarkerView extends Marker {
   void invalidate() {
     width = height = 0;
     offsetX = offsetY = MapboxConstants.UNMEASURED;
-    markerViewManager.invalidateViewMarkersInVisibleRegion();
+    //markerViewManager.invalidateViewMarkersInVisibleRegion();
   }
 
+  //Mappy modif
+  private final RectF drawRect = new RectF();
+  public void onViewPositionUpdated() {
+    drawRect.set(0, 0, width, height);
+    View view = markerViewManager.getView(this);
+    if(view != null) {
+      drawRect.offset(view.getX(), view.getY());
+    }
+  }
+  public RectF getDrawRect() {
+    return drawRect;
+  }
+  
   /**
    * Get the String representation of a MarkerView.
    *
@@ -412,6 +435,38 @@ public class MarkerView extends Marker {
    */
   @Override
   public String toString() {
-    return "MarkerView [position[" + getPosition() + "]]";
+    return "MarkerView [position[" + getPosition() + "], offsetX["+offsetX+","+offsetY+"], Dim["+width+","+height+"], Anchor["+anchorU+"/"+anchorV+"]]";
   }
+
+  //Mappy modifs
+  @Override
+  public int compareTo(@NonNull Annotation annotation) {
+    if (annotation instanceof MarkerView) {
+      MarkerView other = (MarkerView) annotation;
+      int zOrderComparison = Double.compare(getZOrder(), other.getZOrder());
+      if (zOrderComparison != 0) {
+        return zOrderComparison;
+      }
+
+      LatLng left = getPosition();
+      LatLng right = other.getPosition();
+
+      //logic is reverse, right before left, because the last added is displayed on the top
+      final int latComparison = Double.compare(right.getLatitude(), left.getLatitude());
+      if (latComparison != 0) {
+        return latComparison;
+      }
+
+
+      final int lonComparison = Double.compare(right.getLongitude(), left.getLongitude());
+      if (lonComparison != 0) {
+        return lonComparison;
+      }
+
+      return (int) (getId() - other.getId());
+    }
+    return super.compareTo(annotation);
+  }
+
+
 }

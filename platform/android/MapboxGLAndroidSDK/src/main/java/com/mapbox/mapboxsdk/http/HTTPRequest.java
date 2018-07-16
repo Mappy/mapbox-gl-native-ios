@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.os.Build;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
 import com.mapbox.android.telemetry.TelemetryUtils;
@@ -44,6 +45,10 @@ class HTTPRequest implements Callback {
   private static OkHttpClient client = new OkHttpClient.Builder().dispatcher(getDispatcher()).build();
   private static boolean logEnabled = true;
   private static boolean logRequestUrl = false;
+
+  //Mappy modifs
+  @Nullable
+  static HttpRequestHeaderProvider httpRequestHeaderProvider;
 
   // Reentrancy is not needed, but "Lock" is an abstract class.
   private ReentrantLock lock = new ReentrantLock();
@@ -169,13 +174,21 @@ class HTTPRequest implements Callback {
 
       Request.Builder builder = new Request.Builder()
         .url(resourceUrl)
-        .tag(resourceUrl.toLowerCase(MapboxConstants.MAPBOX_LOCALE))
-        .addHeader("User-Agent", getUserAgent());
+        .tag(resourceUrl.toLowerCase(MapboxConstants.MAPBOX_LOCALE));
+        //.addHeader("User-Agent", getUserAgent()); /Use MapBox Header only if mappy Header is null
       if (etag.length() > 0) {
         builder = builder.addHeader("If-None-Match", etag);
       } else if (modified.length() > 0) {
         builder = builder.addHeader("If-Modified-Since", modified);
       }
+      /* Start MAPPY */
+      if (httpRequestHeaderProvider != null) {
+        httpRequestHeaderProvider.addHeader(builder);
+      }
+      else {
+        builder.addHeader("User-Agent", getUserAgent()); //Use MapBox Header only if mappy Header is null
+      }
+      /* End MAPPY */
       Request request = builder.build();
       call = client.newCall(request);
       call.enqueue(this);
@@ -263,6 +276,11 @@ class HTTPRequest implements Callback {
   }
 
   private native void nativeOnFailure(int type, String message);
+
+  //Mappy modifs
+  public interface HttpRequestHeaderProvider {
+    void addHeader(Request.Builder builder);
+  }
 
   private native void nativeOnResponse(int code, String etag, String modified, String cacheControl, String expires,
                                        String retryAfter, String xRateLimitReset, byte[] body);

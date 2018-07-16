@@ -61,6 +61,8 @@ public:
 
     void listOfflineRegions(jni::JNIEnv&, jni::Object<FileSource>, jni::Object<ListOfflineRegionsCallback> callback);
 
+    void cleanAmbientCache(jni::JNIEnv&, jni::Object<FileSource>);
+
     void createOfflineRegion(jni::JNIEnv&,
                              jni::Object<FileSource> jFileSource_,
                              jni::Object<OfflineRegionDefinition> definition,

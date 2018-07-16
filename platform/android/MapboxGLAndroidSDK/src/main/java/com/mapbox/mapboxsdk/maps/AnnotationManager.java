@@ -23,6 +23,7 @@ import com.mapbox.mapboxsdk.annotations.Polyline;
 import com.mapbox.mapboxsdk.annotations.PolylineOptions;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import timber.log.Timber;
@@ -116,7 +117,11 @@ class AnnotationManager {
       }
 
       if (marker instanceof MarkerView) {
-        markerViewManager.removeMarkerView((MarkerView) marker);
+          //mappy
+          final MarkerView markerView = (MarkerView) marker;
+          markerViewManager.removeOnMarkerViewAddedListener(markerView);
+          markerViewManager.removeMarkerView(markerView);
+          //mappy
       } else {
         // do icon cleanup
         iconManager.iconCleanup(marker.getIcon());
@@ -135,7 +140,11 @@ class AnnotationManager {
         }
 
         if (marker instanceof MarkerView) {
-          markerViewManager.removeMarkerView((MarkerView) marker);
+            //mappy
+            final MarkerView markerView = (MarkerView) marker;
+            markerViewManager.removeOnMarkerViewAddedListener(markerView);
+            markerViewManager.removeMarkerView(markerView);
+            //mappy
         } else {
           iconManager.iconCleanup(marker.getIcon());
         }
@@ -156,7 +165,11 @@ class AnnotationManager {
         Marker marker = (Marker) annotation;
         marker.hideInfoWindow();
         if (marker instanceof MarkerView) {
-          markerViewManager.removeMarkerView((MarkerView) marker);
+            //mappy
+            final MarkerView markerView = (MarkerView) marker;
+            markerViewManager.removeOnMarkerViewAddedListener(markerView);
+            markerViewManager.removeMarkerView(markerView);
+            //mappy
         } else {
           iconManager.iconCleanup(marker.getIcon());
         }
@@ -248,6 +261,11 @@ class AnnotationManager {
     return polylines.addBy(polylineOptionsList, mapboxMap);
   }
 
+  //Mappy modif, but annotation polyline with the border white is deactivated
+  List<Polyline> addPolylines(@NonNull List<PolylineOptions> polylineOptionsList, @NonNull MapboxMap mapboxMap, boolean withWhiteStroke) {
+    return polylines.addBy(polylineOptionsList, mapboxMap);
+  }
+
   void updatePolyline(Polyline polyline) {
     if (!isAddedToMap(polyline)) {
       logNonAdded(polyline);
@@ -283,17 +301,25 @@ class AnnotationManager {
       deselectMarkers();
     }
 
-    if (marker instanceof MarkerView) {
-      markerViewManager.select((MarkerView) marker, false);
-      markerViewManager.ensureInfoWindowOffset((MarkerView) marker);
+    boolean handledDefaultClick = true;
+    if (onMarkerClickListener != null) {
+      // end developer has provided a custom click listener
+      handledDefaultClick = onMarkerClickListener.onMarkerClick(marker);
     }
 
-    if (infoWindowManager.isInfoWindowValidForMarker(marker) || infoWindowManager.getInfoWindowAdapter() != null) {
-      infoWindowManager.add(marker.showInfoWindow(mapboxMap, mapView));
-    }
+    if (!handledDefaultClick) {
+      if (marker instanceof MarkerView) {
+        markerViewManager.select((MarkerView) marker, false);
+        markerViewManager.ensureInfoWindowOffset((MarkerView) marker);
+      }
 
-    // only add to selected markers if user didn't handle the click event themselves #3176
-    selectedMarkers.add(marker);
+      if (infoWindowManager.isInfoWindowValidForMarker(marker) || infoWindowManager.getInfoWindowAdapter() != null) {
+        infoWindowManager.add(marker.showInfoWindow(mapboxMap, mapView));
+      }
+
+      // only add to selected markers if user didn't handle the click event themselves #3176
+      selectedMarkers.add(marker);
+    }
   }
 
   void deselectMarkers() {
@@ -385,9 +411,28 @@ class AnnotationManager {
       }
     }
 
-    MarkerHit markerHit = getMarkerHitFromTouchArea(tapPoint);
-    long markerId = new MarkerHitResolver(mapboxMap).execute(markerHit);
-    return markerId != NO_ANNOTATION_ID && isClickHandledForMarker(markerId);
+    List<MarkerView> markerViews = new ArrayList<>();
+    final List<Marker> markers = mapboxMap.getMarkers();
+    for (Marker marker : markers) {
+      if (marker.getClass().equals(MarkerView.class)) {
+        final MarkerView markerView = (MarkerView) marker;
+        if (markerView.isVisible()) {
+          RectF drawRect = markerView.getDrawRect();
+          if (drawRect.contains(tapPoint.x, tapPoint.y)) {
+            markerViews.add(markerView);
+          }
+        }
+      }
+    }
+
+    boolean hasSelectedMarkerView = !markerViews.isEmpty();
+    if (hasSelectedMarkerView) {
+      Collections.sort(markerViews);
+      final MarkerView selectedMarker = markerViews.get(markerViews.size() - 1);
+      isClickHandledForMarker(selectedMarker);
+    }
+
+    return hasSelectedMarkerView;
   }
 
   private ShapeAnnotationHit getShapeAnnotationHitFromTap(PointF tapPoint) {
@@ -424,8 +469,12 @@ class AnnotationManager {
   }
 
   private boolean isClickHandledForMarker(long markerId) {
+    return isClickHandledForMarker((Marker) getAnnotation(markerId));
+  }
+
+  //MAPPY Modif
+  private boolean isClickHandledForMarker(Marker marker) {
     boolean handledDefaultClick;
-    Marker marker = (Marker) getAnnotation(markerId);
     if (marker instanceof MarkerView) {
       handledDefaultClick = markerViewManager.onClickMarkerView((MarkerView) marker);
     } else {
