@@ -6,8 +6,6 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.PointF;
 import android.os.Handler;
-import android.graphics.RectF;
-import android.location.Location;
 import android.support.annotation.Nullable;
 import android.view.InputDevice;
 import android.view.MotionEvent;
@@ -29,10 +27,8 @@ import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 
-import com.almeros.android.multitouch.gesturedetectors.RotateGestureDetector;
-import com.almeros.android.multitouch.gesturedetectors.ShoveGestureDetector;
-import com.almeros.android.multitouch.gesturedetectors.TwoFingerGestureDetector;
 import com.mapbox.mapboxsdk.Mapbox;
+import com.mapbox.mapboxsdk.utils.MathUtils;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -223,10 +219,10 @@ final class MapGestureDetector {
 
     //Mappy modif
     if (onNotSimpleTouchListener != null){
-      if (event.getPointerCount() > 1){
+      if (motionEvent.getPointerCount() > 1){
         onNotSimpleTouchListener.isNotSimpleTouch(false);
       } else {
-        PointF tapPoint = new PointF(event.getX(), event.getY());
+        PointF tapPoint = new PointF(motionEvent.getX(), motionEvent.getY());
         if (!onNotSimpleTouchListener.simpleTouchCheck(projection.fromScreenLocation(tapPoint))) {
           onNotSimpleTouchListener.isNotSimpleTouch(false);
         }
@@ -351,21 +347,7 @@ final class MapGestureDetector {
     @Override
     public boolean onSingleTapConfirmed(MotionEvent motionEvent) {
       PointF tapPoint = new PointF(motionEvent.getX(), motionEvent.getY());
-      boolean tapHandled = false;
-
-      Location myLocation = trackingSettings.getMyLocation();
-      MyLocationView myLocationView = trackingSettings.getMyLocationView();
-      if (myLocation != null && myLocationView.myLocationViewClickListener != null) {
-        RectF myLocationViewDrawRect = myLocationView.getDrawRect();
-        if (myLocationViewDrawRect != null && myLocationViewDrawRect.contains(tapPoint.x, tapPoint.y)) {
-          myLocationView.myLocationViewClickListener.onMyLocationViewClicked(myLocation);
-          tapHandled = true;
-        }
-      }
-
-      if (!tapHandled) {
-        tapHandled = annotationManager.onTap(tapPoint);
-      }
+      boolean tapHandled = annotationManager.onTap(tapPoint);
 
       if (!tapHandled) {
         if (uiSettings.isDeselectMarkersOnTap()) {

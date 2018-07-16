@@ -445,8 +445,8 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
 
     if (event.getAction() == MotionEvent.ACTION_DOWN) {
       mapZoomButtonController.setVisible(true);
-        /* Mappy : on touch down, stop map inertia */
-        cancelTransitions();
+        // Mappy modif : on touch down, stop map inertia
+        nativeMapView.cancelTransitions();
     }
     return mapGestureDetector.onTouchEvent(event) || super.onTouchEvent(event);
   }
