@@ -11,6 +11,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
+
 import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.Geometry;
 import com.mapbox.mapboxsdk.LibraryLoader;
@@ -32,6 +33,7 @@ import com.mapbox.mapboxsdk.style.light.Light;
 import com.mapbox.mapboxsdk.style.sources.CannotAddSourceException;
 import com.mapbox.mapboxsdk.style.sources.Source;
 import com.mapbox.mapboxsdk.utils.BitmapUtils;
+
 import timber.log.Timber;
 
 import java.nio.ByteBuffer;
@@ -939,7 +941,7 @@ final class NativeMapView {
     LatLngBounds latLngBounds, double top, double left, double bottom, double right);
 
   private native CameraPosition nativeGetCameraForGeometry(
-    Geometry geometry, double bearing, double top, double left, double bottom, double right);
+          Geometry geometry, double bearing, double top, double left, double bottom, double right);
 
   private native void nativeResetPosition();
 
