@@ -1923,7 +1923,6 @@ public final class MapboxMap {
     onGesturesManagerInteractionListener.onRemoveShoveListener(listener);
   }
 
-
   /**
    * Sets a custom {@link AndroidGesturesManager} to handle {@link android.view.MotionEvent}s
    * registered by the {@link MapView}.

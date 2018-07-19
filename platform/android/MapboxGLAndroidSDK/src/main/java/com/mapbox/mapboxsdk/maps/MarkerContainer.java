@@ -175,8 +175,6 @@ class MarkerContainer implements Markers {
 
     long[] ids = nativeMapView.queryPointAnnotations(rect);
 
-
-
     List<Long> idsList = new ArrayList<>(ids.length);
     for (long id : ids) {
       idsList.add(id);

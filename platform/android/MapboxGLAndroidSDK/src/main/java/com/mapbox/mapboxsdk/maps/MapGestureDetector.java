@@ -357,9 +357,7 @@ final class MapGestureDetector {
 
         notifyOnMapClickListeners(tapPoint);
       }
-      if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
-          sendTelemetryEvent(Telemetry.SINGLE_TAP, new PointF(motionEvent.getX(), motionEvent.getY()));
-      }
+      sendTelemetryEvent(Telemetry.SINGLE_TAP, new PointF(motionEvent.getX(), motionEvent.getY()));
 
       return true;
     }
@@ -389,9 +387,8 @@ final class MapGestureDetector {
         }
 
         zoomInAnimated(zoomFocalPoint, false);
-        if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
-          sendTelemetryEvent(Telemetry.DOUBLE_TAP, new PointF(motionEvent.getX(), motionEvent.getY()));
-        }
+        sendTelemetryEvent(Telemetry.DOUBLE_TAP, new PointF(motionEvent.getX(), motionEvent.getY()));
+
         return true;
       }
       return super.onDoubleTapEvent(motionEvent);
@@ -452,9 +449,8 @@ final class MapGestureDetector {
       }
 
       transform.cancelTransitions();
-      if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
-        sendTelemetryEvent(Telemetry.PAN, detector.getFocalPoint());
-      }
+      sendTelemetryEvent(Telemetry.PAN, detector.getFocalPoint());
+
       notifyOnMoveBeginListeners(detector);
       return true;
     }
@@ -903,6 +899,9 @@ final class MapGestureDetector {
   }
 
   private void sendTelemetryEvent(String eventType, PointF focalPoint) {
+    if (!Mapbox.ENABLE_METRICS_ON_MAPPY) {
+        return;
+    }
     CameraPosition cameraPosition = transform.getCameraPosition();
     if (cameraPosition != null) {
       double zoom = cameraPosition.zoom;
