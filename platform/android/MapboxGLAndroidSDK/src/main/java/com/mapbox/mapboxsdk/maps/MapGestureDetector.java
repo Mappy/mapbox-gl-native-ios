@@ -1060,7 +1060,7 @@ final class MapGestureDetector {
     onMapClickListenerList.add(onMapClickListener);
   }
 
-  public void setOnNotSimpleTouchListener(MapboxMap.OnNotSimpleTouchListener onNotSimpleTouchListener) {
+  void setOnNotSimpleTouchListener(MapboxMap.OnNotSimpleTouchListener onNotSimpleTouchListener) {
     this.onNotSimpleTouchListener = onNotSimpleTouchListener;
   }
 

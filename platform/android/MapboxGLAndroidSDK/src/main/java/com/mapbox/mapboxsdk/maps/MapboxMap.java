@@ -1960,6 +1960,11 @@ public final class MapboxMap {
     onGesturesManagerInteractionListener.onRemoveMapClickListener(listener);
   }
 
+  // Mappy modifs
+  public void setOnNotSimpleTouchListener(@Nullable OnNotSimpleTouchListener listener) {
+    onGesturesManagerInteractionListener.onSetNotSimpleTouchListener(listener);
+  }
+
   /**
    * Sets a callback that's invoked when the user long clicks on the map view.
    *
@@ -2389,6 +2394,7 @@ public final class MapboxMap {
      */
     boolean simpleTouchCheck(LatLng point);
   }
+  //end Mappy modifs
 
   /**
    * Interface definition for a callback to be invoked when the user long clicks on the map view.
