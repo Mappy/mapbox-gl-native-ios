@@ -1923,6 +1923,35 @@ public final class MapboxMap {
     onGesturesManagerInteractionListener.onRemoveShoveListener(listener);
   }
 
+
+  /**
+   * Sets a custom {@link AndroidGesturesManager} to handle {@link android.view.MotionEvent}s
+   * registered by the {@link MapView}.
+   *
+   * @param androidGesturesManager       Gestures manager that interprets gestures based on the motion events.
+   * @param attachDefaultListeners       If true, pre-defined listeners will be attach
+   *                                     to change map based on {@link AndroidGesturesManager} callbacks.
+   * @param setDefaultMutuallyExclusives If true, pre-defined mutually exclusive gesture sets
+   *                                     will be added to the passed gestures manager.
+   * @see <a href="https://github.com/mapbox/mapbox-gestures-android">mapbox-gestures-android library</a>
+   */
+  public void setGesturesManager(@NonNull AndroidGesturesManager androidGesturesManager, boolean attachDefaultListeners,
+                                 boolean setDefaultMutuallyExclusives) {
+    onGesturesManagerInteractionListener.setGesturesManager(
+            androidGesturesManager, attachDefaultListeners, setDefaultMutuallyExclusives);
+  }
+
+  /**
+   * Get current {@link AndroidGesturesManager} that handles {@link android.view.MotionEvent}s
+   * registered by the {@link MapView}
+   *
+   * @return Current gestures manager.
+   */
+  @NonNull
+  public AndroidGesturesManager getGesturesManager() {
+    return onGesturesManagerInteractionListener.getGesturesManager();
+  }
+
   /**
    * Interrupts any ongoing gesture velocity animations.
    */
