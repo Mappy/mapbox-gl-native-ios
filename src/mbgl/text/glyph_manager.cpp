@@ -20,10 +20,6 @@ GlyphManager::GlyphManager(FileSource& fileSource_, std::unique_ptr<LocalGlyphRa
 GlyphManager::~GlyphManager() = default;
 
 void GlyphManager::getGlyphs(GlyphRequestor& requestor, GlyphDependencies glyphDependencies) {
-    if(glyphURL.empty()) {
-        Log::Error(Event::Style, "getGlyph : no glyphURL available, returning");
-        return;
-    }
     auto dependencies = std::make_shared<GlyphDependencies>(std::move(glyphDependencies));
 
     // Figure out which glyph ranges need to be fetched. For each range that does need to
@@ -49,8 +45,12 @@ void GlyphManager::getGlyphs(GlyphRequestor& requestor, GlyphDependencies glyphD
         for (const auto& range : ranges) {
             auto it = entry.ranges.find(range);
             if (it == entry.ranges.end() || !it->second.parsed) {
-                GlyphRequest& request = requestRange(entry, fontStack, range);
-                request.requestors[&requestor] = dependencies;
+                if(glyphURL.empty()) {
+                    observer->onGlyphsError(fontStack, range, std::make_exception_ptr(std::runtime_error("getGlyph : glyph not loaded because no glyphURL is set")));
+                } else {
+                    GlyphRequest &request = requestRange(entry, fontStack, range);
+                    request.requestors[&requestor] = dependencies;
+                }
             }
         }
     }
