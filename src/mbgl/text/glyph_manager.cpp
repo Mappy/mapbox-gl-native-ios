@@ -5,7 +5,6 @@
 #include <mbgl/storage/resource.hpp>
 #include <mbgl/storage/response.hpp>
 #include <mbgl/util/tiny_sdf.hpp>
-#include <mbgl/util/logging.hpp>
 
 namespace mbgl {
 
