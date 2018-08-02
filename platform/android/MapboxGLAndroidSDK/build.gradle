@@ -144,6 +144,7 @@ android {
     }
 }
 
+
 def static getGitRevision() {
     def cmd = "git rev-parse --short HEAD"
     def proc = cmd.execute()
