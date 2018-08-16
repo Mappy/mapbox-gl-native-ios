@@ -2113,11 +2113,6 @@ public final class MapboxMap {
     onGesturesManagerInteractionListener.onRemoveMapClickListener(listener);
   }
 
-  // Mappy modifs
-  public void setOnNotSimpleTouchListener(@Nullable OnNotSimpleTouchListener listener) {
-    onGesturesManagerInteractionListener.onSetNotSimpleTouchListener(listener);
-  }
-
   /**
    * Sets a callback that's invoked when the user long clicks on the map view.
    *
@@ -2468,9 +2463,6 @@ public final class MapboxMap {
 
     void onRemoveMapClickListener(OnMapClickListener listener);
 
-    // Mappy modifs
-    void onSetNotSimpleTouchListener(OnNotSimpleTouchListener listener);
-
     void onSetMapLongClickListener(OnMapLongClickListener listener);
 
     void onAddMapLongClickListener(OnMapLongClickListener listener);
@@ -2526,28 +2518,6 @@ public final class MapboxMap {
      */
     void onMapClick(@NonNull LatLng point);
   }
-
-  //Mappy modifs
-  /**
-   * Interface definition for a callback to be invoked when the triggered touch is not a simple map touch.
-   *
-   * @see MapboxMap#setOnMapClickListener(OnMapClickListener)
-   */
-  public interface OnNotSimpleTouchListener {
-    /**
-     * Called when the user touch on the map view and do a complex gesture.
-     * @param isMarkerTouch true if touch is above a marker
-     */
-    void isNotSimpleTouch(boolean isMarkerTouch);
-
-    /**
-     * Implement this methode if you need a customer not simple touche check
-     * @return  the check oprater result
-     * @param point
-     */
-    boolean simpleTouchCheck(LatLng point);
-  }
-  //end Mappy modifs
 
   /**
    * Interface definition for a callback to be invoked when the user long clicks on the map view.

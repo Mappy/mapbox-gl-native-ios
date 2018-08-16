@@ -1,5 +1,9 @@
 apply plugin: 'com.android.application'
 
+//mappy modif
+apply from: '../configuration.gradle'
+apply from: '../gradle/dependencies.gradle'
+//end mappy modif
 android {
     compileSdkVersion androidVersions.compileSdkVersion
     buildToolsVersion androidVersions.buildToolsVersion
@@ -54,7 +58,7 @@ android {
 
 dependencies {
     implementation dependenciesList.kotlinLib
-    api(project(':MapboxGLAndroidSDK'))
+    api(project(':mapbox'))
     implementation dependenciesList.mapboxJavaServices
 
     implementation dependenciesList.mapboxJavaTurf
@@ -77,10 +81,10 @@ dependencies {
     androidTestImplementation dependenciesList.testEspressoContrib
 }
 
-apply from: "${rootDir}/gradle/gradle-make.gradle"
-apply from: "${rootDir}/gradle/gradle-config.gradle"
-apply from: "${rootDir}/gradle/gradle-checkstyle.gradle"
-apply from: "${rootDir}/gradle/gradle-lint.gradle"
+apply from: "../gradle/gradle-make.gradle"
+apply from: "../gradle/gradle-config.gradle"
+apply from: "../gradle/gradle-checkstyle.gradle"
+apply from: "../gradle/gradle-lint.gradle"
 
 
 

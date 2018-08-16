@@ -280,7 +280,10 @@ std::vector<FontStack> Parser::fontStacks() const {
         if (layer->is<SymbolLayer>() && !layer->as<SymbolLayer>()->getTextField().isUndefined()) {
             layer->as<SymbolLayer>()->getTextFont().match(
                 [&] (Undefined) {
-                    result.insert({"Open Sans Regular", "Arial Unicode MS Regular"});
+                    //mappy modif
+                    Log::Warning(Event::ParseStyle, "No font defined while parsing layer '%s' : will use default font \" Condensed\".", layer->getID().c_str());
+                    result.insert({"DejaVu Sans Condensed"});
+                    //end mappy modif
                 },
                 [&] (const FontStack& constant) {
                     result.insert(constant);

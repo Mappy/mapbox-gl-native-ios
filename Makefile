@@ -1,4 +1,4 @@
-export BUILDTYPE = Release
+export BUILDTYPE = Debug
 export WITH_CXX11ABI ?= $(shell scripts/check-cxx11abi.sh)
 
 ifeq ($(BUILDTYPE), Release)

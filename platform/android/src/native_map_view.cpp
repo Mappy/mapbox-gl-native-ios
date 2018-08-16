@@ -519,6 +519,7 @@ jni::Array<jlong> NativeMapView::addPolylines(JNIEnv& env, jni::Array<jni::Objec
     return result;
 }
 
+
 jni::Array<jlong> NativeMapView::addPolygons(JNIEnv& env, jni::Array<jni::Object<Polygon>> polygons) {
     NullCheck(env, &polygons);
     std::size_t len = polygons.Length(env);

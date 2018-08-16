@@ -23,12 +23,11 @@ import com.mapbox.android.telemetry.Event;
 import com.mapbox.android.telemetry.MapEventFactory;
 import com.mapbox.android.telemetry.MapState;
 import com.mapbox.android.telemetry.MapboxTelemetry;
+import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
 import com.mapbox.mapboxsdk.geometry.LatLng;
-
-import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.utils.MathUtils;
 
 import java.util.ArrayList;
@@ -55,7 +54,6 @@ final class MapGestureDetector {
   private MapboxMap.OnMapClickListener onMapClickListener;
   private MapboxMap.OnMapLongClickListener onMapLongClickListener;
   private MapboxMap.OnFlingListener onFlingListener;
-  private MapboxMap.OnNotSimpleTouchListener onNotSimpleTouchListener;
   private MapboxMap.OnScrollListener onScrollListener;
 
   // new map touch API
@@ -218,19 +216,8 @@ final class MapGestureDetector {
       return false;
     }
 
-    //Mappy modif
-    if (onNotSimpleTouchListener != null){
-      if (motionEvent.getPointerCount() > 1){
-        onNotSimpleTouchListener.isNotSimpleTouch(false);
-      } else {
-        PointF tapPoint = new PointF(motionEvent.getX(), motionEvent.getY());
-        if (!onNotSimpleTouchListener.simpleTouchCheck(projection.fromScreenLocation(tapPoint))) {
-          onNotSimpleTouchListener.isNotSimpleTouch(false);
-        }
-      }
-    }
-
     boolean result = gesturesManager.onTouchEvent(motionEvent);
+
     switch (motionEvent.getActionMasked()) {
       case MotionEvent.ACTION_DOWN:
         cancelAnimators();
@@ -238,6 +225,7 @@ final class MapGestureDetector {
         break;
       case MotionEvent.ACTION_UP:
         transform.setGestureInProgress(false);
+
         // Start all awaiting velocity animations
         animationsTimeoutHandler.removeCallbacksAndMessages(null);
         for (Animator animator : scheduledAnimators) {
@@ -358,6 +346,7 @@ final class MapGestureDetector {
 
         notifyOnMapClickListeners(tapPoint);
       }
+
       sendTelemetryEvent(Telemetry.SINGLE_TAP, new PointF(motionEvent.getX(), motionEvent.getY()));
 
       return true;
@@ -388,6 +377,7 @@ final class MapGestureDetector {
         }
 
         zoomInAnimated(zoomFocalPoint, false);
+
         sendTelemetryEvent(Telemetry.DOUBLE_TAP, new PointF(motionEvent.getX(), motionEvent.getY()));
 
         return true;
@@ -464,11 +454,6 @@ final class MapGestureDetector {
 
         // Scroll the map
         transform.moveBy(-distanceX, -distanceY, 0 /*no duration*/);
-
-        //Mappy modifs
-        if (onNotSimpleTouchListener != null) {
-          onNotSimpleTouchListener.isNotSimpleTouch(false);
-        }
 
         notifyOnScrollListeners();
         notifyOnMoveListeners(detector);
@@ -1058,10 +1043,6 @@ final class MapGestureDetector {
 
   void addOnMapClickListener(MapboxMap.OnMapClickListener onMapClickListener) {
     onMapClickListenerList.add(onMapClickListener);
-  }
-
-  void setOnNotSimpleTouchListener(MapboxMap.OnNotSimpleTouchListener onNotSimpleTouchListener) {
-    this.onNotSimpleTouchListener = onNotSimpleTouchListener;
   }
 
   void removeOnMapClickListener(MapboxMap.OnMapClickListener onMapClickListener) {

@@ -19,7 +19,7 @@ import static timber.log.Timber.DebugTree;
  */
 public class MapboxApplication extends Application {
 
-  private static final String DEFAULT_MAPBOX_ACCESS_TOKEN = "YOUR_MAPBOX_ACCESS_TOKEN_GOES_HERE";
+  private static final String DEFAULT_MAPBOX_ACCESS_TOKEN = "sk.eyJ1IjoieGF2aWVyY291dGluIiwiYSI6IldfdlRPVlkifQ.Kdk-xoV7zPNAcD_FJtA-UQ";
   private static final String ACCESS_TOKEN_NOT_SET_MESSAGE = "In order to run the Test App you need to set a valid "
     + "access token. During development, you can set the MAPBOX_ACCESS_TOKEN environment variable for the SDK to "
     + "automatically include it in the Test App. Otherwise, you can manually include it in the "

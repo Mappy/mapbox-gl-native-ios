@@ -47,8 +47,9 @@ void GlyphManager::getGlyphs(GlyphRequestor& requestor, GlyphDependencies glyphD
                 if(glyphURL.empty()) {
                     observer->onGlyphsError(fontStack, range, std::make_exception_ptr(std::runtime_error("getGlyph : glyph not loaded because no glyphURL is set")));
                 } else {
-                    GlyphRequest &request = requestRange(entry, fontStack, range);
+                    GlyphRequest& request = entry.ranges[range];
                     request.requestors[&requestor] = dependencies;
+                    requestRange(request, fontStack, range);
                 }
             }
         }
