@@ -1,4 +1,4 @@
-export BUILDTYPE = Debug
+export BUILDTYPE = Release
 export WITH_CXX11ABI ?= $(shell scripts/check-cxx11abi.sh)
 
 ifeq ($(BUILDTYPE), Release)
@@ -436,6 +436,35 @@ $(MACOS_QT_PROJ_PATH): $(BUILD_DEPS)
 .PHONY: qtproj
 qtproj: $(MACOS_QT_PROJ_PATH)
 	open $(MACOS_QT_PROJ_PATH)
+
+endif
+
+ifdef QNX_HOST
+export WITH_QT_DECODERS ?= ON
+export QCC_COMPILER_TARGET ?= gcc_ntox86_64
+export QCC_NTOARCH ?= x86_64
+
+export QNX_OUTPUT_PATH = build/qt-qnx-$(QCC_NTOARCH)/$(BUILDTYPE)
+QNX_QT_BUILD = $(QNX_OUTPUT_PATH)/build.ninja
+$(QNX_QT_BUILD): $(BUILD_DEPS)
+	@scripts/check-qt.sh
+	mkdir -p $(QNX_OUTPUT_PATH)
+	(cd $(QNX_OUTPUT_PATH) && cmake -G Ninja ../../.. \
+		-DCMAKE_BUILD_TYPE=$(BUILDTYPE) \
+		-DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+		-DQCC_COMPILER_TARGET=${QCC_COMPILER_TARGET} \
+		-DQCC_NTOARCH=${QCC_NTOARCH} \
+		-DCMAKE_TOOLCHAIN_FILE=platform/qt/qnx.cmake \
+		-DMBGL_PLATFORM=qt \
+		-DWITH_QT_DECODERS=${WITH_QT_DECODERS} \
+		-DWITH_QT_I18N=${WITH_QT_I18N} \
+		-DWITH_QT_4=${WITH_QT_4} \
+		-DWITH_CXX11ABI=${WITH_CXX11ABI} \
+		-DWITH_COVERAGE=${WITH_COVERAGE})
+
+.PHONY: qnx-qt-lib
+qnx-qt-lib: $(QNX_QT_BUILD)
+	$(NINJA) $(NINJA_ARGS) -j$(JOBS) -C $(QNX_OUTPUT_PATH) qmapboxgl
 
 endif
 

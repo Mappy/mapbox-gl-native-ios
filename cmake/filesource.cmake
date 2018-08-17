@@ -19,6 +19,7 @@ add_library(mbgl-filesource STATIC
     platform/default/mbgl/storage/offline_database.cpp
     platform/default/mbgl/storage/offline_download.hpp
     platform/default/mbgl/storage/offline_download.cpp
+    platform/default/mbgl/storage/offline_schema.hpp
 
     # Database
     platform/default/sqlite3.hpp
@@ -43,6 +44,8 @@ target_link_libraries(mbgl-filesource
 mbgl_filesource()
 
 create_source_groups(mbgl-filesource)
+
+set_target_properties(mbgl-filesource PROPERTIES FOLDER "Core")
 
 xcode_create_scheme(TARGET mbgl-filesource)
 

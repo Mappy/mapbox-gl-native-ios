@@ -1,11 +1,11 @@
 #pragma once
 
 #include <mbgl/style/layer.hpp>
+#include <mbgl/style/layers/symbol_layer.hpp>
 #include <mbgl/style/conversion.hpp>
 #include <mbgl/style/conversion/color_ramp_property_value.hpp>
 #include <mbgl/style/conversion/constant.hpp>
 #include <mbgl/style/conversion/property_value.hpp>
-#include <mbgl/style/conversion/data_driven_property_value.hpp>
 #include <mbgl/style/conversion/transition_options.hpp>
 
 #include <string>
@@ -16,7 +16,7 @@ namespace conversion {
 
 using PropertySetter = optional<Error> (*) (Layer&, const Convertible&);
 
-template <class L, class PropertyValue, void (L::*setter)(PropertyValue)>
+template <class L, class PropertyValue, void (L::*setter)(PropertyValue), bool allowDataExpressions, bool convertTokens>
 optional<Error> setProperty(Layer& layer, const Convertible& value) {
     auto* typedLayer = layer.as<L>();
     if (!typedLayer) {
@@ -24,13 +24,13 @@ optional<Error> setProperty(Layer& layer, const Convertible& value) {
     }
 
     Error error;
-    optional<PropertyValue> typedValue = convert<PropertyValue>(value, error);
+    optional<PropertyValue> typedValue = convert<PropertyValue>(value, error, allowDataExpressions, convertTokens);
     if (!typedValue) {
         return error;
     }
 
     (typedLayer->*setter)(*typedValue);
-    return {};
+    return nullopt;
 }
 
 template <class L, void (L::*setter)(const TransitionOptions&)>
@@ -47,13 +47,13 @@ optional<Error> setTransition(Layer& layer, const Convertible& value) {
     }
 
     (typedLayer->*setter)(*transition);
-    return {};
+    return nullopt;
 }
 
 inline optional<Error> setVisibility(Layer& layer, const Convertible& value) {
     if (isUndefined(value)) {
         layer.setVisibility(VisibilityType::Visible);
-        return {};
+        return nullopt;
     }
 
     Error error;
@@ -63,7 +63,7 @@ inline optional<Error> setVisibility(Layer& layer, const Convertible& value) {
     }
 
     layer.setVisibility(*visibility);
-    return {};
+    return nullopt;
 }
 
 } // namespace conversion

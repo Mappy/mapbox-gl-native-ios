@@ -44,9 +44,13 @@ if(WITH_NODEJS)
             execute_process(
                 COMMAND "${NodeJS_EXECUTABLE}" "${npm_EXECUTABLE}" install --ignore-scripts
                 WORKING_DIRECTORY "${DIRECTORY}"
-                RESULT_VARIABLE NPM_INSTALL_FAILED)
+                RESULT_VARIABLE NPM_INSTALL_FAILED
+                OUTPUT_VARIABLE NPM_OUTPUT
+                ERROR_VARIABLE NPM_OUTPUT)
             if(NOT NPM_INSTALL_FAILED)
                 execute_process(COMMAND ${CMAKE_COMMAND} -E touch "${DIRECTORY}/node_modules/.${NAME}.stamp")
+            else()
+                message(FATAL_ERROR "NPM install failed:\n${NPM_OUTPUT}")
             endif()
         endif()
 
@@ -80,6 +84,7 @@ if(WITH_NODEJS)
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
         COMMENT "Updating submodules..."
     )
+    set_target_properties(update-submodules PROPERTIES FOLDER "Misc")
 
     # Run npm install for both directories, and add custom commands, and a target that depends on them.
     _npm_install("${CMAKE_SOURCE_DIR}" mapbox-gl-native update-submodules)
@@ -88,6 +93,7 @@ if(WITH_NODEJS)
         npm-install ALL
         DEPENDS "${CMAKE_SOURCE_DIR}/node_modules/.mapbox-gl-js.stamp"
     )
+    set_target_properties(npm-install PROPERTIES FOLDER "Misc")
 endif()
 
 # Generate source groups so the files are properly sorted in IDEs like Xcode.
@@ -197,6 +203,9 @@ macro(initialize_xcode_cxx_build_settings target)
 
     # -Wrange-loop-analysis
     set_xcode_property(${target} CLANG_WARN_RANGE_LOOP_ANALYSIS YES)
+
+    # -flto
+    set_xcode_property(${target} LLVM_LTO $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebugInfo>>:YES>)
 endmacro(initialize_xcode_cxx_build_settings)
 
 # CMake 3.1 does not have this yet.

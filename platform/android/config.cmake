@@ -21,10 +21,15 @@ endif()
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections -Wl,--version-script=${CMAKE_SOURCE_DIR}/platform/android/version-script")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections -Wl,--version-script=${CMAKE_SOURCE_DIR}/platform/android/version-script")
 
-mason_use(jni.hpp VERSION 3.0.0 HEADER_ONLY)
-mason_use(sqlite VERSION 3.14.2)
-mason_use(gtest VERSION 1.8.0)
-mason_use(icu VERSION 58.1-min-size)
+# Use LTO in Release builds. Due to a toolchain issue, -O2 is also required for the link step (https://github.com/android-ndk/ndk/issues/721)
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -flto")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -flto")
+set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -flto")
+set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto -O2")
+set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -flto -O2")
+set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} -flto -O2")
+set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO} -flto -O2")
 
 ## mbgl core ##
 
@@ -134,7 +139,7 @@ add_library(mbgl-android STATIC
     # Conversion C++ -> Java
     platform/android/src/conversion/constant.hpp
     platform/android/src/conversion/conversion.hpp
-    platform/android/src/style/conversion/function.hpp
+    platform/android/src/style/conversion/property_expression.hpp
     platform/android/src/style/conversion/property_value.hpp
     platform/android/src/style/conversion/types.hpp
     platform/android/src/style/conversion/types_string_values.hpp

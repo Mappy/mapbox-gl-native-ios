@@ -250,6 +250,8 @@ public:
 
     jni::jboolean getPrefetchesTiles(JNIEnv&);
 
+    mbgl::Map& getMap();
+
 private:
     std::unique_ptr<AndroidRendererFrontend> rendererFrontend;
 

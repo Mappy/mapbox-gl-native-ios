@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.4)
 project(mbgl LANGUAGES CXX C)
-set(CMAKE_CXX_STANDARD 14)
 
 option(WITH_CXX11ABI "Use the C++11 ABI" OFF)
 option(WITH_COVERAGE "Enable coverage reports" OFF)
@@ -32,6 +31,8 @@ if($ENV{CI})
     add_compile_options(-DCI_BUILD=1)
 endif()
 
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
 if(EXISTS ${CMAKE_SOURCE_DIR}/.git/HEAD)
     exec_program(
         "git"
@@ -44,23 +45,7 @@ endif()
 
 set_source_files_properties(src/mbgl/util/version.cpp PROPERTIES COMPILE_DEFINITIONS MBGL_VERSION_REV="${MBGL_VERSION_REV}")
 
-mason_use(geometry VERSION 0.9.2 HEADER_ONLY)
-mason_use(variant VERSION 1.1.4 HEADER_ONLY)
-mason_use(unique_resource VERSION cba309e HEADER_ONLY)
-mason_use(rapidjson VERSION 1.1.0 HEADER_ONLY)
-mason_use(boost VERSION 1.65.1 HEADER_ONLY)
-mason_use(geojsonvt VERSION 6.3.0 HEADER_ONLY)
-mason_use(supercluster VERSION 0.2.2 HEADER_ONLY)
-mason_use(kdbush VERSION 0.1.1-1 HEADER_ONLY)
-mason_use(earcut VERSION 0.12.4 HEADER_ONLY)
-mason_use(protozero VERSION 1.5.2 HEADER_ONLY)
-mason_use(pixelmatch VERSION 0.10.0 HEADER_ONLY)
-mason_use(geojson VERSION 0.4.2 HEADER_ONLY)
-mason_use(polylabel VERSION 1.0.3 HEADER_ONLY)
-mason_use(wagyu VERSION 0.4.3 HEADER_ONLY)
-mason_use(shelf-pack VERSION 2.1.1 HEADER_ONLY)
-mason_use(cheap-ruler VERSION 2.5.3 HEADER_ONLY)
-mason_use(vector-tile VERSION 1.0.1 HEADER_ONLY)
+include(cmake/mason-dependencies.cmake)
 
 add_definitions(-DRAPIDJSON_HAS_STDSTRING=1)
 
@@ -71,8 +56,28 @@ endif(WITH_COVERAGE)
 
 set(CMAKE_CONFIGURATION_TYPES Debug Release RelWithDebugInfo Sanitize)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -ftemplate-depth=1024 -fPIC -fvisibility=hidden -Wall -Wextra -Wshadow -Wnon-virtual-dtor -Wno-variadic-macros -Wno-unknown-pragmas")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -fPIC -fvisibility=hidden -Wall -Wextra -Wshadow -Wno-variadic-macros -Wno-unknown-pragmas")
+# Compiler configuration
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+# Required to avoid warnings when setting visibility
+cmake_policy(SET CMP0063 NEW)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_C_VISIBILITY_PRESET hidden)
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
+
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0 -w")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w")
+else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth=1024 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -Wno-variadic-macros -Wno-unknown-pragmas")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wshadow -Wno-variadic-macros -Wno-unknown-pragmas")
+endif()
 
 if (WITH_ERROR)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")

@@ -2,6 +2,39 @@
 
 Mapbox welcomes participation and contributions from everyone.  If you'd like to do so please see the [`Contributing Guide`](https://github.com/mapbox/mapbox-gl-native/blob/master/CONTRIBUTING.md) first to get started.
 
+## 6.4.0 - August 15, 2018
+ - Use unconverted bearing value for LatLngBounds calculation [#12616](https://github.com/mapbox/mapbox-gl-native/pull/12616)
+ - Store release so files with debugging information [#12628](https://github.com/mapbox/mapbox-gl-native/pull/12628)
+
+## 6.4.0-beta.1 - August 9, 2018
+ - Don't prefetch tiles for geojson sources [#12529](https://github.com/mapbox/mapbox-gl-native/pull/12529)
+ - Enable LTO in release builds [#12546](https://github.com/mapbox/mapbox-gl-native/pull/12546)
+ - Update Java Services to v3.4.0 [#12564](https://github.com/mapbox/mapbox-gl-native/pull/12564)
+ - Telemetry bump to 3.1.5 [#12589](https://github.com/mapbox/mapbox-gl-native/pull/12589)
+
+## 6.4.0-alpha.2 - August 1, 2018
+ - Compress shader source code [#12477](https://github.com/mapbox/mapbox-gl-native/pull/12477)
+ - Add minimal touch target to marker click detection [#12482](https://github.com/mapbox/mapbox-gl-native/pull/12482)
+ - Improve resulting APK size by using @Keep annotation [#12490](https://github.com/mapbox/mapbox-gl-native/pull/12490)
+ - Reuse Bitmap, Paint & Canvas instances in LocalGlyphRasterizer [#12488](https://github.com/mapbox/mapbox-gl-native/pull/12488)
+ - Remove black surface during map start up [#12377](https://github.com/mapbox/mapbox-gl-native/pull/12377)
+ - Corrected VisibleRegion on rotated map [#12255](https://github.com/mapbox/mapbox-gl-native/pull/12255)
+ - Tweak conversions to reduce binary size [#12511](https://github.com/mapbox/mapbox-gl-native/pull/12511)
+
+## 6.4.0-alpha.1 - July 25, 2018
+ - Validate if gesture detector is able to handle gesture [#12375](https://github.com/mapbox/mapbox-gl-native/pull/12375)
+ - Add a convenience method to check whether the map is in a destroyed state, MapView#isDestroyed [#12373](https://github.com/mapbox/mapbox-gl-native/pull/12373)
+ - Add GeoJSON regression tests for java method look up from JNI [#12354](https://github.com/mapbox/mapbox-gl-native/pull/12354)
+ - Bump kotlin, timber and okhttp dependencies [#12393](https://github.com/mapbox/mapbox-gl-native/pull/12393)
+ - Harden map events creation [#12405](https://github.com/mapbox/mapbox-gl-native/pull/12405)
+ - Fix possibly race on undefined behavior [#12408](https://github.com/mapbox/mapbox-gl-native/pull/12408)
+ - Option to request the visible region restricted by the content padding [#12407](https://github.com/mapbox/mapbox-gl-native/pull/12407)
+ - Expose getMap [#12444](https://github.com/mapbox/mapbox-gl-native/pull/12444)
+ - Correct access token validation [#12458](https://github.com/mapbox/mapbox-gl-native/pull/12458)
+ - Port `symbol-placement: line-center` to native [#12337](https://github.com/mapbox/mapbox-gl-native/pull/12337)
+ - Token string syntax (`"{token}"`) in `SymbolLayer` `textField` and `iconImage` property values is now correctly converted to the appropriate expression equivalent. ([#11659](https://github.com/mapbox/mapbox-gl-native/issues/11659))
+ - Fixed a crash when switching between two styles having layers with the same identifier but different layer types. ([#12432](https://github.com/mapbox/mapbox-gl-native/issues/12432))
+
 ## 6.3.0 - July 18, 2018
  - Harden map events creation [#12406](https://github.com/mapbox/mapbox-gl-native/pull/12406)
 

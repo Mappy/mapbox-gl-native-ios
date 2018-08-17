@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@octokit/rest": "^15.9.2",
-    "aws-sdk": "^2.3.5",
+    "aws-sdk": "^2.285.1",
     "csscolorparser": "^1.0.2",
     "ejs": "^2.4.1",
     "express": "^4.11.1",
@@ -39,7 +39,6 @@
     "node": ">=6"
   },
   "scripts": {
-    "preinstall": "npm install node-pre-gyp",
     "install": "node-pre-gyp install --fallback-to-build=false || make node",
     "test": "tape platform/node/test/js/**/*.test.js",
     "test-memory": "node --expose-gc platform/node/test/memory.test.js",
