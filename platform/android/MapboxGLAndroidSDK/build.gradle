@@ -111,7 +111,7 @@ android {
         }
 
         // proguard config for .aar
-        consumerProguardFiles 'proguard-rules.pro'
+//        consumerProguardFiles 'proguard-rules.pro'
     }
 
     // avoid naming conflicts, force usage of prefix
