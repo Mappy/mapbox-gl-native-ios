@@ -18,7 +18,6 @@ dependencies {
         exclude group: 'com.android.support', module: 'appcompat-v7'
     }
 
-    api project(':mappyutils')
     api dependenciesList.supportAnnotations
     api dependenciesList.supportFragmentV4
     api dependenciesList.timber
@@ -42,7 +41,7 @@ android {
         buildConfigField "String", "MAPBOX_EVENTS_USER_AGENT", String.format("\"MapboxEventsAndroid/%s\"", project.VERSION_NAME)
     }
 
-    defaultPublishConfig project.hasProperty("mapbox.buildtype") ? project.getProperty("mapbox.buildtype") : "debug"
+    defaultPublishConfig "release"
 
     // We sometimes want to invoke Gradle without building a native dependency, e.g. when we just want
     // to invoke the Java tests. When we explicitly specify an ABI of 'none', no native dependencies are
@@ -143,6 +142,10 @@ android {
     buildTypes {
         debug {
             jniDebuggable true
+        }
+        release {
+            minifyEnabled false
+            jniDebuggable false
         }
     }
 }

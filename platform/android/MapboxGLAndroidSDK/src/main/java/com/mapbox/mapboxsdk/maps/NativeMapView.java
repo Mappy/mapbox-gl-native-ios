@@ -12,6 +12,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
+import android.util.Log;
 
 import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.Geometry;
@@ -34,7 +35,6 @@ import com.mapbox.mapboxsdk.style.light.Light;
 import com.mapbox.mapboxsdk.style.sources.CannotAddSourceException;
 import com.mapbox.mapboxsdk.style.sources.Source;
 import com.mapbox.mapboxsdk.utils.BitmapUtils;
-import com.mappy.utils.Logger;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -112,7 +112,7 @@ final class NativeMapView {
 
     // validate if map has already been destroyed
     if (destroyed && !TextUtils.isEmpty(callingMethod)) {
-      Logger.e("You're calling `"+callingMethod+"` after the `MapView` was destroyed, were you invoking it after `onDestroy()`?");
+      Log.e("NativeMapView", "You're calling `"+callingMethod+"` after the `MapView` was destroyed, were you invoking it after `onDestroy()`?");
     }
     return destroyed;
   }
@@ -149,13 +149,13 @@ final class NativeMapView {
 
     if (width > 65535) {
       // we have seen edge cases where devices return incorrect values #6111
-      Logger.e("Device returned an out of range width size, capping value at 65535 instead of " + width);
+      Log.e("NativeMapView", "Device returned an out of range width size, capping value at 65535 instead of " + width);
       width = 65535;
     }
 
     if (height > 65535) {
       // we have seen edge cases where devices return incorrect values #6111
-      Logger.e("Device returned an out of range height size, capping value at 65535 instead of " + height);
+      Log.e("NativeMapView", "Device returned an out of range height size, capping value at 65535 instead of " + height);
       height = 65535;
     }
 
@@ -829,7 +829,7 @@ final class NativeMapView {
       try {
         onMapChangedListener.onMapChanged(rawChange);
       } catch (RuntimeException err) {
-        Logger.e(err);
+        Log.e("NativeMapView", Log.getStackTraceString(err));
       }
     }
   }
