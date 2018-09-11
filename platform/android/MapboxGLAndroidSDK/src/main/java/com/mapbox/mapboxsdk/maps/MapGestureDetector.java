@@ -440,6 +440,8 @@ final class MapGestureDetector {
       }
 
       transform.cancelTransitions();
+      cameraChangeDispatcher.onMoveDueToScrollBegin();
+
       sendTelemetryEvent(Telemetry.PAN, detector.getFocalPoint());
       notifyOnMoveBeginListeners(detector);
       return true;
@@ -463,6 +465,7 @@ final class MapGestureDetector {
 
     @Override
     public void onMoveEnd(MoveGestureDetector detector, float velocityX, float velocityY) {
+      cameraChangeDispatcher.onMoveDueToScrollEnd();
       cameraChangeDispatcher.onCameraIdle();
       notifyOnMoveEndListeners(detector);
     }
