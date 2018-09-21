@@ -5,9 +5,13 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.os.Environment;
+import android.support.annotation.Keep;
 import android.support.annotation.NonNull;
+import android.support.annotation.UiThread;
+
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
+
 import timber.log.Timber;
 
 /**
@@ -21,6 +25,7 @@ public class FileSource {
    * from the internet. This can be used add or remove custom parameters, or reroute
    * certain requests to other servers or endpoints.
    */
+  @Keep
   public interface ResourceTransformCallback {
 
     /**
@@ -43,6 +48,7 @@ public class FileSource {
    * @param context the context to derive the cache path from
    * @return the single instance of FileSource
    */
+  @UiThread
   public static synchronized FileSource getInstance(Context context) {
     if (INSTANCE == null) {
       String cachePath = getCachePath(context);
@@ -120,20 +126,29 @@ public class FileSource {
     return false;
   }
 
+  @Keep
   private long nativePtr;
 
   private FileSource(String cachePath, AssetManager assetManager) {
     initialize(Mapbox.getAccessToken(), cachePath, assetManager);
   }
 
+  @Keep
+  public native boolean isActivated();
+
+  @Keep
   public native void activate();
 
+  @Keep
   public native void deactivate();
 
+  @Keep
   public native void setAccessToken(@NonNull String accessToken);
 
+  @Keep
   public native String getAccessToken();
 
+  @Keep
   public native void setApiBaseUrl(String baseUrl);
 
   /**
@@ -144,11 +159,14 @@ public class FileSource {
    *
    * @param callback the callback to be invoked or null to reset
    */
+  @Keep
   public native void setResourceTransform(final ResourceTransformCallback callback);
 
+  @Keep
   private native void initialize(String accessToken, String cachePath, AssetManager assetManager);
 
   @Override
+  @Keep
   protected native void finalize() throws Throwable;
 
 }

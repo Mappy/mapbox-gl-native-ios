@@ -19,7 +19,7 @@
     };
     MGLFeatureAccessibilityElement *element = [[MGLFeatureAccessibilityElement alloc] initWithAccessibilityContainer:self feature:feature];
     XCTAssertEqualObjects(element.accessibilityLabel, @"English", @"Accessibility label should be localized.");
-    
+
     feature.attributes = @{
         @"name": @"Цинциннати",
         @"name_en": @"Цинциннати",

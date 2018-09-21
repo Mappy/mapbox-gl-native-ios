@@ -1,9 +1,7 @@
 add_definitions(-DMBGL_USE_GLES2=1)
 
-mason_use(icu VERSION 58.1-min-size)
-
 macro(initialize_ios_target target)
-    set_xcode_property(${target} IPHONEOS_DEPLOYMENT_TARGET "8.0")
+    set_xcode_property(${target} IPHONEOS_DEPLOYMENT_TARGET "9.0")
     set_xcode_property(${target} ENABLE_BITCODE "YES")
     set_xcode_property(${target} BITCODE_GENERATION_MODE bitcode)
     set_xcode_property(${target} ONLY_ACTIVE_ARCH $<$<CONFIG:Debug>:YES>)
@@ -29,6 +27,7 @@ macro(mbgl_platform_core)
         PRIVATE platform/darwin/mbgl/storage/reachability.h
         PRIVATE platform/darwin/mbgl/storage/reachability.m
         PRIVATE platform/darwin/src/CFHandle.hpp
+        PRIVATE platform/darwin/src/collator.mm
         PRIVATE platform/darwin/src/local_glyph_rasterizer.mm
         PRIVATE platform/darwin/src/logging_nslog.mm
         PRIVATE platform/darwin/src/nsthread.mm
@@ -48,8 +47,6 @@ macro(mbgl_platform_core)
         PRIVATE platform/default/mbgl/gl/headless_backend.cpp
         PRIVATE platform/default/mbgl/gl/headless_backend.hpp
         PRIVATE platform/darwin/src/headless_backend_eagl.mm
-        PRIVATE platform/default/mbgl/gl/headless_display.cpp
-        PRIVATE platform/default/mbgl/gl/headless_display.hpp
 
         # Snapshotting
         PRIVATE platform/default/mbgl/map/map_snapshotter.cpp
@@ -65,17 +62,6 @@ macro(mbgl_platform_core)
     target_add_mason_package(mbgl-core PUBLIC geojson)
     target_add_mason_package(mbgl-core PUBLIC polylabel)
     target_add_mason_package(mbgl-core PRIVATE icu)
-
-    target_compile_options(mbgl-core
-        PRIVATE -fvisibility=hidden
-    )
-
-    # TODO: Remove this by converting to ARC
-    set_source_files_properties(
-        platform/darwin/src/headless_backend_eagl.mm
-            PROPERTIES
-        COMPILE_FLAGS -fno-objc-arc
-    )
 
     target_include_directories(mbgl-core
         PUBLIC platform/darwin
@@ -104,10 +90,6 @@ macro(mbgl_filesource)
 
         # Database
         PRIVATE platform/default/sqlite3.cpp
-    )
-
-    target_compile_options(mbgl-filesource
-        PRIVATE -fvisibility=hidden
     )
 
     target_link_libraries(mbgl-filesource

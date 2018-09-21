@@ -29,13 +29,13 @@ TEST(API, RecycleMapUpdateImages) {
 
     HeadlessFrontend frontend { pixelRatio, fileSource, threadPool };
     auto map = std::make_unique<Map>(frontend, MapObserver::nullObserver(), frontend.getSize(),
-                                     pixelRatio, fileSource, threadPool, MapMode::Still);
+                                     pixelRatio, fileSource, threadPool, MapMode::Static);
 
     EXPECT_TRUE(map);
 
     auto loadStyle = [&](auto markerName, auto markerPath) {
         auto source = std::make_unique<GeoJSONSource>("geometry");
-        source->setGeoJSON({ Point<double> { 0, 0 } });
+        source->setGeoJSON( Geometry<double>{ Point<double>{ 0, 0 } } );
 
         auto layer = std::make_unique<SymbolLayer>("geometry", "geometry");
         layer->setIconImage({ markerName });

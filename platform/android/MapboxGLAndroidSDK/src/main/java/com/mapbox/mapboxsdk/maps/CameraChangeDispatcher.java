@@ -31,6 +31,8 @@ class CameraChangeDispatcher implements MapboxMap.OnCameraMoveStartedListener, M
   private OnCameraMoveListener onCameraMoveListener;
   private OnCameraIdleListener onCameraIdleListener;
 
+  private boolean isScrolling = false;
+
   private final Runnable onCameraMoveStartedRunnable = new Runnable() {
     @Override
     public void run() {
@@ -90,7 +92,7 @@ class CameraChangeDispatcher implements MapboxMap.OnCameraMoveStartedListener, M
   private final Runnable onCameraIdleRunnable = new Runnable() {
     @Override
     public void run() {
-      if (idle) {
+      if (idle || isScrolling) {
         return;
       }
       idle = true;
@@ -108,6 +110,14 @@ class CameraChangeDispatcher implements MapboxMap.OnCameraMoveStartedListener, M
       }
     }
   };
+
+  void onMoveDueToScrollBegin() {
+    isScrolling = true;
+  }
+
+  void onMoveDueToScrollEnd() {
+    isScrolling = false;
+  }
 
   @Deprecated
   void setOnCameraMoveStartedListener(OnCameraMoveStartedListener onCameraMoveStartedListener) {

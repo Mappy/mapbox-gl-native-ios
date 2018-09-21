@@ -22,6 +22,13 @@ MapWindow::MapWindow(const QMapboxGLSettings &settings)
     setWindowIcon(QIcon(":icon.png"));
 }
 
+MapWindow::~MapWindow()
+{
+    // Make sure we have a valid context so we
+    // can delete the QMapboxGL.
+    makeCurrent();
+}
+
 void MapWindow::selfTest()
 {
     if (m_bearingAnimation) {
@@ -222,7 +229,21 @@ void MapWindow::keyPressEvent(QKeyEvent *ev)
 
             m_map->setFilter("3d-buildings", buildingsFilterExpression);
 
-            m_map->setPaintProperty("3d-buildings", "fill-extrusion-color", "#aaa");
+            QString fillExtrusionColorJSON = R"JSON(
+              [
+                "interpolate",
+                ["linear"],
+                ["get", "height"],
+                  0.0, "blue",
+                 20.0, "royalblue",
+                 40.0, "cyan",
+                 60.0, "lime",
+                 80.0, "yellow",
+                100.0, "red"
+              ]
+            )JSON";
+
+            m_map->setPaintProperty("3d-buildings", "fill-extrusion-color", fillExtrusionColorJSON);
             m_map->setPaintProperty("3d-buildings", "fill-extrusion-opacity", .6);
 
             QVariantMap extrusionHeight;
@@ -252,10 +273,18 @@ void MapWindow::keyPressEvent(QKeyEvent *ev)
         break;
     case Qt::Key_2: {
             if (m_lineAnnotationId.isNull()) {
-                QMapbox::Coordinate topLeft     = m_map->coordinateForPixel({ 0, 0 });
-                QMapbox::Coordinate bottomRight = m_map->coordinateForPixel({ qreal(size().width()), qreal(size().height()) });
-                QMapbox::CoordinatesCollections lineGeometry { { { topLeft, bottomRight } } };
-                QMapbox::ShapeAnnotationGeometry annotationGeometry { QMapbox::ShapeAnnotationGeometry::LineStringType, lineGeometry };
+                QMapbox::Coordinates coordinates;
+                coordinates.push_back(m_map->coordinateForPixel({ 0, 0 }));
+                coordinates.push_back(m_map->coordinateForPixel({ qreal(size().width()), qreal(size().height()) }));
+
+                QMapbox::CoordinatesCollection collection;
+                collection.push_back(coordinates);
+
+                QMapbox::CoordinatesCollections lineGeometry;
+                lineGeometry.push_back(collection);
+
+                QMapbox::ShapeAnnotationGeometry annotationGeometry(QMapbox::ShapeAnnotationGeometry::LineStringType, lineGeometry);
+
                 QMapbox::LineAnnotation line;
                 line.geometry = annotationGeometry;
                 line.opacity = 0.5f;
@@ -270,12 +299,20 @@ void MapWindow::keyPressEvent(QKeyEvent *ev)
         break;
     case Qt::Key_3: {
             if (m_fillAnnotationId.isNull()) {
-                QMapbox::Coordinate topLeft     = m_map->coordinateForPixel({ 0, 0 });
-                QMapbox::Coordinate topRight    = m_map->coordinateForPixel({ 0, qreal(size().height()) });
-                QMapbox::Coordinate bottomLeft  = m_map->coordinateForPixel({ qreal(size().width()), 0 });
-                QMapbox::Coordinate bottomRight = m_map->coordinateForPixel({ qreal(size().width()), qreal(size().height()) });
-                QMapbox::CoordinatesCollections fillGeometry { { { bottomLeft, bottomRight, topRight, topLeft, bottomLeft } } };
-                QMapbox::ShapeAnnotationGeometry annotationGeometry { QMapbox::ShapeAnnotationGeometry::PolygonType, fillGeometry };
+                QMapbox::Coordinates coordinates;
+                coordinates.push_back(m_map->coordinateForPixel({ qreal(size().width()), 0 }));
+                coordinates.push_back(m_map->coordinateForPixel({ qreal(size().width()), qreal(size().height()) }));
+                coordinates.push_back(m_map->coordinateForPixel({ 0, qreal(size().height()) }));
+                coordinates.push_back(m_map->coordinateForPixel({ 0, 0 }));
+
+                QMapbox::CoordinatesCollection collection;
+                collection.push_back(coordinates);
+
+                QMapbox::CoordinatesCollections fillGeometry;
+                fillGeometry.push_back(collection);
+
+                QMapbox::ShapeAnnotationGeometry annotationGeometry(QMapbox::ShapeAnnotationGeometry::PolygonType, fillGeometry);
+
                 QMapbox::FillAnnotation fill;
                 fill.geometry = annotationGeometry;
                 fill.opacity = 0.5f;
@@ -293,8 +330,16 @@ void MapWindow::keyPressEvent(QKeyEvent *ev)
                 m_map->removeLayer("circleLayer");
                 m_map->removeSource("circleSource");
             } else {
-                QMapbox::CoordinatesCollections point { { { m_map->coordinate() } } };
-                QMapbox::Feature feature { QMapbox::Feature::PointType, point, {}, {} };
+                QMapbox::Coordinates coordinates;
+                coordinates.push_back(m_map->coordinate());
+
+                QMapbox::CoordinatesCollection collection;
+                collection.push_back(coordinates);
+
+                QMapbox::CoordinatesCollections point;
+                point.push_back(collection);
+
+                QMapbox::Feature feature(QMapbox::Feature::PointType, point, {}, {});
 
                 QVariantMap circleSource;
                 circleSource["type"] = "geojson";
@@ -418,10 +463,9 @@ void MapWindow::initializeGL()
 void MapWindow::paintGL()
 {
     m_frameDraws++;
-    m_map->resize(size(), size() * pixelRatio());
+    m_map->resize(size());
 #if QT_VERSION >= 0x050400
-    // When we're using QOpenGLWidget, we need to tell Mapbox GL about the framebuffer we're using.
-    m_map->setFramebufferObject(defaultFramebufferObject());
+    m_map->setFramebufferObject(defaultFramebufferObject(), size() * pixelRatio());
 #endif
     m_map->render();
 }

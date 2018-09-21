@@ -1,11 +1,13 @@
 package com.mapbox.mapboxsdk.testapp.activity.snapshot;
 
+import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.PointF;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.ImageView;
@@ -24,6 +26,7 @@ import timber.log.Timber;
 public class MapSnapshotterMarkerActivity extends AppCompatActivity implements MapSnapshotter.SnapshotReadyCallback {
 
   private MapSnapshotter mapSnapshotter;
+  private MapSnapshot mapSnapshot;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -58,12 +61,21 @@ public class MapSnapshotterMarkerActivity extends AppCompatActivity implements M
     mapSnapshotter.cancel();
   }
 
+  @SuppressLint("ClickableViewAccessibility")
   @Override
   public void onSnapshotReady(MapSnapshot snapshot) {
     Timber.i("Snapshot ready");
     ImageView imageView = (ImageView) findViewById(R.id.snapshot_image);
     Bitmap image = addMarker(snapshot);
     imageView.setImageBitmap(image);
+    imageView.setOnTouchListener((v, event) -> {
+      if (event.getAction() == MotionEvent.ACTION_DOWN) {
+        LatLng latLng = snapshot.latLngForPixel(new PointF(event.getX(), event.getY()));
+        Timber.e("Clicked LatLng is %s", latLng);
+        return true;
+      }
+      return false;
+    });
   }
 
   private Bitmap addMarker(MapSnapshot snapshot) {
@@ -72,9 +84,10 @@ public class MapSnapshotterMarkerActivity extends AppCompatActivity implements M
     // Dom toren
     PointF markerLocation = snapshot.pixelForLatLng(new LatLng(52.090649433011315, 5.121310651302338));
     canvas.drawBitmap(marker,
-      markerLocation.x,
-      /* Subtract height (in dp) so the bottom of the marker aligns correctly */
-      markerLocation.y - (marker.getHeight() / getResources().getDisplayMetrics().density),
+      /* Subtract half of the width so we center the bitmap correctly */
+      markerLocation.x - marker.getWidth() / 2,
+      /* Subtract half of the height so we align the bitmap bottom correctly */
+      markerLocation.y - marker.getHeight() / 2,
       null
     );
     return snapshot.getBitmap();

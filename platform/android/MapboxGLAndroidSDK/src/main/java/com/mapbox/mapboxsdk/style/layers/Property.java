@@ -92,6 +92,10 @@ public final class Property {
    * The label is placed along the line of the geometry. Can only be used on LineString and Polygon geometries.
    */
   public static final String SYMBOL_PLACEMENT_LINE = "line";
+  /**
+   * The label is placed at the center of the line of the geometry. Can only be used on LineString and Polygon geometries. Note that a single feature in a vector tile may contain multiple line geometries.
+   */
+  public static final String SYMBOL_PLACEMENT_LINE_CENTER = "line-center";
 
   /**
    * Label placement relative to its geometry.
@@ -99,6 +103,7 @@ public final class Property {
   @StringDef({
       SYMBOL_PLACEMENT_POINT,
       SYMBOL_PLACEMENT_LINE,
+      SYMBOL_PLACEMENT_LINE_CENTER,
     })
   @Retention(RetentionPolicy.SOURCE)
   public @interface SYMBOL_PLACEMENT {}
@@ -106,7 +111,7 @@ public final class Property {
   // ICON_ROTATION_ALIGNMENT: In combination with `symbol-placement`, determines the rotation behavior of icons.
 
   /**
-   * When {@link SYMBOL_PLACEMENT} is set to {@link Property#SYMBOL_PLACEMENT_POINT}, aligns icons east-west. When {@link SYMBOL_PLACEMENT} is set to {@link Property#SYMBOL_PLACEMENT_LINE}, aligns icon x-axes with the line.
+   * When {@link SYMBOL_PLACEMENT} is set to {@link Property#SYMBOL_PLACEMENT_POINT}, aligns icons east-west. When {@link SYMBOL_PLACEMENT} is set to {@link Property#SYMBOL_PLACEMENT_LINE} or {@link Property#SYMBOL_PLACEMENT_LINE_CENTER}, aligns icon x-axes with the line.
    */
   public static final String ICON_ROTATION_ALIGNMENT_MAP = "map";
   /**
@@ -114,7 +119,7 @@ public final class Property {
    */
   public static final String ICON_ROTATION_ALIGNMENT_VIEWPORT = "viewport";
   /**
-   * When {@link SYMBOL_PLACEMENT} is set to {@link Property#SYMBOL_PLACEMENT_POINT}, this is equivalent to {@link Property#ICON_ROTATION_ALIGNMENT_VIEWPORT}. When {@link SYMBOL_PLACEMENT} is set to {@link Property#SYMBOL_PLACEMENT_LINE}, this is equivalent to {@link Property#ICON_ROTATION_ALIGNMENT_MAP}.
+   * When {@link SYMBOL_PLACEMENT} is set to {@link Property#SYMBOL_PLACEMENT_POINT}, this is equivalent to {@link Property#ICON_ROTATION_ALIGNMENT_VIEWPORT}. When {@link SYMBOL_PLACEMENT} is set to {@link Property#SYMBOL_PLACEMENT_LINE} or {@link Property#SYMBOL_PLACEMENT_LINE_CENTER}, this is equivalent to {@link Property#ICON_ROTATION_ALIGNMENT_MAP}.
    */
   public static final String ICON_ROTATION_ALIGNMENT_AUTO = "auto";
 
@@ -271,7 +276,7 @@ public final class Property {
   // TEXT_ROTATION_ALIGNMENT: In combination with `symbol-placement`, determines the rotation behavior of the individual glyphs forming the text.
 
   /**
-   * When {@link SYMBOL_PLACEMENT} is set to {@link Property#SYMBOL_PLACEMENT_POINT}, aligns text east-west. When {@link SYMBOL_PLACEMENT} is set to {@link Property#SYMBOL_PLACEMENT_LINE}, aligns text x-axes with the line.
+   * When {@link SYMBOL_PLACEMENT} is set to {@link Property#SYMBOL_PLACEMENT_POINT}, aligns text east-west. When {@link SYMBOL_PLACEMENT} is set to {@link Property#SYMBOL_PLACEMENT_LINE} or {@link Property#SYMBOL_PLACEMENT_LINE_CENTER}, aligns text x-axes with the line.
    */
   public static final String TEXT_ROTATION_ALIGNMENT_MAP = "map";
   /**
@@ -279,7 +284,7 @@ public final class Property {
    */
   public static final String TEXT_ROTATION_ALIGNMENT_VIEWPORT = "viewport";
   /**
-   * When {@link SYMBOL_PLACEMENT} is set to {@link Property#SYMBOL_PLACEMENT_POINT}, this is equivalent to {@link Property#TEXT_ROTATION_ALIGNMENT_VIEWPORT}. When {@link SYMBOL_PLACEMENT} is set to {@link Property#SYMBOL_PLACEMENT_LINE}, this is equivalent to {@link Property#TEXT_ROTATION_ALIGNMENT_MAP}.
+   * When {@link SYMBOL_PLACEMENT} is set to {@link Property#SYMBOL_PLACEMENT_POINT}, this is equivalent to {@link Property#TEXT_ROTATION_ALIGNMENT_VIEWPORT}. When {@link SYMBOL_PLACEMENT} is set to {@link Property#SYMBOL_PLACEMENT_LINE} or {@link Property#SYMBOL_PLACEMENT_LINE_CENTER}, this is equivalent to {@link Property#TEXT_ROTATION_ALIGNMENT_MAP}.
    */
   public static final String TEXT_ROTATION_ALIGNMENT_AUTO = "auto";
 
@@ -402,7 +407,7 @@ public final class Property {
   @Retention(RetentionPolicy.SOURCE)
   public @interface TEXT_TRANSFORM {}
 
-  // FILL_TRANSLATE_ANCHOR: Controls the translation reference point.
+  // FILL_TRANSLATE_ANCHOR: Controls the frame of reference for `fill-translate`.
 
   /**
    * The fill is translated relative to the map.
@@ -414,7 +419,7 @@ public final class Property {
   public static final String FILL_TRANSLATE_ANCHOR_VIEWPORT = "viewport";
 
   /**
-   * Controls the translation reference point.
+   * Controls the frame of reference for `fill-translate`.
    */
   @StringDef({
       FILL_TRANSLATE_ANCHOR_MAP,
@@ -423,7 +428,7 @@ public final class Property {
   @Retention(RetentionPolicy.SOURCE)
   public @interface FILL_TRANSLATE_ANCHOR {}
 
-  // LINE_TRANSLATE_ANCHOR: Controls the translation reference point.
+  // LINE_TRANSLATE_ANCHOR: Controls the frame of reference for `line-translate`.
 
   /**
    * The line is translated relative to the map.
@@ -435,7 +440,7 @@ public final class Property {
   public static final String LINE_TRANSLATE_ANCHOR_VIEWPORT = "viewport";
 
   /**
-   * Controls the translation reference point.
+   * Controls the frame of reference for `line-translate`.
    */
   @StringDef({
       LINE_TRANSLATE_ANCHOR_MAP,
@@ -444,7 +449,7 @@ public final class Property {
   @Retention(RetentionPolicy.SOURCE)
   public @interface LINE_TRANSLATE_ANCHOR {}
 
-  // ICON_TRANSLATE_ANCHOR: Controls the translation reference point.
+  // ICON_TRANSLATE_ANCHOR: Controls the frame of reference for `icon-translate`.
 
   /**
    * Icons are translated relative to the map.
@@ -456,7 +461,7 @@ public final class Property {
   public static final String ICON_TRANSLATE_ANCHOR_VIEWPORT = "viewport";
 
   /**
-   * Controls the translation reference point.
+   * Controls the frame of reference for `icon-translate`.
    */
   @StringDef({
       ICON_TRANSLATE_ANCHOR_MAP,
@@ -465,7 +470,7 @@ public final class Property {
   @Retention(RetentionPolicy.SOURCE)
   public @interface ICON_TRANSLATE_ANCHOR {}
 
-  // TEXT_TRANSLATE_ANCHOR: Controls the translation reference point.
+  // TEXT_TRANSLATE_ANCHOR: Controls the frame of reference for `text-translate`.
 
   /**
    * The text is translated relative to the map.
@@ -477,7 +482,7 @@ public final class Property {
   public static final String TEXT_TRANSLATE_ANCHOR_VIEWPORT = "viewport";
 
   /**
-   * Controls the translation reference point.
+   * Controls the frame of reference for `text-translate`.
    */
   @StringDef({
       TEXT_TRANSLATE_ANCHOR_MAP,
@@ -486,7 +491,7 @@ public final class Property {
   @Retention(RetentionPolicy.SOURCE)
   public @interface TEXT_TRANSLATE_ANCHOR {}
 
-  // CIRCLE_TRANSLATE_ANCHOR: Controls the translation reference point.
+  // CIRCLE_TRANSLATE_ANCHOR: Controls the frame of reference for `circle-translate`.
 
   /**
    * The circle is translated relative to the map.
@@ -498,7 +503,7 @@ public final class Property {
   public static final String CIRCLE_TRANSLATE_ANCHOR_VIEWPORT = "viewport";
 
   /**
-   * Controls the translation reference point.
+   * Controls the frame of reference for `circle-translate`.
    */
   @StringDef({
       CIRCLE_TRANSLATE_ANCHOR_MAP,
@@ -549,7 +554,7 @@ public final class Property {
   @Retention(RetentionPolicy.SOURCE)
   public @interface CIRCLE_PITCH_ALIGNMENT {}
 
-  // FILL_EXTRUSION_TRANSLATE_ANCHOR: Controls the translation reference point.
+  // FILL_EXTRUSION_TRANSLATE_ANCHOR: Controls the frame of reference for `fill-extrusion-translate`.
 
   /**
    * The fill extrusion is translated relative to the map.
@@ -561,7 +566,7 @@ public final class Property {
   public static final String FILL_EXTRUSION_TRANSLATE_ANCHOR_VIEWPORT = "viewport";
 
   /**
-   * Controls the translation reference point.
+   * Controls the frame of reference for `fill-extrusion-translate`.
    */
   @StringDef({
       FILL_EXTRUSION_TRANSLATE_ANCHOR_MAP,
@@ -569,6 +574,48 @@ public final class Property {
     })
   @Retention(RetentionPolicy.SOURCE)
   public @interface FILL_EXTRUSION_TRANSLATE_ANCHOR {}
+
+  // RASTER_RESAMPLING: The resampling/interpolation method to use for overscaling, also known as texture magnification filter
+
+  /**
+   * (Bi)linear filtering interpolates pixel values using the weighted average of the four closest original source pixels creating a smooth but blurry look when overscaled
+   */
+  public static final String RASTER_RESAMPLING_LINEAR = "linear";
+  /**
+   * Nearest neighbor filtering interpolates pixel values using the nearest original source pixel creating a sharp but pixelated look when overscaled
+   */
+  public static final String RASTER_RESAMPLING_NEAREST = "nearest";
+
+  /**
+   * The resampling/interpolation method to use for overscaling, also known as texture magnification filter
+   */
+  @StringDef({
+      RASTER_RESAMPLING_LINEAR,
+      RASTER_RESAMPLING_NEAREST,
+    })
+  @Retention(RetentionPolicy.SOURCE)
+  public @interface RASTER_RESAMPLING {}
+
+  // HILLSHADE_ILLUMINATION_ANCHOR: Direction of light source when map is rotated.
+
+  /**
+   * The hillshade illumination is relative to the north direction.
+   */
+  public static final String HILLSHADE_ILLUMINATION_ANCHOR_MAP = "map";
+  /**
+   * The hillshade illumination is relative to the top of the viewport.
+   */
+  public static final String HILLSHADE_ILLUMINATION_ANCHOR_VIEWPORT = "viewport";
+
+  /**
+   * Direction of light source when map is rotated.
+   */
+  @StringDef({
+      HILLSHADE_ILLUMINATION_ANCHOR_MAP,
+      HILLSHADE_ILLUMINATION_ANCHOR_VIEWPORT,
+    })
+  @Retention(RetentionPolicy.SOURCE)
+  public @interface HILLSHADE_ILLUMINATION_ANCHOR {}
 
   // ANCHOR: Whether extruded geometries are lit relative to the map or viewport.
 

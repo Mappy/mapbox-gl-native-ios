@@ -6,77 +6,104 @@ if (NOT MBGL_PLATFORM)
     endif()
 endif()
 
-find_program(NodeJS_EXECUTABLE NAMES nodejs node)
-if (NOT NodeJS_EXECUTABLE)
-    message(FATAL_ERROR "Could not find Node.js")
-endif()
-
-find_program(npm_EXECUTABLE NAMES npm)
-if (NOT npm_EXECUTABLE)
-    message(FATAL_ERROR "Could not find npm")
-endif()
-
-function(_npm_install DIRECTORY NAME ADDITIONAL_DEPS)
-    SET(NPM_INSTALL_FAILED FALSE)
-    if("${DIRECTORY}/package.json" IS_NEWER_THAN "${DIRECTORY}/node_modules/.${NAME}.stamp")
-        message(STATUS "Running 'npm install' for ${NAME}...")
-        execute_process(
-            COMMAND ${NodeJS_EXECUTABLE} ${npm_EXECUTABLE} install --ignore-scripts
-            WORKING_DIRECTORY "${DIRECTORY}"
-            RESULT_VARIABLE NPM_INSTALL_FAILED)
-        if(NOT NPM_INSTALL_FAILED)
-            execute_process(COMMAND ${CMAKE_COMMAND} -E touch "${DIRECTORY}/node_modules/.${NAME}.stamp")
-        endif()
+if(WITH_NODEJS)
+    find_program(NodeJS_EXECUTABLE NAMES nodejs node)
+    if (NOT NodeJS_EXECUTABLE)
+        message(FATAL_ERROR "Could not find Node.js")
     endif()
 
-    add_custom_command(
-        OUTPUT "${DIRECTORY}/node_modules/.${NAME}.stamp"
-        COMMAND ${NodeJS_EXECUTABLE} ${npm_EXECUTABLE} install --ignore-scripts
-        COMMAND ${CMAKE_COMMAND} -E touch "${DIRECTORY}/node_modules/.${NAME}.stamp"
-        WORKING_DIRECTORY "${DIRECTORY}"
-        DEPENDS ${ADDITIONAL_DEPS} "${DIRECTORY}/package.json"
-        COMMENT "Running 'npm install' for ${NAME}...")
-endfunction()
+    find_program(npm_EXECUTABLE NAMES npm)
+    if (NOT npm_EXECUTABLE)
+        message(FATAL_ERROR "Could not find npm")
+    endif()
 
-# Run submodule update
-message(STATUS "Updating submodules...")
-execute_process(
-    COMMAND git submodule update --init mapbox-gl-js
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
-
-if(MBGL_PLATFORM STREQUAL "ios")
     execute_process(
-        COMMAND git submodule update --init platform/ios/vendor/SMCalloutView platform/ios/uitest/KIF platform/ios/uitest/OHHTTPStubs
+        COMMAND "${NodeJS_EXECUTABLE}" -e "process.stdout.write(process.versions.node)"
+        RESULT_VARIABLE _STATUS_CODE
+        OUTPUT_VARIABLE NodeJS_VERSION
+        ERROR_VARIABLE _STATUS_MESSAGE
+    )
+    if(NOT _STATUS_CODE EQUAL 0)
+        message(FATAL_ERROR "Could not detect Node.js version: ${_STATUS_MESSAGE}")
+    endif()
+
+    execute_process(
+        COMMAND "${NodeJS_EXECUTABLE}" -e "process.stdout.write(process.versions.modules)"
+        RESULT_VARIABLE _STATUS_CODE
+        OUTPUT_VARIABLE NodeJS_ABI
+        ERROR_VARIABLE _STATUS_MESSAGE
+    )
+    if(NOT _STATUS_CODE EQUAL 0)
+        message(FATAL_ERROR "Could not detect Node.js ABI version: ${_STATUS_MESSAGE}")
+    endif()
+
+    function(_npm_install DIRECTORY NAME ADDITIONAL_DEPS)
+        SET(NPM_INSTALL_FAILED FALSE)
+        if("${DIRECTORY}/package.json" IS_NEWER_THAN "${DIRECTORY}/node_modules/.${NAME}.stamp")
+            message(STATUS "Running 'npm install' for ${NAME}...")
+            execute_process(
+                COMMAND "${NodeJS_EXECUTABLE}" "${npm_EXECUTABLE}" install --ignore-scripts
+                WORKING_DIRECTORY "${DIRECTORY}"
+                RESULT_VARIABLE NPM_INSTALL_FAILED
+                OUTPUT_VARIABLE NPM_OUTPUT
+                ERROR_VARIABLE NPM_OUTPUT)
+            if(NOT NPM_INSTALL_FAILED)
+                execute_process(COMMAND ${CMAKE_COMMAND} -E touch "${DIRECTORY}/node_modules/.${NAME}.stamp")
+            else()
+                message(FATAL_ERROR "NPM install failed:\n${NPM_OUTPUT}")
+            endif()
+        endif()
+
+        add_custom_command(
+            OUTPUT "${DIRECTORY}/node_modules/.${NAME}.stamp"
+            COMMAND "${NodeJS_EXECUTABLE}" "${npm_EXECUTABLE}" install --ignore-scripts
+            COMMAND ${CMAKE_COMMAND} -E touch "${DIRECTORY}/node_modules/.${NAME}.stamp"
+            WORKING_DIRECTORY "${DIRECTORY}"
+            DEPENDS ${ADDITIONAL_DEPS} "${DIRECTORY}/package.json"
+            COMMENT "Running 'npm install' for ${NAME}...")
+    endfunction()
+
+    # Run submodule update
+    message(STATUS "Updating submodules...")
+    execute_process(
+        COMMAND git submodule update --init mapbox-gl-js
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+
+    if(NOT EXISTS "${CMAKE_SOURCE_DIR}/mapbox-gl-js/node_modules")
+        # Symlink mapbox-gl-js/node_modules so that the modules that are
+        # about to be installed get cached between CI runs.
+        execute_process(
+             COMMAND ln -sF ../node_modules .
+             WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/mapbox-gl-js")
+    endif()
+
+    # Add target for running submodule update during builds
+    add_custom_target(
+        update-submodules ALL
+        COMMAND git submodule update --init mapbox-gl-js
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        COMMENT "Updating submodules..."
+    )
+    set_target_properties(update-submodules PROPERTIES FOLDER "Misc")
+
+    # Run npm install for both directories, and add custom commands, and a target that depends on them.
+    _npm_install("${CMAKE_SOURCE_DIR}" mapbox-gl-native update-submodules)
+    _npm_install("${CMAKE_SOURCE_DIR}/mapbox-gl-js/test/integration" mapbox-gl-js "${CMAKE_SOURCE_DIR}/node_modules/.mapbox-gl-native.stamp")
+    add_custom_target(
+        npm-install ALL
+        DEPENDS "${CMAKE_SOURCE_DIR}/node_modules/.mapbox-gl-js.stamp"
+    )
+    set_target_properties(npm-install PROPERTIES FOLDER "Misc")
 endif()
-
-if(NOT EXISTS "${CMAKE_SOURCE_DIR}/mapbox-gl-js/node_modules")
-    # Symlink mapbox-gl-js/node_modules so that the modules that are
-    # about to be installed get cached between CI runs.
-    execute_process(
-         COMMAND ln -sF ../node_modules .
-         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/mapbox-gl-js")
-endif()
-
-# Add target for running submodule update during builds
-add_custom_target(
-    update-submodules ALL
-    COMMAND git submodule update --init mapbox-gl-js
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    COMMENT "Updating submodules..."
-)
-
-# Run npm install for both directories, and add custom commands, and a target that depends on them.
-_npm_install("${CMAKE_SOURCE_DIR}" mapbox-gl-native update-submodules)
-_npm_install("${CMAKE_SOURCE_DIR}/mapbox-gl-js/test/integration" mapbox-gl-js "${CMAKE_SOURCE_DIR}/node_modules/.mapbox-gl-native.stamp")
-add_custom_target(
-    npm-install ALL
-    DEPENDS "${CMAKE_SOURCE_DIR}/node_modules/.mapbox-gl-js.stamp"
-)
 
 # Generate source groups so the files are properly sorted in IDEs like Xcode.
 function(create_source_groups target)
-    get_target_property(sources ${target} SOURCES)
+    get_target_property(type ${target} TYPE)
+    if(type AND type STREQUAL "INTERFACE_LIBRARY")
+        get_target_property(sources ${target} INTERFACE_SOURCES)
+    else()
+        get_target_property(sources ${target} SOURCES)
+    endif()
     foreach(file ${sources})
         get_filename_component(file "${file}" ABSOLUTE)
         string(REGEX REPLACE "^${CMAKE_SOURCE_DIR}/" "" group "${file}")
@@ -84,6 +111,25 @@ function(create_source_groups target)
         string(REPLACE "/" "\\" group "${group}")
         source_group("${group}" FILES "${file}")
     endforeach()
+endfunction()
+
+# Creates a library target for a vendored dependency
+function(add_vendor_target NAME TYPE)
+    add_library(${NAME} ${TYPE} cmake/empty.cpp)
+    set(INCLUDE_TYPE "INTERFACE")
+    set(SOURCE_TYPE "INTERFACE")
+    if (TYPE STREQUAL "STATIC" OR TYPE STREQUAL "SHARED")
+        set(INCLUDE_TYPE "PUBLIC")
+        set(SOURCE_TYPE "PRIVATE")
+        set_target_properties(${NAME} PROPERTIES SOURCES "")
+    endif()
+    set_target_properties(${NAME} PROPERTIES INTERFACE_SOURCES "")
+    file(STRINGS vendor/${NAME}/files.txt FILES)
+    foreach(FILE IN LISTS FILES)
+        target_sources(${NAME} ${SOURCE_TYPE} "${CMAKE_SOURCE_DIR}/vendor/${NAME}/${FILE}")
+    endforeach()
+    target_include_directories(${NAME} ${INCLUDE_TYPE} vendor/${NAME}/include)
+    create_source_groups(${NAME})
 endfunction()
 
 # This little macro lets you set any XCode specific property
@@ -111,6 +157,12 @@ function(_get_xcconfig_property target var)
         set(${target}_${var} "${result}" PARENT_SCOPE)
     endif()
 endfunction()
+
+if(MBGL_PLATFORM STREQUAL "ios")
+    execute_process(
+        COMMAND git submodule update --init platform/ios/vendor/mapbox-events-ios
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+endif()
 
 function(write_xcconfig_target_properties)
     foreach(target ${ARGN})
@@ -143,11 +195,17 @@ macro(initialize_xcode_cxx_build_settings target)
     # -Wshadow
     set_xcode_property(${target} GCC_WARN_SHADOW YES)
 
-    # -Wno-unknown-pragmas
-    set_xcode_property(${target} GCC_WARN_UNKNOWN_PRAGMAS YES)
-
     # -Wnon-virtual-dtor
     set_xcode_property(${target} GCC_WARN_NON_VIRTUAL_DESTRUCTOR YES)
+
+    # -Wnon-literal-conversion
+    set_xcode_property(${target} CLANG_WARN_NON_LITERAL_NULL_CONVERSION YES)
+
+    # -Wrange-loop-analysis
+    set_xcode_property(${target} CLANG_WARN_RANGE_LOOP_ANALYSIS YES)
+
+    # -flto
+    set_xcode_property(${target} LLVM_LTO $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebugInfo>>:YES>)
 endmacro(initialize_xcode_cxx_build_settings)
 
 # CMake 3.1 does not have this yet.

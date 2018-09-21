@@ -11,7 +11,8 @@ namespace mbgl {
 using namespace style;
 
 CircleBucket::CircleBucket(const BucketParameters& parameters, const std::vector<const RenderLayer*>& layers)
-    : mode(parameters.mode) {
+    : Bucket(LayerType::Circle),
+      mode(parameters.mode) {
     for (const auto& layer : layers) {
         paintPropertyBinders.emplace(
             std::piecewise_construct,
@@ -49,7 +50,7 @@ void CircleBucket::addFeature(const GeometryTileFeature& feature,
             // Do not include points that are outside the tile boundaries.
             // Include all points in Still mode. You need to include points from
             // neighbouring tiles so that they are not clipped at tile boundaries.
-            if ((mode != MapMode::Still) &&
+            if ((mode == MapMode::Continuous) &&
                 (x < 0 || x >= util::EXTENT || y < 0 || y >= util::EXTENT)) continue;
 
             if (segments.empty() || segments.back().vertexLength + vertexLength > std::numeric_limits<uint16_t>::max()) {
@@ -108,8 +109,9 @@ float CircleBucket::getQueryRadius(const RenderLayer& layer) const {
     auto circleLayer = layer.as<RenderCircleLayer>();
 
     float radius = get<CircleRadius>(*circleLayer, paintPropertyBinders);
+    float stroke = get<CircleStrokeWidth>(*circleLayer, paintPropertyBinders);
     auto translate = circleLayer->evaluated.get<CircleTranslate>();
-    return radius + util::length(translate[0], translate[1]);
+    return radius + stroke + util::length(translate[0], translate[1]);
 }
 
 } // namespace mbgl

@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.DrawableRes;
+import android.support.annotation.Keep;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.UiThread;
@@ -33,6 +34,7 @@ public class ImageSource extends Source {
    *
    * @param nativePtr - pointer to native peer
    */
+  @Keep
   public ImageSource(long nativePtr) {
     super(nativePtr);
   }
@@ -45,6 +47,7 @@ public class ImageSource extends Source {
    * @param url         remote json file
    */
   public ImageSource(String id, LatLngQuad coordinates, URL url) {
+    super();
     initialize(id, coordinates);
     setUrl(url);
   }
@@ -57,6 +60,7 @@ public class ImageSource extends Source {
    * @param bitmap      A Bitmap image
    */
   public ImageSource(String id, LatLngQuad coordinates, @NonNull android.graphics.Bitmap bitmap) {
+    super();
     initialize(id, coordinates);
     setImage(bitmap);
   }
@@ -69,6 +73,7 @@ public class ImageSource extends Source {
    * @param resourceId  The resource ID of a Bitmap image
    */
   public ImageSource(String id, LatLngQuad coordinates, @DrawableRes int resourceId) {
+    super();
     initialize(id, coordinates);
     setImage(resourceId);
   }
@@ -88,6 +93,7 @@ public class ImageSource extends Source {
    * @param url An image url
    */
   public void setUrl(String url) {
+    checkThread();
     nativeSetUrl(url);
   }
 
@@ -97,6 +103,7 @@ public class ImageSource extends Source {
    * @param bitmap A Bitmap image
    */
   public void setImage(@NonNull android.graphics.Bitmap bitmap) {
+    checkThread();
     nativeSetImage(bitmap);
   }
 
@@ -106,6 +113,7 @@ public class ImageSource extends Source {
    * @param resourceId The resource ID of a Bitmap image
    */
   public void setImage(@DrawableRes int resourceId) throws IllegalArgumentException {
+    checkThread();
     Context context = Mapbox.getApplicationContext();
     Drawable drawable = ContextCompat.getDrawable(context, resourceId);
     if (drawable instanceof BitmapDrawable) {
@@ -121,6 +129,7 @@ public class ImageSource extends Source {
    */
   @Nullable
   public String getUrl() {
+    checkThread();
     return nativeGetUrl();
   }
 
@@ -130,19 +139,26 @@ public class ImageSource extends Source {
    * @param latLngQuad latitude and longitude of the four corners of the image
    */
   public void setCoordinates(LatLngQuad latLngQuad) {
+    checkThread();
     nativeSetCoordinates(latLngQuad);
   }
 
+  @Keep
   protected native void initialize(String layerId, LatLngQuad payload);
 
+  @Keep
   protected native void nativeSetUrl(String url);
 
+  @Keep
   protected native String nativeGetUrl();
 
+  @Keep
   protected native void nativeSetImage(Bitmap bitmap);
 
+  @Keep
   protected native void nativeSetCoordinates(LatLngQuad latLngQuad);
 
   @Override
+  @Keep
   protected native void finalize() throws Throwable;
 }

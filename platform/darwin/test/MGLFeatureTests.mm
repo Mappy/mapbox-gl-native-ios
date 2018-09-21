@@ -38,7 +38,7 @@
     };
     features.push_back(mbgl::Feature { polygon });
 
-    NS_ARRAY_OF(MGLShape <MGLFeature> *) *shapes = MGLFeaturesFromMBGLFeatures(features);
+    NSArray<MGLShape <MGLFeature> *> *shapes = MGLFeaturesFromMBGLFeatures(features);
     XCTAssertEqual(shapes.count, 3, @"All features should be converted into shapes");
 
     MGLPointFeature *pointShape = (MGLPointFeature *)shapes[0];
@@ -69,7 +69,7 @@
                           [NSValue valueWithMGLCoordinate:CLLocationCoordinate2DMake(4, 4)]);
     XCTAssertEqualObjects([NSValue valueWithMGLCoordinate:polygonCoordinates[3]],
                           [NSValue valueWithMGLCoordinate:CLLocationCoordinate2DMake(4, 1)]);
-    NS_ARRAY_OF(MGLPolygon *) *interiorPolygons = polygonShape.interiorPolygons;
+    NSArray<MGLPolygon *> *interiorPolygons = polygonShape.interiorPolygons;
     XCTAssertEqual(interiorPolygons.count, 1);
     MGLPolygon *interiorPolygon = interiorPolygons.firstObject;
     XCTAssertEqual(interiorPolygon.pointCount, 4);
@@ -103,7 +103,7 @@
     vector.push_back(true);
     features.push_back(pointFeature);
 
-    NS_ARRAY_OF(MGLShape <MGLFeature> *) *shapes = MGLFeaturesFromMBGLFeatures(features);
+    NSArray<MGLShape <MGLFeature> *> *shapes = MGLFeaturesFromMBGLFeatures(features);
     XCTAssertEqual(shapes.count, 1, @"All features should be converted into shapes");
 
     MGLShape <MGLFeature> *shape = shapes.firstObject;
@@ -298,29 +298,36 @@
 }
 
 - (void)testShapeCollectionFeatureGeoJSONDictionary {
-    MGLPointAnnotation *pointFeature = [[MGLPointAnnotation alloc] init];
+    MGLPointFeature *pointFeature = [[MGLPointFeature alloc] init];
     CLLocationCoordinate2D pointCoordinate = { 10, 10 };
     pointFeature.coordinate = pointCoordinate;
 
     CLLocationCoordinate2D coord1 = { 0, 0 };
     CLLocationCoordinate2D coord2 = { 10, 10 };
     CLLocationCoordinate2D coords[] = { coord1, coord2 };
-    MGLPolyline *polyline = [MGLPolyline polylineWithCoordinates:coords count:2];
+    MGLPolylineFeature *polylineFeature = [MGLPolylineFeature polylineWithCoordinates:coords count:2];
 
-    MGLShapeCollectionFeature *shapeCollectionFeature = [MGLShapeCollectionFeature shapeCollectionWithShapes:@[pointFeature,
-                                                                                                             polyline]];
+    MGLShapeCollectionFeature *shapeCollectionFeature = [MGLShapeCollectionFeature shapeCollectionWithShapes:@[pointFeature, polylineFeature]];
+
     // A GeoJSON feature
     NSDictionary *geoJSONFeature = [shapeCollectionFeature geoJSONDictionary];
 
     // it has the correct geometry
     NSDictionary *expectedGeometry = @{@"type": @"GeometryCollection",
                                        @"geometries": @[
-                                                         @{@"type": @"Point",
-                                                           @"coordinates": @[@(pointCoordinate.longitude), @(pointCoordinate.latitude)]},
-                                                         @{@"type": @"LineString",
-                                                           @"coordinates": @[@[@(coord1.longitude), @(coord1.latitude)],
-                                                                             @[@(coord2.longitude), @(coord2.latitude)]]}
-                                                       ]};
+                                           @{ @"geometry": @{@"type": @"Point",
+                                                             @"coordinates": @[@(pointCoordinate.longitude), @(pointCoordinate.latitude)]},
+                                              @"properties": [NSNull null],
+                                              @"type": @"Feature",
+                                             },
+                                            @{ @"geometry": @{@"type": @"LineString",
+                                                              @"coordinates": @[@[@(coord1.longitude), @(coord1.latitude)],
+                                                                                @[@(coord2.longitude), @(coord2.latitude)]]},
+                                               @"properties": [NSNull null],
+                                               @"type": @"Feature",
+                                            }
+                                        ]
+                                    };
     XCTAssertEqualObjects(geoJSONFeature[@"geometry"], expectedGeometry);
 
     // When the shape collection is created with an empty array of shapes

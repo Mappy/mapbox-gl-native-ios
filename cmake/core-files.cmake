@@ -1,9 +1,11 @@
-# Do not edit. Regenerate this with ./scripts/generate-core-files.sh
+# This file is generated. Do not edit. Regenerate this with scripts/generate-cmake-files.js
 
 set(MBGL_CORE_FILES
     # actor
     include/mbgl/actor/actor.hpp
     include/mbgl/actor/actor_ref.hpp
+    include/mbgl/actor/aspiring_actor.hpp
+    include/mbgl/actor/established_actor.hpp
     include/mbgl/actor/mailbox.hpp
     include/mbgl/actor/message.hpp
     include/mbgl/actor/scheduler.hpp
@@ -44,6 +46,8 @@ set(MBGL_CORE_FILES
     # geometry
     src/mbgl/geometry/anchor.hpp
     src/mbgl/geometry/debug_font_data.hpp
+    src/mbgl/geometry/dem_data.cpp
+    src/mbgl/geometry/dem_data.hpp
     src/mbgl/geometry/feature_index.cpp
     src/mbgl/geometry/feature_index.hpp
     src/mbgl/geometry/line_atlas.cpp
@@ -123,15 +127,18 @@ set(MBGL_CORE_FILES
     src/mbgl/math/log2.cpp
 
     # parsedate
-    src/parsedate/parsedate.c
-    src/parsedate/parsedate.h
+    src/parsedate/parsedate.cpp
+    src/parsedate/parsedate.hpp
 
     # programs
     src/mbgl/programs/attributes.hpp
+    src/mbgl/programs/background_program.cpp
+    src/mbgl/programs/background_program.hpp
     src/mbgl/programs/binary_program.cpp
     src/mbgl/programs/binary_program.hpp
     src/mbgl/programs/circle_program.cpp
     src/mbgl/programs/circle_program.hpp
+    src/mbgl/programs/clipping_mask_program.hpp
     src/mbgl/programs/collision_box_program.cpp
     src/mbgl/programs/collision_box_program.hpp
     src/mbgl/programs/debug_program.hpp
@@ -141,6 +148,14 @@ set(MBGL_CORE_FILES
     src/mbgl/programs/fill_extrusion_program.hpp
     src/mbgl/programs/fill_program.cpp
     src/mbgl/programs/fill_program.hpp
+    src/mbgl/programs/heatmap_program.cpp
+    src/mbgl/programs/heatmap_program.hpp
+    src/mbgl/programs/heatmap_texture_program.cpp
+    src/mbgl/programs/heatmap_texture_program.hpp
+    src/mbgl/programs/hillshade_prepare_program.cpp
+    src/mbgl/programs/hillshade_prepare_program.hpp
+    src/mbgl/programs/hillshade_program.cpp
+    src/mbgl/programs/hillshade_program.hpp
     src/mbgl/programs/line_program.cpp
     src/mbgl/programs/line_program.hpp
     src/mbgl/programs/program.hpp
@@ -156,10 +171,12 @@ set(MBGL_CORE_FILES
 
     # renderer
     include/mbgl/renderer/backend_scope.hpp
+    include/mbgl/renderer/mode.hpp
     include/mbgl/renderer/query.hpp
     include/mbgl/renderer/renderer.hpp
     include/mbgl/renderer/renderer_backend.hpp
     include/mbgl/renderer/renderer_frontend.hpp
+    include/mbgl/renderer/renderer_observer.hpp
     src/mbgl/renderer/backend_scope.cpp
     src/mbgl/renderer/bucket.hpp
     src/mbgl/renderer/bucket_parameters.cpp
@@ -167,8 +184,6 @@ set(MBGL_CORE_FILES
     src/mbgl/renderer/cross_faded_property_evaluator.cpp
     src/mbgl/renderer/cross_faded_property_evaluator.hpp
     src/mbgl/renderer/data_driven_property_evaluator.hpp
-    src/mbgl/renderer/frame_history.cpp
-    src/mbgl/renderer/frame_history.hpp
     src/mbgl/renderer/group_by_layout.cpp
     src/mbgl/renderer/group_by_layout.hpp
     src/mbgl/renderer/image_atlas.cpp
@@ -198,7 +213,6 @@ set(MBGL_CORE_FILES
     src/mbgl/renderer/renderer_backend.cpp
     src/mbgl/renderer/renderer_impl.cpp
     src/mbgl/renderer/renderer_impl.hpp
-    src/mbgl/renderer/renderer_observer.hpp
     src/mbgl/renderer/style_diff.cpp
     src/mbgl/renderer/style_diff.hpp
     src/mbgl/renderer/tile_mask.hpp
@@ -217,6 +231,10 @@ set(MBGL_CORE_FILES
     src/mbgl/renderer/buckets/fill_bucket.hpp
     src/mbgl/renderer/buckets/fill_extrusion_bucket.cpp
     src/mbgl/renderer/buckets/fill_extrusion_bucket.hpp
+    src/mbgl/renderer/buckets/heatmap_bucket.cpp
+    src/mbgl/renderer/buckets/heatmap_bucket.hpp
+    src/mbgl/renderer/buckets/hillshade_bucket.cpp
+    src/mbgl/renderer/buckets/hillshade_bucket.hpp
     src/mbgl/renderer/buckets/line_bucket.cpp
     src/mbgl/renderer/buckets/line_bucket.hpp
     src/mbgl/renderer/buckets/raster_bucket.cpp
@@ -235,6 +253,10 @@ set(MBGL_CORE_FILES
     src/mbgl/renderer/layers/render_fill_extrusion_layer.hpp
     src/mbgl/renderer/layers/render_fill_layer.cpp
     src/mbgl/renderer/layers/render_fill_layer.hpp
+    src/mbgl/renderer/layers/render_heatmap_layer.cpp
+    src/mbgl/renderer/layers/render_heatmap_layer.hpp
+    src/mbgl/renderer/layers/render_hillshade_layer.cpp
+    src/mbgl/renderer/layers/render_hillshade_layer.hpp
     src/mbgl/renderer/layers/render_line_layer.cpp
     src/mbgl/renderer/layers/render_line_layer.hpp
     src/mbgl/renderer/layers/render_raster_layer.cpp
@@ -243,20 +265,32 @@ set(MBGL_CORE_FILES
     src/mbgl/renderer/layers/render_symbol_layer.hpp
 
     # renderer/sources
+    src/mbgl/renderer/sources/render_custom_geometry_source.cpp
+    src/mbgl/renderer/sources/render_custom_geometry_source.hpp
     src/mbgl/renderer/sources/render_geojson_source.cpp
     src/mbgl/renderer/sources/render_geojson_source.hpp
     src/mbgl/renderer/sources/render_image_source.cpp
     src/mbgl/renderer/sources/render_image_source.hpp
+    src/mbgl/renderer/sources/render_raster_dem_source.cpp
+    src/mbgl/renderer/sources/render_raster_dem_source.hpp
     src/mbgl/renderer/sources/render_raster_source.cpp
     src/mbgl/renderer/sources/render_raster_source.hpp
     src/mbgl/renderer/sources/render_vector_source.cpp
     src/mbgl/renderer/sources/render_vector_source.hpp
 
     # shaders
+    src/mbgl/shaders/background.cpp
+    src/mbgl/shaders/background.hpp
+    src/mbgl/shaders/background_pattern.cpp
+    src/mbgl/shaders/background_pattern.hpp
     src/mbgl/shaders/circle.cpp
     src/mbgl/shaders/circle.hpp
+    src/mbgl/shaders/clipping_mask.cpp
+    src/mbgl/shaders/clipping_mask.hpp
     src/mbgl/shaders/collision_box.cpp
     src/mbgl/shaders/collision_box.hpp
+    src/mbgl/shaders/collision_circle.cpp
+    src/mbgl/shaders/collision_circle.hpp
     src/mbgl/shaders/debug.cpp
     src/mbgl/shaders/debug.hpp
     src/mbgl/shaders/extrusion_texture.cpp
@@ -273,6 +307,14 @@ set(MBGL_CORE_FILES
     src/mbgl/shaders/fill_outline_pattern.hpp
     src/mbgl/shaders/fill_pattern.cpp
     src/mbgl/shaders/fill_pattern.hpp
+    src/mbgl/shaders/heatmap.cpp
+    src/mbgl/shaders/heatmap.hpp
+    src/mbgl/shaders/heatmap_texture.cpp
+    src/mbgl/shaders/heatmap_texture.hpp
+    src/mbgl/shaders/hillshade.cpp
+    src/mbgl/shaders/hillshade.hpp
+    src/mbgl/shaders/hillshade_prepare.cpp
+    src/mbgl/shaders/hillshade_prepare.hpp
     src/mbgl/shaders/line.cpp
     src/mbgl/shaders/line.hpp
     src/mbgl/shaders/line_pattern.cpp
@@ -285,6 +327,8 @@ set(MBGL_CORE_FILES
     src/mbgl/shaders/raster.hpp
     src/mbgl/shaders/shaders.cpp
     src/mbgl/shaders/shaders.hpp
+    src/mbgl/shaders/source.cpp
+    src/mbgl/shaders/source.hpp
     src/mbgl/shaders/symbol_icon.cpp
     src/mbgl/shaders/symbol_icon.hpp
     src/mbgl/shaders/symbol_sdf.cpp
@@ -317,15 +361,15 @@ set(MBGL_CORE_FILES
     src/mbgl/storage/response.cpp
 
     # style
+    include/mbgl/style/color_ramp_property_value.hpp
     include/mbgl/style/conversion.hpp
-    include/mbgl/style/data_driven_property_value.hpp
     include/mbgl/style/filter.hpp
-    include/mbgl/style/filter_evaluator.hpp
     include/mbgl/style/image.hpp
     include/mbgl/style/layer.hpp
     include/mbgl/style/layer_type.hpp
     include/mbgl/style/light.hpp
     include/mbgl/style/position.hpp
+    include/mbgl/style/property_expression.hpp
     include/mbgl/style/property_value.hpp
     include/mbgl/style/source.hpp
     include/mbgl/style/style.hpp
@@ -333,6 +377,9 @@ set(MBGL_CORE_FILES
     include/mbgl/style/types.hpp
     include/mbgl/style/undefined.hpp
     src/mbgl/style/collection.hpp
+    src/mbgl/style/custom_tile_loader.cpp
+    src/mbgl/style/custom_tile_loader.hpp
+    src/mbgl/style/filter.cpp
     src/mbgl/style/image.cpp
     src/mbgl/style/image_impl.cpp
     src/mbgl/style/image_impl.hpp
@@ -361,39 +408,99 @@ set(MBGL_CORE_FILES
     src/mbgl/style/types.cpp
 
     # style/conversion
+    include/mbgl/style/conversion/color_ramp_property_value.hpp
     include/mbgl/style/conversion/constant.hpp
     include/mbgl/style/conversion/coordinate.hpp
-    include/mbgl/style/conversion/data_driven_property_value.hpp
+    include/mbgl/style/conversion/custom_geometry_source_options.hpp
     include/mbgl/style/conversion/filter.hpp
     include/mbgl/style/conversion/function.hpp
     include/mbgl/style/conversion/geojson.hpp
     include/mbgl/style/conversion/geojson_options.hpp
+    include/mbgl/style/conversion/get_json_type.hpp
     include/mbgl/style/conversion/layer.hpp
     include/mbgl/style/conversion/light.hpp
-    include/mbgl/style/conversion/make_property_setters.hpp
     include/mbgl/style/conversion/position.hpp
-    include/mbgl/style/conversion/property_setter.hpp
     include/mbgl/style/conversion/property_value.hpp
     include/mbgl/style/conversion/source.hpp
     include/mbgl/style/conversion/tileset.hpp
     include/mbgl/style/conversion/transition_options.hpp
+    src/mbgl/style/conversion/color_ramp_property_value.cpp
+    src/mbgl/style/conversion/constant.cpp
+    src/mbgl/style/conversion/coordinate.cpp
+    src/mbgl/style/conversion/custom_geometry_source_options.cpp
+    src/mbgl/style/conversion/filter.cpp
+    src/mbgl/style/conversion/function.cpp
     src/mbgl/style/conversion/geojson.cpp
+    src/mbgl/style/conversion/geojson_options.cpp
+    src/mbgl/style/conversion/get_json_type.cpp
     src/mbgl/style/conversion/json.hpp
+    src/mbgl/style/conversion/layer.cpp
+    src/mbgl/style/conversion/light.cpp
+    src/mbgl/style/conversion/make_property_setters.hpp
+    src/mbgl/style/conversion/position.cpp
+    src/mbgl/style/conversion/property_setter.hpp
+    src/mbgl/style/conversion/source.cpp
     src/mbgl/style/conversion/stringify.hpp
+    src/mbgl/style/conversion/tileset.cpp
+    src/mbgl/style/conversion/transition_options.cpp
 
-    # style/function
-    include/mbgl/style/function/camera_function.hpp
-    include/mbgl/style/function/categorical_stops.hpp
-    include/mbgl/style/function/composite_categorical_stops.hpp
-    include/mbgl/style/function/composite_exponential_stops.hpp
-    include/mbgl/style/function/composite_function.hpp
-    include/mbgl/style/function/composite_interval_stops.hpp
-    include/mbgl/style/function/exponential_stops.hpp
-    include/mbgl/style/function/identity_stops.hpp
-    include/mbgl/style/function/interval_stops.hpp
-    include/mbgl/style/function/source_function.hpp
-    src/mbgl/style/function/categorical_stops.cpp
-    src/mbgl/style/function/identity_stops.cpp
+    # style/expression
+    include/mbgl/style/expression/array_assertion.hpp
+    include/mbgl/style/expression/assertion.hpp
+    include/mbgl/style/expression/at.hpp
+    include/mbgl/style/expression/boolean_operator.hpp
+    include/mbgl/style/expression/case.hpp
+    include/mbgl/style/expression/check_subtype.hpp
+    include/mbgl/style/expression/coalesce.hpp
+    include/mbgl/style/expression/coercion.hpp
+    include/mbgl/style/expression/collator.hpp
+    include/mbgl/style/expression/collator_expression.hpp
+    include/mbgl/style/expression/comparison.hpp
+    include/mbgl/style/expression/compound_expression.hpp
+    include/mbgl/style/expression/dsl.hpp
+    include/mbgl/style/expression/error.hpp
+    include/mbgl/style/expression/expression.hpp
+    include/mbgl/style/expression/find_zoom_curve.hpp
+    include/mbgl/style/expression/get_covering_stops.hpp
+    include/mbgl/style/expression/interpolate.hpp
+    include/mbgl/style/expression/interpolator.hpp
+    include/mbgl/style/expression/is_constant.hpp
+    include/mbgl/style/expression/is_expression.hpp
+    include/mbgl/style/expression/length.hpp
+    include/mbgl/style/expression/let.hpp
+    include/mbgl/style/expression/literal.hpp
+    include/mbgl/style/expression/match.hpp
+    include/mbgl/style/expression/parsing_context.hpp
+    include/mbgl/style/expression/step.hpp
+    include/mbgl/style/expression/type.hpp
+    include/mbgl/style/expression/value.hpp
+    src/mbgl/style/expression/array_assertion.cpp
+    src/mbgl/style/expression/assertion.cpp
+    src/mbgl/style/expression/at.cpp
+    src/mbgl/style/expression/boolean_operator.cpp
+    src/mbgl/style/expression/case.cpp
+    src/mbgl/style/expression/check_subtype.cpp
+    src/mbgl/style/expression/coalesce.cpp
+    src/mbgl/style/expression/coercion.cpp
+    src/mbgl/style/expression/collator_expression.cpp
+    src/mbgl/style/expression/comparison.cpp
+    src/mbgl/style/expression/compound_expression.cpp
+    src/mbgl/style/expression/dsl.cpp
+    src/mbgl/style/expression/expression.cpp
+    src/mbgl/style/expression/find_zoom_curve.cpp
+    src/mbgl/style/expression/get_covering_stops.cpp
+    src/mbgl/style/expression/interpolate.cpp
+    src/mbgl/style/expression/is_constant.cpp
+    src/mbgl/style/expression/is_expression.cpp
+    src/mbgl/style/expression/length.cpp
+    src/mbgl/style/expression/let.cpp
+    src/mbgl/style/expression/literal.cpp
+    src/mbgl/style/expression/match.cpp
+    src/mbgl/style/expression/parsing_context.cpp
+    src/mbgl/style/expression/step.cpp
+    src/mbgl/style/expression/util.cpp
+    src/mbgl/style/expression/util.hpp
+    src/mbgl/style/expression/value.cpp
 
     # style/layers
     include/mbgl/style/layers/background_layer.hpp
@@ -401,6 +508,8 @@ set(MBGL_CORE_FILES
     include/mbgl/style/layers/custom_layer.hpp
     include/mbgl/style/layers/fill_extrusion_layer.hpp
     include/mbgl/style/layers/fill_layer.hpp
+    include/mbgl/style/layers/heatmap_layer.hpp
+    include/mbgl/style/layers/hillshade_layer.hpp
     include/mbgl/style/layers/line_layer.hpp
     include/mbgl/style/layers/raster_layer.hpp
     include/mbgl/style/layers/symbol_layer.hpp
@@ -427,6 +536,16 @@ set(MBGL_CORE_FILES
     src/mbgl/style/layers/fill_layer_impl.hpp
     src/mbgl/style/layers/fill_layer_properties.cpp
     src/mbgl/style/layers/fill_layer_properties.hpp
+    src/mbgl/style/layers/heatmap_layer.cpp
+    src/mbgl/style/layers/heatmap_layer_impl.cpp
+    src/mbgl/style/layers/heatmap_layer_impl.hpp
+    src/mbgl/style/layers/heatmap_layer_properties.cpp
+    src/mbgl/style/layers/heatmap_layer_properties.hpp
+    src/mbgl/style/layers/hillshade_layer.cpp
+    src/mbgl/style/layers/hillshade_layer_impl.cpp
+    src/mbgl/style/layers/hillshade_layer_impl.hpp
+    src/mbgl/style/layers/hillshade_layer_properties.cpp
+    src/mbgl/style/layers/hillshade_layer_properties.hpp
     src/mbgl/style/layers/line_layer.cpp
     src/mbgl/style/layers/line_layer_impl.cpp
     src/mbgl/style/layers/line_layer_impl.hpp
@@ -444,16 +563,22 @@ set(MBGL_CORE_FILES
     src/mbgl/style/layers/symbol_layer_properties.hpp
 
     # style/sources
+    include/mbgl/style/sources/custom_geometry_source.hpp
     include/mbgl/style/sources/geojson_source.hpp
     include/mbgl/style/sources/image_source.hpp
+    include/mbgl/style/sources/raster_dem_source.hpp
     include/mbgl/style/sources/raster_source.hpp
     include/mbgl/style/sources/vector_source.hpp
+    src/mbgl/style/sources/custom_geometry_source.cpp
+    src/mbgl/style/sources/custom_geometry_source_impl.cpp
+    src/mbgl/style/sources/custom_geometry_source_impl.hpp
     src/mbgl/style/sources/geojson_source.cpp
     src/mbgl/style/sources/geojson_source_impl.cpp
     src/mbgl/style/sources/geojson_source_impl.hpp
     src/mbgl/style/sources/image_source.cpp
     src/mbgl/style/sources/image_source_impl.cpp
     src/mbgl/style/sources/image_source_impl.hpp
+    src/mbgl/style/sources/raster_dem_source.cpp
     src/mbgl/style/sources/raster_source.cpp
     src/mbgl/style/sources/raster_source_impl.cpp
     src/mbgl/style/sources/raster_source_impl.hpp
@@ -467,8 +592,10 @@ set(MBGL_CORE_FILES
     src/mbgl/text/check_max_angle.hpp
     src/mbgl/text/collision_feature.cpp
     src/mbgl/text/collision_feature.hpp
-    src/mbgl/text/collision_tile.cpp
-    src/mbgl/text/collision_tile.hpp
+    src/mbgl/text/collision_index.cpp
+    src/mbgl/text/collision_index.hpp
+    src/mbgl/text/cross_tile_symbol_index.cpp
+    src/mbgl/text/cross_tile_symbol_index.hpp
     src/mbgl/text/get_anchors.cpp
     src/mbgl/text/get_anchors.hpp
     src/mbgl/text/glyph.cpp
@@ -481,8 +608,11 @@ set(MBGL_CORE_FILES
     src/mbgl/text/glyph_pbf.cpp
     src/mbgl/text/glyph_pbf.hpp
     src/mbgl/text/glyph_range.hpp
+    src/mbgl/text/language_tag.cpp
+    src/mbgl/text/language_tag.hpp
     src/mbgl/text/local_glyph_rasterizer.hpp
-    src/mbgl/text/placement_config.hpp
+    src/mbgl/text/placement.cpp
+    src/mbgl/text/placement.hpp
     src/mbgl/text/quads.cpp
     src/mbgl/text/quads.hpp
     src/mbgl/text/shaping.cpp
@@ -491,6 +621,8 @@ set(MBGL_CORE_FILES
     # tile
     include/mbgl/tile/tile_id.hpp
     include/mbgl/tile/tile_necessity.hpp
+    src/mbgl/tile/custom_geometry_tile.cpp
+    src/mbgl/tile/custom_geometry_tile.hpp
     src/mbgl/tile/geojson_tile.cpp
     src/mbgl/tile/geojson_tile.hpp
     src/mbgl/tile/geojson_tile_data.hpp
@@ -500,6 +632,10 @@ set(MBGL_CORE_FILES
     src/mbgl/tile/geometry_tile_data.hpp
     src/mbgl/tile/geometry_tile_worker.cpp
     src/mbgl/tile/geometry_tile_worker.hpp
+    src/mbgl/tile/raster_dem_tile.cpp
+    src/mbgl/tile/raster_dem_tile.hpp
+    src/mbgl/tile/raster_dem_tile_worker.cpp
+    src/mbgl/tile/raster_dem_tile_worker.hpp
     src/mbgl/tile/raster_tile.cpp
     src/mbgl/tile/raster_tile.hpp
     src/mbgl/tile/raster_tile_worker.cpp
@@ -519,7 +655,6 @@ set(MBGL_CORE_FILES
     src/mbgl/tile/vector_tile_data.hpp
 
     # util
-    include/mbgl/util/any.hpp
     include/mbgl/util/async_request.hpp
     include/mbgl/util/async_task.hpp
     include/mbgl/util/char_array_buffer.hpp
@@ -555,7 +690,9 @@ set(MBGL_CORE_FILES
     include/mbgl/util/tileset.hpp
     include/mbgl/util/timer.hpp
     include/mbgl/util/traits.hpp
+    include/mbgl/util/tuple.hpp
     include/mbgl/util/type_list.hpp
+    include/mbgl/util/unique_any.hpp
     include/mbgl/util/unitbezier.hpp
     include/mbgl/util/util.hpp
     include/mbgl/util/variant.hpp
@@ -609,11 +746,11 @@ set(MBGL_CORE_FILES
     src/mbgl/util/stopwatch.hpp
     src/mbgl/util/string.cpp
     src/mbgl/util/thread_local.hpp
-    src/mbgl/util/throttler.cpp
-    src/mbgl/util/throttler.hpp
     src/mbgl/util/tile_coordinate.hpp
     src/mbgl/util/tile_cover.cpp
     src/mbgl/util/tile_cover.hpp
+    src/mbgl/util/tile_cover_impl.cpp
+    src/mbgl/util/tile_cover_impl.hpp
     src/mbgl/util/tile_range.hpp
     src/mbgl/util/tiny_sdf.cpp
     src/mbgl/util/tiny_sdf.hpp
@@ -624,4 +761,5 @@ set(MBGL_CORE_FILES
     src/mbgl/util/version.cpp
     src/mbgl/util/version.hpp
     src/mbgl/util/work_request.cpp
+
 )

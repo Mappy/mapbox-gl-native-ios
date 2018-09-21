@@ -149,23 +149,16 @@ namespace android {
         layer.as<mbgl::style::RasterLayer>()->RasterLayer::setRasterContrastTransition(options);
     }
 
+    jni::Object<jni::ObjectTag> RasterLayer::getRasterResampling(jni::JNIEnv& env) {
+        using namespace mbgl::android::conversion;
+        Result<jni::jobject*> converted = convert<jni::jobject*>(env, layer.as<mbgl::style::RasterLayer>()->RasterLayer::getRasterResampling());
+        return jni::Object<jni::ObjectTag>(*converted);
+    }
+
     jni::Object<jni::ObjectTag> RasterLayer::getRasterFadeDuration(jni::JNIEnv& env) {
         using namespace mbgl::android::conversion;
         Result<jni::jobject*> converted = convert<jni::jobject*>(env, layer.as<mbgl::style::RasterLayer>()->RasterLayer::getRasterFadeDuration());
         return jni::Object<jni::ObjectTag>(*converted);
-    }
-
-    jni::Object<TransitionOptions> RasterLayer::getRasterFadeDurationTransition(jni::JNIEnv& env) {
-        using namespace mbgl::android::conversion;
-        mbgl::style::TransitionOptions options = layer.as<mbgl::style::RasterLayer>()->RasterLayer::getRasterFadeDurationTransition();
-        return *convert<jni::Object<TransitionOptions>>(env, options);
-    }
-
-    void RasterLayer::setRasterFadeDurationTransition(jni::JNIEnv&, jlong duration, jlong delay) {
-        mbgl::style::TransitionOptions options;
-        options.duration.emplace(mbgl::Milliseconds(duration));
-        options.delay.emplace(mbgl::Milliseconds(delay));
-        layer.as<mbgl::style::RasterLayer>()->RasterLayer::setRasterFadeDurationTransition(options);
     }
 
 
@@ -206,8 +199,7 @@ namespace android {
             METHOD(&RasterLayer::getRasterContrastTransition, "nativeGetRasterContrastTransition"),
             METHOD(&RasterLayer::setRasterContrastTransition, "nativeSetRasterContrastTransition"),
             METHOD(&RasterLayer::getRasterContrast, "nativeGetRasterContrast"),
-            METHOD(&RasterLayer::getRasterFadeDurationTransition, "nativeGetRasterFadeDurationTransition"),
-            METHOD(&RasterLayer::setRasterFadeDurationTransition, "nativeSetRasterFadeDurationTransition"),
+            METHOD(&RasterLayer::getRasterResampling, "nativeGetRasterResampling"),
             METHOD(&RasterLayer::getRasterFadeDuration, "nativeGetRasterFadeDuration"));
     }
 

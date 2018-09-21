@@ -5,7 +5,6 @@
 #include <mbgl/style/layer.hpp>
 #include <mbgl/style/filter.hpp>
 #include <mbgl/style/property_value.hpp>
-#include <mbgl/style/data_driven_property_value.hpp>
 
 #include <mbgl/util/color.hpp>
 
@@ -66,6 +65,12 @@ public:
     void setRasterContrast(PropertyValue<float>);
     void setRasterContrastTransition(const TransitionOptions&);
     TransitionOptions getRasterContrastTransition() const;
+
+    static PropertyValue<RasterResamplingType> getDefaultRasterResampling();
+    PropertyValue<RasterResamplingType> getRasterResampling() const;
+    void setRasterResampling(PropertyValue<RasterResamplingType>);
+    void setRasterResamplingTransition(const TransitionOptions&);
+    TransitionOptions getRasterResamplingTransition() const;
 
     static PropertyValue<float> getDefaultRasterFadeDuration();
     PropertyValue<float> getRasterFadeDuration() const;

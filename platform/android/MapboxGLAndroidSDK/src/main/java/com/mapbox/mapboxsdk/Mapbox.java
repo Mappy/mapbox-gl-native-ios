@@ -5,18 +5,12 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.annotation.UiThread;
-import android.text.TextUtils;
-
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
 import com.mapbox.mapboxsdk.exceptions.MapboxConfigurationException;
-import com.mapbox.mapboxsdk.location.LocationSource;
+import com.mapbox.mapboxsdk.maps.Telemetry;
 import com.mapbox.mapboxsdk.net.ConnectivityReceiver;
-import com.mapbox.services.android.telemetry.location.LocationEngine;
-import com.mapbox.services.android.telemetry.location.LocationEnginePriority;
-import com.mapbox.services.android.telemetry.location.LocationEngineProvider;
-import com.mapbox.services.android.telemetry.MapboxTelemetry;
-
 import timber.log.Timber;
 
 /**
@@ -36,12 +30,11 @@ public final class Mapbox {
   private Context context;
   private String accessToken;
   private Boolean connected;
-  private LocationEngine locationEngine;
 
   /**
    * Get an instance of Mapbox.
    * <p>
-   * This class manages the active access token, application context, and connectivity state.
+   * This class manages the Mapbox access token, application context, and connectivity state.
    * </p>
    *
    * @param context     Android context which holds or is an application context
@@ -49,41 +42,22 @@ public final class Mapbox {
    * @return the single instance of Mapbox
    */
   @UiThread
-  public static synchronized Mapbox getInstance(@NonNull Context context, @NonNull String accessToken) {
-    return getInstance(context, accessToken, true);
-  }
-  /*
-    Mappy modif
-   */
-  @UiThread
-  public static synchronized Mapbox getInstance(@NonNull Context context, @NonNull String accessToken, boolean initWithLocalLocation) {
+  public static synchronized Mapbox getInstance(@NonNull Context context, @Nullable String accessToken) {
     if (INSTANCE == null) {
       Context appContext = context.getApplicationContext();
-      LocationEngine locationEngine = null;
-      if(initWithLocalLocation) {
-        LocationEngineProvider locationEngineProvider = new LocationEngineProvider(context);
-        locationEngine = locationEngineProvider.obtainBestLocationEngineAvailable();
-        locationEngine.setPriority(LocationEnginePriority.NO_POWER);
-      }
-      INSTANCE = new Mapbox(appContext, accessToken, locationEngine);
-
-      if(ENABLE_METRICS_ON_MAPPY) {
-        try {
-          MapboxTelemetry.getInstance().initialize(
-                  appContext, accessToken, BuildConfig.MAPBOX_EVENTS_USER_AGENT, locationEngine);
-        } catch (Exception exception) {
-          Timber.e(exception, "Unable to instantiate Mapbox telemetry");
-        }
+      INSTANCE = new Mapbox(appContext, accessToken);
+      // Mappy modif
+      if (ENABLE_METRICS_ON_MAPPY && isAccessTokenValid(accessToken)) {
+        initializeTelemetry();
       }
       ConnectivityReceiver.instance(appContext);
     }
     return INSTANCE;
   }
 
-  Mapbox(@NonNull Context context, @NonNull String accessToken, LocationEngine locationEngine) {
+  Mapbox(@NonNull Context context, @Nullable String accessToken) {
     this.context = context;
     this.accessToken = accessToken;
-    this.locationEngine = locationEngine;
   }
 
   /**
@@ -91,32 +65,10 @@ public final class Mapbox {
    *
    * @return Mapbox access token
    */
+  @Nullable
   public static String getAccessToken() {
     validateMapbox();
-    validateAccessToken();
     return INSTANCE.accessToken;
-  }
-
-  /**
-   * Runtime validation of Mapbox creation.
-   */
-  private static void validateMapbox() throws MapboxConfigurationException {
-    if (INSTANCE == null) {
-      throw new MapboxConfigurationException();
-    }
-  }
-
-  /**
-   * Runtime validation of access token.
-   *
-   * @throws MapboxConfigurationException exception thrown when not using a valid accessToken
-   */
-  private static void validateAccessToken() throws MapboxConfigurationException {
-    String accessToken = INSTANCE.accessToken;
-    if (TextUtils.isEmpty(accessToken) || (!accessToken.toLowerCase(MapboxConstants.MAPBOX_LOCALE).startsWith("pk.")
-      && !accessToken.toLowerCase(MapboxConstants.MAPBOX_LOCALE).startsWith("sk."))) {
-      throw new MapboxConfigurationException();
-    }
   }
 
   /**
@@ -124,7 +76,9 @@ public final class Mapbox {
    *
    * @return the application context
    */
+  @NonNull
   public static Context getApplicationContext() {
+    validateMapbox();
     return INSTANCE.context;
   }
 
@@ -136,6 +90,7 @@ public final class Mapbox {
    *                  disconnected, and null for ConnectivityManager to determine.
    */
   public static synchronized void setConnected(Boolean connected) {
+    validateMapbox();
     // Connectivity state overridden by app
     INSTANCE.connected = connected;
   }
@@ -147,6 +102,7 @@ public final class Mapbox {
    * @return true if there is an internet connection, false otherwise
    */
   public static synchronized Boolean isConnected() {
+    validateMapbox();
     if (INSTANCE.connected != null) {
       // Connectivity state overridden by app
       return INSTANCE.connected;
@@ -158,30 +114,37 @@ public final class Mapbox {
   }
 
   /**
-   * Returns a location source instance with empty methods.
-   *
-   * @return an empty location source implementation
-   * @deprecated Replaced by {@link Mapbox#getLocationEngine()}
+   * Initializes telemetry
    */
-  @Deprecated
-  public static LocationSource getLocationSource() {
-    return new EmptyLocationSource();
-  }
-
-
-  /**
-   * Returns the location engine used by the SDK.
-   *
-   * @return the location engine configured
-   */
-  public static LocationEngine getLocationEngine() {
-    return INSTANCE.locationEngine;
-  }
-
-  public static void setLocationSource(LocationEngine  locSource) {
-    if(INSTANCE!=null){
-      INSTANCE.locationEngine = locSource;
+  private static void initializeTelemetry() {
+    try {
+      Telemetry.initialize();
+    } catch (Exception exception) {
+      Timber.e(exception);
     }
   }
 
+  /**
+   * Runtime validation of Mapbox creation.
+   */
+  private static void validateMapbox() {
+    if (INSTANCE == null) {
+      throw new MapboxConfigurationException();
+    }
+  }
+
+  /**
+   * Runtime validation of Mapbox access token
+   *
+   * @param accessToken the access token to validate
+   * @return true is valid, false otherwise
+   */
+  static boolean isAccessTokenValid(String accessToken) {
+    if (accessToken == null) {
+      return false;
+    }
+
+    accessToken = accessToken.trim().toLowerCase(MapboxConstants.MAPBOX_LOCALE);
+    return accessToken.length() != 0 && (accessToken.startsWith("pk.") || accessToken.startsWith("sk."));
+  }
 }

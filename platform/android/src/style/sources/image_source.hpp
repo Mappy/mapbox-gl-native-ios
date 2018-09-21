@@ -21,7 +21,7 @@ public:
 
     ImageSource(jni::JNIEnv&, jni::String, jni::Object<LatLngQuad>);
 
-    ImageSource(mbgl::style::ImageSource&);
+    ImageSource(jni::JNIEnv&, mbgl::style::Source&, AndroidRendererFrontend&);
 
     ~ImageSource();
 
@@ -29,9 +29,11 @@ public:
     jni::String getURL(jni::JNIEnv&);
 
     void setImage(jni::JNIEnv&, jni::Object<Bitmap>);
+
     void setCoordinates(jni::JNIEnv&, jni::Object<LatLngQuad>);
 
-    jni::jobject* createJavaPeer(jni::JNIEnv&);
+private:
+    jni::Object<Source> createJavaPeer(jni::JNIEnv&);
 
 }; // class ImageSource
 

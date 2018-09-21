@@ -6,10 +6,6 @@ target_sources(mbgl-offline
     PRIVATE platform/default/mbgl/util/default_styles.hpp
 )
 
-target_compile_options(mbgl-offline
-    PRIVATE -fvisibility-inlines-hidden
-)
-
 target_include_directories(mbgl-offline
     PRIVATE platform/default
 )
@@ -19,11 +15,15 @@ target_link_libraries(mbgl-offline
 )
 
 target_add_mason_package(mbgl-offline PRIVATE boost)
-target_add_mason_package(mbgl-offline PRIVATE boost_libprogram_options)
+target_add_mason_package(mbgl-offline PRIVATE args)
 
 mbgl_platform_offline()
 
 create_source_groups(mbgl-offline)
+
+initialize_xcode_cxx_build_settings(mbgl-offline)
+
+set_target_properties(mbgl-offline PROPERTIES FOLDER "Executables")
 
 xcode_create_scheme(
     TARGET mbgl-offline

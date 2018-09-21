@@ -3,13 +3,26 @@ package com.mapbox.mapboxsdk.http;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.os.Build;
+import android.support.annotation.Keep;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
-
+import android.util.Log;
+import com.mapbox.android.telemetry.TelemetryUtils;
 import com.mapbox.mapboxsdk.BuildConfig;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Dispatcher;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+import timber.log.Timber;
 
+import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.NoRouteToHostException;
@@ -18,47 +31,119 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.concurrent.locks.ReentrantLock;
 
-import javax.net.ssl.SSLException;
-
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.Dispatcher;
-import okhttp3.HttpUrl;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import timber.log.Timber;
-
-import static com.mapbox.services.android.telemetry.utils.TelemetryUtils.toHumanReadableAscii;
-
 import static android.util.Log.DEBUG;
+import static android.util.Log.ERROR;
 import static android.util.Log.INFO;
+import static android.util.Log.VERBOSE;
 import static android.util.Log.WARN;
 
 class HTTPRequest implements Callback {
-
-  private static OkHttpClient mClient = new OkHttpClient.Builder().dispatcher(getDispatcher()).build();
-  private static boolean logEnabled = true;
-  private static boolean logRequestUrl = false;
-
-  private String USER_AGENT_STRING = null;
 
   private static final int CONNECTION_ERROR = 0;
   private static final int TEMPORARY_ERROR = 1;
   private static final int PERMANENT_ERROR = 2;
 
+  private static OkHttpClient client = new OkHttpClient.Builder().dispatcher(getDispatcher()).build();
+  private static boolean logEnabled = true;
+  private static boolean logRequestUrl = false;
+
   //Mappy modifs
   @Nullable
   static HttpRequestHeaderProvider httpRequestHeaderProvider;
 
-  // Reentrancy is not needed, but "Lock" is an
-  // abstract class.
-  private ReentrantLock mLock = new ReentrantLock();
+  // Reentrancy is not needed, but "Lock" is an abstract class.
+  private ReentrantLock lock = new ReentrantLock();
+  private String userAgentString;
+  @Keep
+  private long nativePtr = 0;
+  private Call call;
 
-  private long mNativePtr = 0;
+  @Keep
+  private HTTPRequest(long nativePtr, String resourceUrl, String etag, String modified) {
+    this.nativePtr = nativePtr;
 
-  private Call mCall;
-  private Request mRequest;
+    if (resourceUrl.startsWith("local://")) {
+      // used by render test to serve files from assets
+      executeLocalRequest(resourceUrl);
+      return;
+    }
+    executeRequest(resourceUrl, etag, modified);
+  }
+
+  @Keep
+  public void cancel() {
+    // call can be null if the constructor gets aborted (e.g, under a NoRouteToHostException).
+    if (call != null) {
+      call.cancel();
+    }
+
+    // TODO: We need a lock here because we can try
+    // to cancel at the same time the request is getting
+    // answered on the OkHTTP thread. We could get rid of
+    // this lock by using Runnable when we move Android
+    // implementation of mbgl::RunLoop to Looper.
+    lock.lock();
+    nativePtr = 0;
+    lock.unlock();
+  }
+
+  @Override
+  public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+    if (response.isSuccessful()) {
+      log(VERBOSE, String.format("[HTTP] Request was successful (code = %s).", response.code()));
+    } else {
+      // We don't want to call this unsuccessful because a 304 isn't really an error
+      String message = !TextUtils.isEmpty(response.message()) ? response.message() : "No additional information";
+      log(DEBUG, String.format("[HTTP] Request with response code = %s: %s", response.code(), message));
+    }
+
+    ResponseBody responseBody = response.body();
+    if (responseBody == null) {
+      log(ERROR, "[HTTP] Received empty response body");
+      return;
+    }
+
+    byte[] body;
+    try {
+      body = responseBody.bytes();
+    } catch (IOException ioException) {
+      onFailure(call, ioException);
+      // throw ioException;
+      return;
+    } finally {
+      response.close();
+    }
+
+    lock.lock();
+    if (nativePtr != 0) {
+      nativeOnResponse(response.code(),
+        response.header("ETag"),
+        response.header("Last-Modified"),
+        response.header("Cache-Control"),
+        response.header("Expires"),
+        response.header("Retry-After"),
+        response.header("x-rate-limit-reset"),
+        body);
+    }
+    lock.unlock();
+  }
+
+  @Override
+  public void onFailure(@NonNull Call call, @NonNull IOException e) {
+    handleFailure(call, e);
+  }
+
+  static void enableLog(boolean enabled) {
+    logEnabled = enabled;
+  }
+
+  static void enablePrintRequestUrlOnFailure(boolean enabled) {
+    logRequestUrl = enabled;
+  }
+
+  static void setOKHttpClient(OkHttpClient client) {
+    HTTPRequest.client = client;
+  }
 
   private static Dispatcher getDispatcher() {
     Dispatcher dispatcher = new Dispatcher();
@@ -68,18 +153,14 @@ class HTTPRequest implements Callback {
     return dispatcher;
   }
 
-  private native void nativeOnFailure(int type, String message);
-
-  private native void nativeOnResponse(int code, String etag, String modified, String cacheControl, String expires,
-                                       String retryAfter, String xRateLimitReset, byte[] body);
-
-  private HTTPRequest(long nativePtr, String resourceUrl, String etag, String modified) {
-    mNativePtr = nativePtr;
-
+  private void executeRequest(String resourceUrl, String etag, String modified) {
     try {
       HttpUrl httpUrl = HttpUrl.parse(resourceUrl);
-      final String host = httpUrl.host().toLowerCase(MapboxConstants.MAPBOX_LOCALE);
+      if (httpUrl == null) {
+        log(Log.ERROR, String.format("[HTTP] Unable to parse resourceUrl %s", resourceUrl));
+      }
 
+      final String host = httpUrl.host().toLowerCase(MapboxConstants.MAPBOX_LOCALE);
       // Don't try a request to remote server if we aren't connected
       if (!Mapbox.isConnected() && !host.equals("127.0.0.1") && !host.equals("localhost")) {
         throw new NoRouteToHostException("No Internet connection available.");
@@ -112,71 +193,27 @@ class HTTPRequest implements Callback {
         builder.addHeader("User-Agent", getUserAgent()); //Use MapBox Header only if mappy Header is null
       }
       /* End MAPPY */
-      mRequest = builder.build();
-      mCall = mClient.newCall(mRequest);
-      mCall.enqueue(this);
+      Request request = builder.build();
+      call = client.newCall(request);
+      call.enqueue(this);
     } catch (Exception exception) {
-      handleFailure(mCall, exception);
+      handleFailure(call, exception);
     }
   }
 
-  public void cancel() {
-    // mCall can be null if the constructor gets aborted (e.g, under a NoRouteToHostException).
-    if (mCall != null) {
-      mCall.cancel();
-    }
-
-    // TODO: We need a lock here because we can try
-    // to cancel at the same time the request is getting
-    // answered on the OkHTTP thread. We could get rid of
-    // this lock by using Runnable when we move Android
-    // implementation of mbgl::RunLoop to Looper.
-    mLock.lock();
-    mNativePtr = 0;
-    mLock.unlock();
-  }
-
-  @Override
-  public void onResponse(Call call, Response response) throws IOException {
-
-    if (logEnabled) {
-      if (response.isSuccessful()) {
-        Timber.v("[HTTP] Request was successful (code = %s).", response.code());
-      } else {
-        // We don't want to call this unsuccessful because a 304 isn't really an error
-        String message = !TextUtils.isEmpty(response.message()) ? response.message() : "No additional information";
-        Timber.d("[HTTP] Request with response code = %s: %s", response.code(), message);
+  private void executeLocalRequest(String resourceUrl) {
+    new LocalRequestTask(new LocalRequestTask.OnLocalRequestResponse() {
+      @Override
+      public void onResponse(byte[] bytes) {
+        if (bytes != null) {
+          lock.lock();
+          if (nativePtr != 0) {
+            nativeOnResponse(200, null, null, null, null, null, null, bytes);
+          }
+          lock.unlock();
+        }
       }
-    }
-
-    byte[] body;
-    try {
-      body = response.body().bytes();
-    } catch (IOException ioException) {
-      onFailure(call, ioException);
-      // throw ioException;
-      return;
-    } finally {
-      response.body().close();
-    }
-
-    mLock.lock();
-    if (mNativePtr != 0) {
-      nativeOnResponse(response.code(),
-        response.header("ETag"),
-        response.header("Last-Modified"),
-        response.header("Cache-Control"),
-        response.header("Expires"),
-        response.header("Retry-After"),
-        response.header("x-rate-limit-reset"),
-        body);
-    }
-    mLock.unlock();
-  }
-
-  @Override
-  public void onFailure(Call call, IOException e) {
-    handleFailure(call, e);
+    }).execute(resourceUrl);
   }
 
   private void handleFailure(Call call, Exception e) {
@@ -188,11 +225,11 @@ class HTTPRequest implements Callback {
       logFailure(type, errorMessage, requestUrl);
     }
 
-    mLock.lock();
-    if (mNativePtr != 0) {
+    lock.lock();
+    if (nativePtr != 0) {
       nativeOnFailure(type, errorMessage);
     }
-    mLock.unlock();
+    lock.unlock();
   }
 
   private int getFailureType(Exception e) {
@@ -205,19 +242,26 @@ class HTTPRequest implements Callback {
     return PERMANENT_ERROR;
   }
 
+  private void log(int type, String errorMessage) {
+    if (logEnabled) {
+      Timber.log(type, errorMessage);
+    }
+  }
+
   private void logFailure(int type, String errorMessage, String requestUrl) {
-    Timber.log(
-      type == TEMPORARY_ERROR ? DEBUG : type == CONNECTION_ERROR ? INFO : WARN,
-      "Request failed due to a %s error: %s %s",
-      type == TEMPORARY_ERROR ? "temporary" : type == CONNECTION_ERROR ? "connection" : "permanent",
-      errorMessage,
-      logRequestUrl ? requestUrl : ""
+    log(type == TEMPORARY_ERROR ? DEBUG : type == CONNECTION_ERROR ? INFO : WARN,
+      String.format(
+        "Request failed due to a %s error: %s %s",
+        type == TEMPORARY_ERROR ? "temporary" : type == CONNECTION_ERROR ? "connection" : "permanent",
+        errorMessage,
+        logRequestUrl ? requestUrl : ""
+      )
     );
   }
 
   private String getUserAgent() {
-    if (USER_AGENT_STRING == null) {
-      return USER_AGENT_STRING = toHumanReadableAscii(
+    if (userAgentString == null) {
+      userAgentString = TelemetryUtils.toHumanReadableAscii(
         String.format("%s %s (%s) Android/%s (%s)",
           getApplicationIdentifier(),
           BuildConfig.MAPBOX_VERSION_STRING,
@@ -225,9 +269,8 @@ class HTTPRequest implements Callback {
           Build.VERSION.SDK_INT,
           Build.CPU_ABI)
       );
-    } else {
-      return USER_AGENT_STRING;
     }
+    return userAgentString;
   }
 
   private String getApplicationIdentifier() {
@@ -240,20 +283,15 @@ class HTTPRequest implements Callback {
     }
   }
 
+  @Keep
+  private native void nativeOnFailure(int type, String message);
+
+  @Keep
+  private native void nativeOnResponse(int code, String etag, String modified, String cacheControl, String expires,
+                                       String retryAfter, String xRateLimitReset, byte[] body);
+
   //Mappy modifs
   public interface HttpRequestHeaderProvider {
     void addHeader(Request.Builder builder);
-  }
-
-  static void enableLog(boolean enabled) {
-    logEnabled = enabled;
-  }
-
-  static void enablePrintRequestUrlOnFailure(boolean enabled) {
-    logRequestUrl = enabled;
-  }
-
-  static void setOKHttpClient(OkHttpClient client) {
-    mClient = client;
   }
 }
