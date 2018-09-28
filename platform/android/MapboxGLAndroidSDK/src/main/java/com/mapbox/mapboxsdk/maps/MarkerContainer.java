@@ -5,7 +5,6 @@ import android.graphics.RectF;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.util.LongSparseArray;
-import android.util.Log;
 
 import com.mapbox.mapboxsdk.annotations.Annotation;
 import com.mapbox.mapboxsdk.annotations.BaseMarkerOptions;
@@ -174,8 +173,6 @@ class MarkerContainer implements Markers {
       rectangle.bottom / pixelRatio);
 
     long[] ids = nativeMapView.queryPointAnnotations(rect);
-
-
 
     List<Long> idsList = new ArrayList<>(ids.length);
     for (long id : ids) {

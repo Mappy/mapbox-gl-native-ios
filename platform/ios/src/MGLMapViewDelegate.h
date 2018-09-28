@@ -439,7 +439,7 @@ By default, the polyline doesn't have a white stroke.
  @param annotationViews An array of `MGLAnnotationView` objects representing the
     views that were added.
  */
-- (void)mapView:(MGLMapView *)mapView didAddAnnotationViews:(NS_ARRAY_OF(MGLAnnotationView *) *)annotationViews;
+- (void)mapView:(MGLMapView *)mapView didAddAnnotationViews:(NSArray<MGLAnnotationView *> *)annotationViews;
 
 #pragma mark Selecting Annotations
 

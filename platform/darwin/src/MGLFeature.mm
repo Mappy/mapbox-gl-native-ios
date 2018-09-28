@@ -7,12 +7,12 @@
 
 #import "MGLShape_Private.h"
 #import "MGLPointCollection_Private.h"
-#import "MGLPolyline+MGLAdditions.h"
-#import "MGLPolygon+MGLAdditions.h"
+#import "MGLPolyline_Private.h"
+#import "MGLPolygon_Private.h"
+
 #import "NSDictionary+MGLAdditions.h"
 #import "NSArray+MGLAdditions.h"
-
-#import "NSExpression+MGLAdditions.h"
+#import "NSExpression+MGLPrivateAdditions.h"
 
 #import <mbgl/util/geometry.hpp>
 #import <mbgl/style/conversion/geojson.hpp>
@@ -233,7 +233,7 @@ MGL_DEFINE_FEATURE_IS_EQUAL();
 
 @dynamic shapes;
 
-+ (instancetype)shapeCollectionWithShapes:(NS_ARRAY_OF(MGLShape<MGLFeature> *) *)shapes {
++ (instancetype)shapeCollectionWithShapes:(NSArray<MGLShape<MGLFeature> *> *)shapes {
     return [super shapeCollectionWithShapes:shapes];
 }
 
@@ -373,7 +373,7 @@ public:
     }
 };
 
-NS_ARRAY_OF(MGLShape <MGLFeature> *) *MGLFeaturesFromMBGLFeatures(const std::vector<mbgl::Feature> &features) {
+NSArray<MGLShape <MGLFeature> *> *MGLFeaturesFromMBGLFeatures(const std::vector<mbgl::Feature> &features) {
     NSMutableArray *shapes = [NSMutableArray arrayWithCapacity:features.size()];
     for (const auto &feature : features) {
         [shapes addObject:MGLFeatureFromMBGLFeature(feature)];
@@ -414,7 +414,7 @@ mbgl::Feature mbglFeature(mbgl::Feature feature, id identifier, NSDictionary *at
     return feature;
 }
 
-NS_DICTIONARY_OF(NSString *, id) *NSDictionaryFeatureForGeometry(NSDictionary *geometry, NSDictionary *attributes, id identifier) {
+NSDictionary<NSString *, id> *NSDictionaryFeatureForGeometry(NSDictionary *geometry, NSDictionary *attributes, id identifier) {
     NSMutableDictionary *feature = [@{@"type": @"Feature",
                                       @"properties": (attributes) ?: [NSNull null],
                                       @"geometry": geometry} mutableCopy];

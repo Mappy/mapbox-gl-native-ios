@@ -149,8 +149,8 @@ void Map::renderStill(StillImageCallback callback) {
         return;
     }
 
-    if (impl->mode != MapMode::Still) {
-        callback(std::make_exception_ptr(util::MisuseException("Map is not in still image render mode")));
+    if (impl->mode != MapMode::Static && impl->mode != MapMode::Tile) {
+        callback(std::make_exception_ptr(util::MisuseException("Map is not in static or tile image render modes")));
         return;
     }
 
@@ -364,13 +364,13 @@ void Map::setLatLngZoom(const LatLng& latLng, double zoom, const EdgeInsets& pad
     impl->onUpdate();
 }
 
-CameraOptions Map::cameraForLatLngBounds(const LatLngBounds& bounds, const EdgeInsets& padding, optional<double> bearing) const {
+CameraOptions Map::cameraForLatLngBounds(const LatLngBounds& bounds, const EdgeInsets& padding, optional<double> bearing, optional<double> pitch) const {
     return cameraForLatLngs({
         bounds.northwest(),
         bounds.southwest(),
         bounds.southeast(),
         bounds.northeast(),
-    }, padding, bearing);
+    }, padding, bearing, pitch);
 }
 
 CameraOptions cameraForLatLngs(const std::vector<LatLng>& latLngs, const Transform& transform, const EdgeInsets& padding) {
@@ -402,7 +402,7 @@ CameraOptions cameraForLatLngs(const std::vector<LatLng>& latLngs, const Transfo
         scaleY -= (padding.top() + padding.bottom()) / height;
         minScale = util::min(scaleX, scaleY);
     }
-    double zoom = transform.getZoom() + util::log2(minScale);
+    double zoom = transform.getZoom() + ::log2(minScale);
     zoom = util::clamp(zoom, transform.getState().getMinZoom(), transform.getState().getMaxZoom());
 
     // Calculate the center point of a virtual bounds that is extended in all directions by padding.
@@ -426,27 +426,37 @@ CameraOptions cameraForLatLngs(const std::vector<LatLng>& latLngs, const Transfo
     return options;
 }
 
-CameraOptions Map::cameraForLatLngs(const std::vector<LatLng>& latLngs, const EdgeInsets& padding, optional<double> bearing) const {
-    if(bearing) {
-        double angle = -*bearing * util::DEG2RAD;  // Convert to radians
-        Transform transform(impl->transform.getState());
-        transform.setAngle(angle);
-        CameraOptions options = mbgl::cameraForLatLngs(latLngs, transform, padding);
-        options.angle = angle;
-        return options;
-    } else {
+CameraOptions Map::cameraForLatLngs(const std::vector<LatLng>& latLngs, const EdgeInsets& padding, optional<double> bearing, optional<double> pitch) const {
+    
+    if (!bearing && !pitch) {
         return mbgl::cameraForLatLngs(latLngs, impl->transform, padding);
     }
+    
+    Transform transform(impl->transform.getState());
+    
+    if (bearing) {
+        double angle = -*bearing * util::DEG2RAD; // Convert to radians
+        transform.setAngle(angle);
+    }
+    if (pitch) {
+        double pitchAsRadian = *pitch * util::DEG2RAD; // Convert to radians
+        transform.setPitch(pitchAsRadian);
+    }
+    
+    CameraOptions options = mbgl::cameraForLatLngs(latLngs, transform, padding);
+    options.angle = transform.getAngle();
+    options.pitch = transform.getPitch();
+    
+    return options;
 }
 
-CameraOptions Map::cameraForGeometry(const Geometry<double>& geometry, const EdgeInsets& padding, optional<double> bearing) const {
+CameraOptions Map::cameraForGeometry(const Geometry<double>& geometry, const EdgeInsets& padding, optional<double> bearing, optional<double> pitch) const {
 
     std::vector<LatLng> latLngs;
     forEachPoint(geometry, [&](const Point<double>& pt) {
         latLngs.push_back({ pt.y, pt.x });
     });
-    return cameraForLatLngs(latLngs, padding, bearing);
-
+    return cameraForLatLngs(latLngs, padding, bearing, pitch);
 }
 
 LatLngBounds Map::latLngBoundsForCamera(const CameraOptions& camera) const {
@@ -617,6 +627,35 @@ ViewportMode Map::getViewportMode() const {
     return impl->transform.getViewportMode();
 }
 
+#pragma mark - Projection mode
+
+void Map::setAxonometric(bool axonometric) {
+    impl->transform.setAxonometric(axonometric);
+    impl->onUpdate();
+}
+
+bool Map::getAxonometric() const {
+    return impl->transform.getAxonometric();
+}
+
+void Map::setXSkew(double xSkew) {
+    impl->transform.setXSkew(xSkew);
+    impl->onUpdate();
+}
+
+double Map::getXSkew() const {
+    return impl->transform.getXSkew();
+}
+
+void Map::setYSkew(double ySkew) {
+    impl->transform.setYSkew(ySkew);
+    impl->onUpdate();
+}
+
+double Map::getYSkew() const {
+    return impl->transform.getYSkew();
+}
+
 #pragma mark - Projection
 
 ScreenCoordinate Map::pixelForLatLng(const LatLng& latLng) const {
@@ -719,6 +758,11 @@ void Map::Impl::onInvalidate() {
 }
 
 void Map::Impl::onUpdate() {
+    // Don't load/render anything in still mode until explicitly requested.
+    if (mode != MapMode::Continuous && !stillImageRequest) {
+        return;
+    }
+    
     TimePoint timePoint = mode == MapMode::Continuous ? Clock::now() : Clock::time_point::max();
 
     transform.updateTransitions(timePoint);
@@ -765,7 +809,7 @@ void Map::Impl::onStyleError(std::exception_ptr error) {
 }
 
 void Map::Impl::onResourceError(std::exception_ptr error) {
-    if (mode == MapMode::Still && stillImageRequest) {
+    if (mode != MapMode::Continuous && stillImageRequest) {
         auto request = std::move(stillImageRequest);
         request->callback(error);
     }

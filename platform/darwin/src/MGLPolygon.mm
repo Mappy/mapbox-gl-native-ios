@@ -1,9 +1,9 @@
-#import "MGLPolygon.h"
+#import "MGLPolygon_Private.h"
 
 #import "MGLMultiPoint_Private.h"
 #import "MGLGeometry_Private.h"
 
-#import "MGLPolygon+MGLAdditions.h"
+#import "MGLFeature.h"
 
 #import <mbgl/util/geojson.hpp>
 #import <mapbox/polylabel.hpp>
@@ -102,11 +102,33 @@
              @"coordinates": self.mgl_coordinates};
 }
 
+- (NSArray<id> *)mgl_coordinates {
+    NSMutableArray *coordinates = [NSMutableArray array];
+
+    NSMutableArray *exteriorRing = [NSMutableArray array];
+    for (NSUInteger index = 0; index < self.pointCount; index++) {
+        CLLocationCoordinate2D coordinate = self.coordinates[index];
+        [exteriorRing addObject:@[@(coordinate.longitude), @(coordinate.latitude)]];
+    }
+    [coordinates addObject:exteriorRing];
+
+    for (MGLPolygon *interiorPolygon in self.interiorPolygons) {
+        NSMutableArray *interiorRing = [NSMutableArray array];
+        for (int index = 0; index < interiorPolygon.pointCount; index++) {
+            CLLocationCoordinate2D coordinate = interiorPolygon.coordinates[index];
+            [interiorRing addObject:@[@(coordinate.longitude), @(coordinate.latitude)]];
+        }
+        [coordinates addObject:interiorRing];
+    }
+
+    return [coordinates copy];
+}
+
 @end
 
 @interface MGLMultiPolygon ()
 
-@property (nonatomic, copy, readwrite) NS_ARRAY_OF(MGLPolygon *) *polygons;
+@property (nonatomic, copy, readwrite) NSArray<MGLPolygon *> *polygons;
 
 @end
 
@@ -116,11 +138,11 @@
 
 @synthesize overlayBounds = _overlayBounds;
 
-+ (instancetype)multiPolygonWithPolygons:(NS_ARRAY_OF(MGLPolygon *) *)polygons {
++ (instancetype)multiPolygonWithPolygons:(NSArray<MGLPolygon *> *)polygons {
     return [[self alloc] initWithPolygons:polygons];
 }
 
-- (instancetype)initWithPolygons:(NS_ARRAY_OF(MGLPolygon *) *)polygons {
+- (instancetype)initWithPolygons:(NSArray<MGLPolygon *> *)polygons {
     if (self = [super init]) {
         _polygons = polygons;
 

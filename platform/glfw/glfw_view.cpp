@@ -7,6 +7,7 @@
 #include <mbgl/style/image.hpp>
 #include <mbgl/style/transition_options.hpp>
 #include <mbgl/style/layers/fill_extrusion_layer.hpp>
+#include <mbgl/style/expression/dsl.hpp>
 #include <mbgl/util/logging.hpp>
 #include <mbgl/util/platform.hpp>
 #include <mbgl/util/string.hpp>
@@ -288,6 +289,7 @@ void GLFWView::onKey(GLFWwindow *window, int key, int /*scancode*/, int action, 
         case GLFW_KEY_8: view->addRandomShapeAnnotations(10); break;
         case GLFW_KEY_9: view->addRandomShapeAnnotations(100); break;
         case GLFW_KEY_0: view->addRandomShapeAnnotations(1000); break;
+        case GLFW_KEY_M: view->addAnimatedAnnotation(); break;
         }
     }
 }
@@ -379,12 +381,36 @@ void GLFWView::addRandomShapeAnnotations(int count) {
     }
 }
 
+void GLFWView::addAnimatedAnnotation() {
+    const double started = glfwGetTime();
+    animatedAnnotationIDs.push_back(map->addAnnotation(mbgl::SymbolAnnotation { { 0, 0 } , "default_marker" }));
+    animatedAnnotationAddedTimes.push_back(started);
+}
+
+void GLFWView::updateAnimatedAnnotations() {
+    const double time = glfwGetTime();
+    for (size_t i = 0; i < animatedAnnotationIDs.size(); i++) {
+        auto dt = time - animatedAnnotationAddedTimes[i];
+
+        const double period = 10;
+        const double x = dt / period * 360 - 180;
+        const double y = std::sin(dt/ period * M_PI * 2.0) * 80;
+        map->updateAnnotation(animatedAnnotationIDs[i], mbgl::SymbolAnnotation { {x, y }, "default_marker" });
+    }
+}
+
 void GLFWView::clearAnnotations() {
     for (const auto& id : annotationIDs) {
         map->removeAnnotation(id);
     }
 
     annotationIDs.clear();
+
+    for (const auto& id : animatedAnnotationIDs) {
+        map->removeAnnotation(id);
+    }
+
+    animatedAnnotationIDs.clear();
 }
 
 void GLFWView::popAnnotation() {
@@ -415,7 +441,7 @@ void GLFWView::onScroll(GLFWwindow *window, double /*xOffset*/, double yOffset) 
         scale = 1.0 / scale;
     }
 
-    view->map->setZoom(view->map->getZoom() + std::log2(scale), mbgl::ScreenCoordinate { view->lastX, view->lastY });
+    view->map->setZoom(view->map->getZoom() + ::log2(scale), mbgl::ScreenCoordinate { view->lastX, view->lastY });
 }
 
 void GLFWView::onWindowResize(GLFWwindow *window, int width, int height) {
@@ -471,12 +497,10 @@ void GLFWView::onMouseClick(GLFWwindow *window, int button, int action, int modi
 void GLFWView::onMouseMove(GLFWwindow *window, double x, double y) {
     auto *view = reinterpret_cast<GLFWView *>(glfwGetWindowUserPointer(window));
     if (view->tracking) {
-        double dx = x - view->lastX;
-        double dy = y - view->lastY;
+        const double dx = x - view->lastX;
+        const double dy = y - view->lastY;
         if (dx || dy) {
-            view->map->setLatLng(
-                    view->map->latLngForPixel(mbgl::ScreenCoordinate(x - dx, y - dy)),
-                    mbgl::ScreenCoordinate(x, y));
+            view->map->moveBy(mbgl::ScreenCoordinate { dx, dy });
         }
     } else if (view->rotating) {
         view->map->rotateBy({ view->lastX, view->lastY }, { x, y });
@@ -505,6 +529,8 @@ void GLFWView::run() {
 
             if (animateRouteCallback)
                 animateRouteCallback(map);
+
+            updateAnimatedAnnotations();
 
             activate();
 
@@ -540,7 +566,7 @@ mbgl::Size GLFWView::getFramebufferSize() const {
     return { static_cast<uint32_t>(fbWidth), static_cast<uint32_t>(fbHeight) };
 }
 
-mbgl::gl::ProcAddress GLFWView::initializeExtension(const char* name) {
+mbgl::gl::ProcAddress GLFWView::getExtensionFunctionPointer(const char* name) {
     return glfwGetProcAddress(name);
 }
 
@@ -592,6 +618,9 @@ void GLFWView::onDidFinishLoadingStyle() {
 }
 
 void GLFWView::toggle3DExtrusions(bool visible) {
+    using namespace mbgl::style;
+    using namespace mbgl::style::expression::dsl;
+
     show3DExtrusions = visible;
 
     // Satellite-only style does not contain building extrusions data.
@@ -600,32 +629,22 @@ void GLFWView::toggle3DExtrusions(bool visible) {
     }
 
     if (auto layer = map->getStyle().getLayer("3d-buildings")) {
-        layer->setVisibility(mbgl::style::VisibilityType(!show3DExtrusions));
+        layer->setVisibility(VisibilityType(!show3DExtrusions));
         return;
     }
 
-    auto extrusionLayer = std::make_unique<mbgl::style::FillExtrusionLayer>("3d-buildings", "composite");
+    auto extrusionLayer = std::make_unique<FillExtrusionLayer>("3d-buildings", "composite");
     extrusionLayer->setSourceLayer("building");
     extrusionLayer->setMinZoom(15.0f);
-    extrusionLayer->setFilter(mbgl::style::EqualsFilter { "extrude", { std::string("true") } });
-
-    auto colorFn = mbgl::style::SourceFunction<mbgl::Color> { "height",
-        mbgl::style::ExponentialStops<mbgl::Color> {
-            std::map<float, mbgl::Color> {
-                {   0.f, *mbgl::Color::parse("#160e23") },
-                {  50.f, *mbgl::Color::parse("#00615f") },
-                { 100.f, *mbgl::Color::parse("#55e9ff") }
-            }
-        }
-    };
-    extrusionLayer->setFillExtrusionColor({ colorFn });
-    extrusionLayer->setFillExtrusionOpacity({ 0.6f });
-
-    auto heightSourceFn = mbgl::style::SourceFunction<float> { "height", mbgl::style::IdentityStops<float>() };
-    extrusionLayer->setFillExtrusionHeight({ heightSourceFn });
-
-    auto baseSourceFn = mbgl::style::SourceFunction<float> { "min_height", mbgl::style::IdentityStops<float>() };
-    extrusionLayer->setFillExtrusionBase({ baseSourceFn });
+    extrusionLayer->setFilter(Filter(eq(get("extrude"), literal("true"))));
+    extrusionLayer->setFillExtrusionColor(PropertyExpression<mbgl::Color>(
+        interpolate(linear(), number(get("height")),
+                    0.f, toColor(literal("#160e23")),
+                    50.f, toColor(literal("#00615f")),
+                    100.f, toColor(literal("#55e9ff")))));
+    extrusionLayer->setFillExtrusionOpacity(0.6f);
+    extrusionLayer->setFillExtrusionHeight(PropertyExpression<float>(get("height")));
+    extrusionLayer->setFillExtrusionBase(PropertyExpression<float>(get("min_height")));
 
     map->getStyle().addLayer(std::move(extrusionLayer));
 }

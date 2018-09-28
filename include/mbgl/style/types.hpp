@@ -4,17 +4,19 @@
 
 namespace mbgl {
 
-// TODO: should be in public source.hpp header and style namespace
+namespace style {
+
+// TODO: should be in public source.hpp header
 enum class SourceType : uint8_t {
     Vector,
     Raster,
+    RasterDEM,
     GeoJSON,
     Video,
     Annotations,
-    Image
+    Image,
+    CustomVector
 };
-
-namespace style {
 
 enum class VisibilityType : bool {
     Visible,
@@ -36,6 +38,16 @@ enum class LineJoinType : uint8_t {
     FlipBevel
 };
 
+enum class RasterResamplingType : bool {
+    Linear,
+    Nearest
+};
+
+enum class HillshadeIlluminationAnchorType : bool {
+    Map,
+    Viewport
+};
+
 enum class TranslateAnchorType : bool {
     Map,
     Viewport
@@ -51,9 +63,10 @@ enum class CirclePitchScaleType : bool {
     Viewport,
 };
 
-enum class SymbolPlacementType : bool {
+enum class SymbolPlacementType : uint8_t {
     Point,
     Line,
+    LineCenter
 };
 
 enum class AlignmentType : uint8_t {

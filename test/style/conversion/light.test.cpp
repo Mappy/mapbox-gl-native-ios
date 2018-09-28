@@ -1,11 +1,10 @@
 #include <mbgl/test/util.hpp>
 
 #include <mbgl/style/conversion.hpp>
-#include <mbgl/style/rapidjson_conversion.hpp>
+#include <mbgl/style/conversion/json.hpp>
 #include <mbgl/style/conversion/constant.hpp>
 #include <mbgl/style/conversion/light.hpp>
 #include <mbgl/style/position.hpp>
-#include <mbgl/util/rapidjson.hpp>
 #include <mbgl/util/color.hpp>
 #include <mbgl/util/chrono.hpp>
 
@@ -19,9 +18,7 @@ TEST(StyleConversion, Light) {
     Error error;
 
     auto parseLight = [&](const std::string& src) {
-        JSDocument doc;
-        doc.Parse<0>(src);
-        return convert<Light>(doc, error);
+        return convertJSON<Light>(src, error);
     };
 
     {
@@ -35,22 +32,23 @@ TEST(StyleConversion, Light) {
 
         ASSERT_TRUE(light->getAnchor().isUndefined());
         ASSERT_FALSE(light->getAnchor().isConstant());
-        ASSERT_FALSE(light->getAnchor().isCameraFunction());
+        ASSERT_FALSE(light->getAnchor().isExpression());
 
         ASSERT_FALSE(light->getIntensity().isUndefined());
         ASSERT_TRUE(light->getIntensity().isConstant());
         ASSERT_EQ(light->getIntensity().asConstant(), 0.3f);
-        ASSERT_FALSE(light->getAnchor().isCameraFunction());
+        ASSERT_FALSE(light->getIntensity().isExpression());
 
         ASSERT_FALSE(light->getColor().isUndefined());
         ASSERT_FALSE(light->getColor().isConstant());
-        ASSERT_TRUE(light->getColor().isCameraFunction());
+        ASSERT_TRUE(light->getColor().isExpression());
+        ASSERT_FALSE(light->getColor().asExpression().isZoomConstant());
 
         ASSERT_FALSE(light->getPosition().isUndefined());
         ASSERT_TRUE(light->getPosition().isConstant());
         std::array<float, 3> expected{{ 3, 90, 90 }};
         ASSERT_EQ(light->getPosition().asConstant(), mbgl::style::Position({ expected }));
-        ASSERT_FALSE(light->getPosition().isCameraFunction());
+        ASSERT_FALSE(light->getPosition().isExpression());
     }
 
     {
@@ -59,7 +57,7 @@ TEST(StyleConversion, Light) {
 
         ASSERT_FALSE(light->getColor().isUndefined());
         ASSERT_TRUE(light->getColor().isConstant());
-        ASSERT_FALSE(light->getColor().isCameraFunction());
+        ASSERT_FALSE(light->getColor().isExpression());
         ASSERT_EQ(light->getColorTransition().duration, mbgl::Duration(mbgl::Milliseconds(1000)));
         ASSERT_FALSE((bool) light->getColorTransition().delay);
     }

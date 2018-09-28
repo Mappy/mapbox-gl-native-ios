@@ -23,7 +23,9 @@ FileSource::FileSource(jni::JNIEnv& _env,
         std::make_unique<AssetManagerFileSource>(_env, assetManager));
 
     // Set access token
-    fileSource->setAccessToken(jni::Make<std::string>(_env, accessToken));
+    if (accessToken) {
+        fileSource->setAccessToken(jni::Make<std::string>(_env, accessToken));
+    }
 }
 
 FileSource::~FileSource() {
@@ -70,15 +72,24 @@ void FileSource::resume(jni::JNIEnv&) {
 
     activationCounter.value()++;
     if (activationCounter == 1) {
-       fileSource->resume();
+        fileSource->resume();
     }
 }
 
 void FileSource::pause(jni::JNIEnv&) {
-    activationCounter.value()--;
-    if (activationCounter == 0) {
-        fileSource->pause();
+    if (activationCounter) {
+        activationCounter.value()--;
+        if (activationCounter == 0) {
+            fileSource->pause();
+        }
     }
+}
+
+jni::jboolean FileSource::isResumed(jni::JNIEnv&) {
+    if (activationCounter) {
+       return  (jboolean) (activationCounter > 0);
+    }
+    return (jboolean) false;
 }
 
 jni::Class<FileSource> FileSource::javaClass;
@@ -112,7 +123,8 @@ void FileSource::registerNative(jni::JNIEnv& env) {
         METHOD(&FileSource::setAPIBaseUrl, "setApiBaseUrl"),
         METHOD(&FileSource::setResourceTransform, "setResourceTransform"),
         METHOD(&FileSource::resume, "activate"),
-        METHOD(&FileSource::pause, "deactivate")
+        METHOD(&FileSource::pause, "deactivate"),
+        METHOD(&FileSource::isResumed, "isActivated")
     );
 }
 

@@ -1,8 +1,9 @@
+#!/usr/bin/env node
 'use strict';
 
 const fs = require('fs');
 const ejs = require('ejs');
-const spec = require('../mapbox-gl-js/src/style-spec/reference/v8');
+const spec = require('./style-spec');
 const colorParser = require('csscolorparser');
 
 require('./style-code');
@@ -13,10 +14,6 @@ function parseCSSColor(str) {
       color[0] / 255 * color[3], color[1] / 255 * color[3], color[2] / 255 * color[3], color[3]
   ];
 }
-
-global.isDataDriven = function (property) {
-  return property['property-function'] === true;
-};
 
 global.isLightProperty = function (property) {
   return property['light-property'] === true;
@@ -76,28 +73,33 @@ function attributeUniformType(property, type) {
 }
 
 global.layoutPropertyType = function (property) {
-  if (isDataDriven(property)) {
-    return `DataDrivenLayoutProperty<${evaluatedType(property)}>`;
-  } else {
-    return `LayoutProperty<${evaluatedType(property)}>`;
+  switch (property['property-type']) {
+    case 'data-driven':
+    case 'cross-faded-data-driven':
+      return `DataDrivenLayoutProperty<${evaluatedType(property)}>`;
+    default:
+      return `LayoutProperty<${evaluatedType(property)}>`;
   }
 };
 
 global.paintPropertyType = function (property, type) {
-  if (isDataDriven(property)) {
-    return `DataDrivenPaintProperty<${evaluatedType(property)}, ${attributeUniformType(property, type)}>`;
-  } else if (/-pattern$/.test(property.name) || property.name === 'line-dasharray') {
-    return `CrossFadedPaintProperty<${evaluatedType(property)}>`;
-  } else {
-    return `PaintProperty<${evaluatedType(property)}>`;
+  switch (property['property-type']) {
+    case 'data-driven':
+    case 'cross-faded-data-driven':
+      return `DataDrivenPaintProperty<${evaluatedType(property)}, ${attributeUniformType(property, type)}>`;
+    case 'cross-faded':
+      return `CrossFadedPaintProperty<${evaluatedType(property)}>`;
+    default:
+      return `PaintProperty<${evaluatedType(property)}>`;
   }
 };
 
 global.propertyValueType = function (property) {
-  if (isDataDriven(property)) {
-    return `DataDrivenPropertyValue<${evaluatedType(property)}>`;
-  } else {
-    return `PropertyValue<${evaluatedType(property)}>`;
+  switch (property['property-type']) {
+    case 'color-ramp':
+      return `ColorRampPropertyValue`;
+    default:
+      return `PropertyValue<${evaluatedType(property)}>`;
   }
 };
 
@@ -109,6 +111,10 @@ global.defaultValue = function (property) {
 
   if (property.name === 'fill-outline-color') {
     return '{}';
+  }
+
+  if (property.name === 'heatmap-color') {
+      return '{}';
   }
 
   switch (property.type) {
@@ -186,8 +192,8 @@ for (const layer of layers) {
   writeIfModified(`src/mbgl/style/layers/${layerFileName}_layer_properties.cpp`, propertiesCpp(layer));
 }
 
-const propertySettersHpp = ejs.compile(fs.readFileSync('include/mbgl/style/conversion/make_property_setters.hpp.ejs', 'utf8'), {strict: true});
-writeIfModified('include/mbgl/style/conversion/make_property_setters.hpp', propertySettersHpp({layers: layers}));
+const propertySettersHpp = ejs.compile(fs.readFileSync('src/mbgl/style/conversion/make_property_setters.hpp.ejs', 'utf8'), {strict: true});
+writeIfModified('src/mbgl/style/conversion/make_property_setters.hpp', propertySettersHpp({layers: layers}));
 
 // Light
 const lightProperties = Object.keys(spec[`light`]).reduce((memo, name) => {

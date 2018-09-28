@@ -12,6 +12,7 @@ MBGL_DEFINE_ENUM(SourceType, {
     { SourceType::Video, "video" },
     { SourceType::Annotations, "annotations" },
     { SourceType::Image, "image" },
+    { SourceType::CustomVector, "customvector" }
 });
 
 MBGL_DEFINE_ENUM(VisibilityType, {
@@ -22,6 +23,16 @@ MBGL_DEFINE_ENUM(VisibilityType, {
 MBGL_DEFINE_ENUM(TranslateAnchorType, {
     { TranslateAnchorType::Map, "map" },
     { TranslateAnchorType::Viewport, "viewport" },
+});
+
+MBGL_DEFINE_ENUM(RasterResamplingType, {
+    { RasterResamplingType::Linear, "linear" },
+    { RasterResamplingType::Nearest, "nearest" },
+});
+
+MBGL_DEFINE_ENUM(HillshadeIlluminationAnchorType, {
+    { HillshadeIlluminationAnchorType::Map, "map" },
+    { HillshadeIlluminationAnchorType::Viewport, "viewport" },
 });
 
 MBGL_DEFINE_ENUM(RotateAnchorType, {
@@ -51,6 +62,7 @@ MBGL_DEFINE_ENUM(LineJoinType, {
 MBGL_DEFINE_ENUM(SymbolPlacementType, {
     { SymbolPlacementType::Point, "point" },
     { SymbolPlacementType::Line, "line" },
+    { SymbolPlacementType::LineCenter, "line-center" },
 });
 
 MBGL_DEFINE_ENUM(SymbolAnchorType, {

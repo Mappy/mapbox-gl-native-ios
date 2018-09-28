@@ -14,17 +14,23 @@ using namespace style;
 static_assert(sizeof(SymbolLayoutVertex) == 16, "expected SymbolLayoutVertex size");
 
 std::unique_ptr<SymbolSizeBinder> SymbolSizeBinder::create(const float tileZoom,
-                                                    const style::DataDrivenPropertyValue<float>& sizeProperty,
+                                                    const style::PropertyValue<float>& sizeProperty,
                                                     const float defaultValue) {
     return sizeProperty.match(
-        [&] (const style::CompositeFunction<float>& function) -> std::unique_ptr<SymbolSizeBinder> {
-            return std::make_unique<CompositeFunctionSymbolSizeBinder>(tileZoom, function, defaultValue);
-        },
-        [&] (const style::SourceFunction<float>& function) {
-            return std::make_unique<SourceFunctionSymbolSizeBinder>(tileZoom, function, defaultValue);
-        },
-        [&] (const auto& value) -> std::unique_ptr<SymbolSizeBinder> {
+        [&] (const Undefined& value) -> std::unique_ptr<SymbolSizeBinder> {
             return std::make_unique<ConstantSymbolSizeBinder>(tileZoom, value, defaultValue);
+        },
+        [&] (float value) -> std::unique_ptr<SymbolSizeBinder> {
+            return std::make_unique<ConstantSymbolSizeBinder>(tileZoom, value, defaultValue);
+        },
+        [&] (const style::PropertyExpression<float>& expression) -> std::unique_ptr<SymbolSizeBinder> {
+            if (expression.isFeatureConstant()) {
+                return std::make_unique<ConstantSymbolSizeBinder>(tileZoom, expression, defaultValue);
+            } else if (expression.isZoomConstant()) {
+                return std::make_unique<SourceFunctionSymbolSizeBinder>(tileZoom, expression, defaultValue);
+            } else {
+                return std::make_unique<CompositeFunctionSymbolSizeBinder>(tileZoom, expression, defaultValue);
+            }
         }
     );
 }
@@ -37,9 +43,10 @@ Values makeValues(const bool isText,
                   const bool alongLine,
                   const RenderTile& tile,
                   const TransformState& state,
+                  const float symbolFadeChange,
                   Args&&... args) {
     std::array<float, 2> extrudeScale;
-    
+
     if (values.pitchAlignment == AlignmentType::Map) {
         extrudeScale.fill(tile.id.pixelsToTileUnits(1, state.getZoom()));
     } else {
@@ -52,7 +59,7 @@ Values makeValues(const bool isText,
     const float pixelsToTileUnits = tile.id.pixelsToTileUnits(1.0, state.getZoom());
     const bool pitchWithMap = values.pitchAlignment == style::AlignmentType::Map;
     const bool rotateWithMap = values.rotationAlignment == style::AlignmentType::Map;
-    
+
     // Line label rotation happens in `updateLineLabels`
     // Pitched point labels are automatically rotated by the labelPlaneMatrix projection
     // Unpitched point labels need to have their rotation applied after projection
@@ -68,7 +75,7 @@ Values makeValues(const bool isText,
     }
 
     mat4 glCoordMatrix = getGlCoordMatrix(tile.matrix, pitchWithMap, rotateWithMap, state, pixelsToTileUnits);
-        
+
     return Values {
         uniforms::u_matrix::Value{ tile.translatedMatrix(values.translate,
                                    values.translateAnchor,
@@ -82,13 +89,11 @@ Values makeValues(const bool isText,
         uniforms::u_extrude_scale::Value{ extrudeScale },
         uniforms::u_texsize::Value{ texsize },
         uniforms::u_texture::Value{ 0 },
-        uniforms::u_fadetexture::Value{ 1 },
+        uniforms::u_fade_change::Value{ symbolFadeChange },
         uniforms::u_is_text::Value{ isText },
-        uniforms::u_collision_y_stretch::Value{ tile.tile.yStretch() },
         uniforms::u_camera_to_center_distance::Value{ state.getCameraToCenterDistance() },
         uniforms::u_pitch::Value{ state.getPitch() },
         uniforms::u_pitch_with_map::Value{ pitchWithMap },
-        uniforms::u_max_camera_distance::Value{ values.maxCameraDistance },
         uniforms::u_rotate_symbol::Value{ rotateInShader },
         uniforms::u_aspect_ratio::Value{ state.getSize().aspectRatio() },
         std::forward<Args>(args)...
@@ -102,7 +107,8 @@ SymbolIconProgram::uniformValues(const bool isText,
                                  const std::array<float, 2>& pixelsToGLUnits,
                                  const bool alongLine,
                                  const RenderTile& tile,
-                                 const TransformState& state)
+                                 const TransformState& state,
+                                 const float symbolFadeChange)
 {
     return makeValues<SymbolIconProgram::UniformValues>(
         isText,
@@ -111,7 +117,8 @@ SymbolIconProgram::uniformValues(const bool isText,
         pixelsToGLUnits,
         alongLine,
         tile,
-        state
+        state,
+        symbolFadeChange
     );
 }
 
@@ -124,12 +131,13 @@ typename SymbolSDFProgram<PaintProperties>::UniformValues SymbolSDFProgram<Paint
       const bool alongLine,
       const RenderTile& tile,
       const TransformState& state,
+      const float symbolFadeChange,
       const SymbolSDFPart part)
 {
     const float gammaScale = (values.pitchAlignment == AlignmentType::Map
                               ? std::cos(state.getPitch()) * state.getCameraToCenterDistance()
                               : 1.0);
-    
+
     return makeValues<SymbolSDFProgram<PaintProperties>::UniformValues>(
         isText,
         values,
@@ -138,6 +146,7 @@ typename SymbolSDFProgram<PaintProperties>::UniformValues SymbolSDFProgram<Paint
         alongLine,
         tile,
         state,
+        symbolFadeChange,
         uniforms::u_gamma_scale::Value{ gammaScale },
         uniforms::u_is_halo::Value{ part == SymbolSDFPart::Halo }
     );

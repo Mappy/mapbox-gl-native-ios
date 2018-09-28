@@ -125,6 +125,14 @@ public:
     void setViewportMode(ViewportMode);
     ViewportMode getViewportMode() const;
 
+    // Projection mode
+    void setAxonometric(bool);
+    bool getAxonometric() const;
+    void setXSkew(double xSkew);
+    double getXSkew() const;
+    void setYSkew(double ySkew);
+    double getYSkew() const;
+
     // Transitions
     bool inTransition() const;
     void updateTransitions(const TimePoint& now);
@@ -157,7 +165,7 @@ private:
 
     TimePoint transitionStart;
     Duration transitionDuration;
-    std::function<void(const TimePoint)> transitionFrameFn;
+    std::function<bool(const TimePoint)> transitionFrameFn;
     std::function<void()> transitionFinishFn;
 };
 

@@ -5,6 +5,7 @@
 #include <mbgl/text/collision_feature.hpp>
 #include <mbgl/style/layers/symbol_layer_properties.hpp>
 
+
 namespace mbgl {
 
 class Anchor;
@@ -18,33 +19,40 @@ public:
                    optional<PositionedIcon> shapedIcon,
                    const style::SymbolLayoutProperties::Evaluated&,
                    const float layoutTextSize,
-                   const bool inside,
-                   const uint32_t index,
                    const float textBoxScale,
                    const float textPadding,
                    style::SymbolPlacementType textPlacement,
                    const std::array<float, 2> textOffset,
                    const float iconBoxScale,
                    const float iconPadding,
-                   style::SymbolPlacementType iconPlacement,
                    const std::array<float, 2> iconOffset,
                    const GlyphPositionMap&,
                    const IndexedSubfeature&,
-                   const std::size_t featureIndex);
+                   const std::size_t layoutFeatureIndex,
+                   const std::size_t dataFeatureIndex,
+                   const std::u16string& key,
+                   const float overscaling);
 
     Anchor anchor;
     GeometryCoordinates line;
-    uint32_t index;
     bool hasText;
     bool hasIcon;
-    SymbolQuads glyphQuads;
+    SymbolQuads horizontalGlyphQuads;
+    SymbolQuads verticalGlyphQuads;
     optional<SymbolQuad> iconQuad;
     CollisionFeature textCollisionFeature;
     CollisionFeature iconCollisionFeature;
     WritingModeType writingModes;
-    std::size_t featureIndex;
+    std::size_t layoutFeatureIndex; // Index into the set of features included at layout time
+    std::size_t dataFeatureIndex;   // Index into the underlying tile data feature set
     std::array<float, 2> textOffset;
     std::array<float, 2> iconOffset;
+    std::u16string key;
+    bool isDuplicate;
+    optional<size_t> placedTextIndex;
+    optional<size_t> placedVerticalTextIndex;
+    optional<size_t> placedIconIndex;
+    uint32_t crossTileID = 0;
 };
 
 } // namespace mbgl

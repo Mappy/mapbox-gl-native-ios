@@ -20,6 +20,17 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (NSString *)mgl_titleCasedStringWithLocale:(NSLocale *)locale;
 
+/**
+ Returns a transliterated representation of the receiver using the specified
+ script. If transliteration fails, the receiver will be returned.
+
+ Only supports scripts for languages used by Mapbox Streets.
+
+ @param script The four-letter code representing the name of the script, as
+    specified by ISO 15924.
+ */
+- (NSString *)mgl_stringByTransliteratingIntoScript:(NSString *)script;
+
 @end
 
 @interface NSAttributedString (MGLAdditions)

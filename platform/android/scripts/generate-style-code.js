@@ -1,8 +1,9 @@
+#!/usr/bin/env node
 'use strict';
 
 const fs = require('fs');
 const ejs = require('ejs');
-const spec = require('../../../mapbox-gl-js/src/style-spec/reference/v8');
+const spec = require('../../../scripts/style-spec');
 const _ = require('lodash');
 
 require('../../../scripts/style-code');
@@ -12,6 +13,7 @@ const lightProperties = Object.keys(spec[`light`]).reduce((memo, name) => {
   var property = spec[`light`][name];
   property.name = name;
   property['light-property'] = true;
+  property.doc = property.doc.replace(/°/g,'&#xB0;');
   memo.push(property);
   return memo;
 }, []);
@@ -147,6 +149,24 @@ global.propertyTypeAnnotation = function propertyTypeAnnotation(property) {
   }
 };
 
+global.defaultExpressionJava = function(property) {
+    switch (property.type) {
+      case 'boolean':
+        return 'boolean';
+      case 'number':
+        return 'number';
+      case 'string':
+        return "string";
+      case 'enum':
+        return "string";
+      case 'color':
+        return 'toColor';
+      case 'array':
+        return "array";
+      default: return "string";
+      }
+}
+
 global.defaultValueJava = function(property) {
     if(property.name.endsWith("-pattern")) {
         return '"pedestrian-polygon"';
@@ -215,10 +235,15 @@ global.propertyValueDoc = function (property, value) {
 
     // Match references to other property names & values.
     // Requires the format 'When `foo` is set to `bar`,'.
-    let doc = property.values[value].doc.replace(/When `(.+?)` is set to `(.+?)`,/g, function (m, peerPropertyName, propertyValue, offset, str) {
+    let doc = property.values[value].doc.replace(/When `(.+?)` is set to `(.+?)`(?: or `([^`]+?)`)?,/g, function (m, peerPropertyName, propertyValue, secondPropertyValue, offset, str) {
         let otherProperty = snakeCaseUpper(peerPropertyName);
         let otherValue = snakeCaseUpper(peerPropertyName) + '_' + snakeCaseUpper(propertyValue);
-        return 'When {@link ' + `${otherProperty}` + '} is set to {@link Property#' + `${otherValue}` + '},';
+        const firstPropertyValue = 'When {@link ' + `${otherProperty}` + '} is set to {@link Property#' + `${otherValue}` + '}';
+        if (secondPropertyValue) {
+            return firstPropertyValue + ` or {@link Property#${snakeCaseUpper(peerPropertyName) + '_' + snakeCaseUpper(secondPropertyValue)}},`;
+        } else {
+            return firstPropertyValue + ',';
+        }
     });
 
     // Match references to our own property values.
@@ -247,19 +272,14 @@ global.propertyValueDoc = function (property, value) {
     return doc;
 };
 
-global.isDataDriven = function (property) {
-  return property['property-function'] === true;
-};
-
 global.isLightProperty = function (property) {
   return property['light-property'] === true;
 };
 
 global.propertyValueType = function (property) {
-  if (isDataDriven(property)) {
-    return `DataDrivenPropertyValue<${evaluatedType(property)}>`;
-  } else {
-    return `PropertyValue<${evaluatedType(property)}>`;
+  switch (property['property-type']) {
+    default:
+      return `PropertyValue<${evaluatedType(property)}>`;
   }
 };
 
@@ -298,11 +318,11 @@ global.evaluatedType = function (property) {
 };
 
 global.supportsZoomFunction = function (property) {
-  return property['zoom-function'] === true;
+  return property.expression && property.expression.parameters.indexOf('zoom') > -1;
 };
 
 global.supportsPropertyFunction = function (property) {
-  return property['property-function'] === true;
+  return property['property-type'] === 'data-driven' || property['property-type'] === 'cross-faded-data-driven';
 };
 
 // Template processing //

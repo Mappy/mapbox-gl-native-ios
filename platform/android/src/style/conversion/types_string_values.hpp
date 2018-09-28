@@ -67,6 +67,9 @@ namespace conversion {
           case mbgl::style::SymbolPlacementType::Line:
             return "line";
             break;
+          case mbgl::style::SymbolPlacementType::LineCenter:
+            return "line-center";
+            break;
           default:
             throw std::runtime_error("Not implemented");
         }
@@ -199,6 +202,34 @@ namespace conversion {
             return "map";
             break;
           case mbgl::style::CirclePitchScaleType::Viewport:
+            return "viewport";
+            break;
+          default:
+            throw std::runtime_error("Not implemented");
+        }
+    }
+
+    // raster-resampling
+    inline std::string toString(mbgl::style::RasterResamplingType value) {
+        switch (value) {
+          case mbgl::style::RasterResamplingType::Linear:
+            return "linear";
+            break;
+          case mbgl::style::RasterResamplingType::Nearest:
+            return "nearest";
+            break;
+          default:
+            throw std::runtime_error("Not implemented");
+        }
+    }
+
+    // hillshade-illumination-anchor
+    inline std::string toString(mbgl::style::HillshadeIlluminationAnchorType value) {
+        switch (value) {
+          case mbgl::style::HillshadeIlluminationAnchorType::Map:
+            return "map";
+            break;
+          case mbgl::style::HillshadeIlluminationAnchorType::Viewport:
             return "viewport";
             break;
           default:

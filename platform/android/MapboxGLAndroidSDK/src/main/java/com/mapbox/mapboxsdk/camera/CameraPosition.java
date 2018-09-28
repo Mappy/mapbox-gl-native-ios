@@ -4,11 +4,12 @@ import android.content.res.TypedArray;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.FloatRange;
+import android.support.annotation.Keep;
 
 import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
 import com.mapbox.mapboxsdk.geometry.LatLng;
-import com.mapbox.services.android.telemetry.utils.MathUtils;
+import com.mapbox.mapboxsdk.utils.MathUtils;
 
 /**
  * Resembles the position, angle, zoom and tilt of the user's viewpoint.
@@ -35,23 +36,27 @@ public final class CameraPosition implements Parcelable {
   /**
    * Direction that the camera is pointing in, in degrees clockwise from north.
    */
+  @Keep
   public final double bearing;
 
   /**
    * The location that the camera is pointing at.
    */
+  @Keep
   public final LatLng target;
 
   /**
    * The angle, in degrees, of the camera angle from the nadir (directly facing the Earth).
    * See tilt(float) for details of restrictions on the range of values.
    */
+  @Keep
   public final double tilt;
 
   /**
    * Zoom level near the center of the screen. See zoom(float) for the definition of the camera's
    * zoom level.
    */
+  @Keep
   public final double zoom;
 
   /**
@@ -67,6 +72,7 @@ public final class CameraPosition implements Parcelable {
    * @throws NullPointerException     if target is null
    * @throws IllegalArgumentException if tilt is outside the range of 0 to 90 degrees inclusive.
    */
+  @Keep
   CameraPosition(LatLng target, double zoom, double tilt, double bearing) {
     this.target = target;
     this.bearing = bearing;

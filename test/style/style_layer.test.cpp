@@ -211,7 +211,7 @@ TEST(Layer, Observer) {
         EXPECT_EQ(layer.get(), &layer_);
         filterChanged = true;
     };
-    layer->setFilter(NullFilter());
+    layer->setFilter(Filter());
     EXPECT_TRUE(filterChanged);
 
     // Notifies observer on visibility change.
@@ -285,7 +285,7 @@ TEST(Layer, DuplicateLayer) {
     try {
         style.addLayer(std::make_unique<LineLayer>("line", "unusedsource"));
         FAIL() << "Should not have been allowed to add a duplicate layer id";
-    } catch (const std::runtime_error e) {
+    } catch (const std::runtime_error& e) {
         // Expected
         ASSERT_STREQ("Layer line already exists", e.what());
     }

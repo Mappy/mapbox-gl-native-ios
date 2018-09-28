@@ -1,8 +1,9 @@
 package com.mapbox.mapboxsdk.testapp.activity.style;
 
-import android.graphics.BitmapFactory;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.PointF;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -11,24 +12,35 @@ import android.view.MenuItem;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import com.mapbox.geojson.Feature;
+import com.mapbox.geojson.FeatureCollection;
+import com.mapbox.geojson.Point;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
-import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
+import com.mapbox.mapboxsdk.style.layers.Property;
 import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
 import com.mapbox.mapboxsdk.testapp.R;
-import com.mapbox.services.commons.geojson.Feature;
-import com.mapbox.services.commons.geojson.FeatureCollection;
-import com.mapbox.services.commons.geojson.Point;
+import com.mapbox.mapboxsdk.utils.BitmapUtils;
+
 
 import java.util.Arrays;
 import java.util.List;
 
+import static com.mapbox.mapboxsdk.style.expressions.Expression.any;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.get;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.has;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.literal;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.lte;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.not;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconAllowOverlap;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconAnchor;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconImage;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconSize;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textAnchor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textField;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textFont;
@@ -51,43 +63,45 @@ public class SymbolLayerActivity extends AppCompatActivity implements MapboxMap.
 
     mapView = (MapView) findViewById(R.id.mapView);
     mapView.onCreate(savedInstanceState);
-    mapView.getMapAsync(new OnMapReadyCallback() {
-      @Override
-      public void onMapReady(@NonNull final MapboxMap map) {
-        mapboxMap = map;
+    mapView.getMapAsync(map -> {
+      mapboxMap = map;
 
-        // Add a image for the makers
-        mapboxMap.addImage(
-          "my-marker-image",
-          BitmapFactory.decodeResource(SymbolLayerActivity.this.getResources(),
-            R.drawable.mapbox_marker_icon_default)
-        );
+      // Add a sdf image for the makers
+      Drawable icLayersDrawable = getResources().getDrawable(R.drawable.ic_layers);
+      Bitmap icLayersBitmap = BitmapUtils.getBitmapFromDrawable(icLayersDrawable);
+      mapboxMap.addImage(
+        "my-layers-image",
+        icLayersBitmap,
+        true
+      );
 
-        // Add a source
-        FeatureCollection markers = FeatureCollection.fromFeatures(new Feature[] {
-          Feature.fromGeometry(Point.fromCoordinates(new double[] {4.91638, 52.35673}), featureProperties("Marker 1")),
-          Feature.fromGeometry(Point.fromCoordinates(new double[] {4.91638, 52.34673}), featureProperties("Marker 2"))
-        });
-        mapboxMap.addSource(new GeoJsonSource(MARKER_SOURCE, markers));
+      // Add a source
+      FeatureCollection markers = FeatureCollection.fromFeatures(new Feature[] {
+        Feature.fromGeometry(Point.fromLngLat(4.91638, 52.35673), featureProperties("Marker 1")),
+        Feature.fromGeometry(Point.fromLngLat(4.91638, 52.34673), featureProperties("Marker 2"))
+      });
+      mapboxMap.addSource(new GeoJsonSource(MARKER_SOURCE, markers));
 
-        // Add the symbol-layer
-        mapboxMap.addLayer(
-          new SymbolLayer(MARKER_LAYER, MARKER_SOURCE)
-            .withProperties(
-              iconImage("my-marker-image"),
-              iconAllowOverlap(true),
-              textField("{title}"),
-              textColor(Color.RED),
-              textSize(10f)
-            )
-        );
+      // Add the symbol-layer
+      mapboxMap.addLayer(
+        new SymbolLayer(MARKER_LAYER, MARKER_SOURCE)
+          .withProperties(
+            iconImage("my-layers-image"),
+            iconAllowOverlap(true),
+            iconAnchor(Property.ICON_ANCHOR_BOTTOM),
+            textField(get("title")),
+            iconColor(Color.RED),
+            textColor(Color.RED),
+            textAnchor(Property.TEXT_ANCHOR_TOP),
+            textSize(10f)
+          ).withFilter((any(not(has("price")), lte(get("price"), literal(25)))))
+      );
 
-        // Show
-        mapboxMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(52.35273, 4.91638), 14));
+      // Show
+      mapboxMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(52.35273, 4.91638), 14));
 
-        // Set a click-listener so we can manipulate the map
-        mapboxMap.setOnMapClickListener(SymbolLayerActivity.this);
-      }
+      // Set a click-listener so we can manipulate the map
+      mapboxMap.setOnMapClickListener(SymbolLayerActivity.this);
     });
   }
 

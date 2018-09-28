@@ -4,7 +4,6 @@
 #include <mbgl/renderer/property_evaluation_parameters.hpp>
 #include <mbgl/renderer/render_tile.hpp>
 #include <mbgl/renderer/paint_parameters.hpp>
-#include <mbgl/renderer/frame_history.hpp>
 #include <mbgl/text/glyph_atlas.hpp>
 #include <mbgl/programs/programs.hpp>
 #include <mbgl/programs/symbol_program.hpp>
@@ -76,12 +75,13 @@ void RenderSymbolLayer::render(PaintParameters& parameters, RenderSource*) {
     }
 
     for (const RenderTile& tile : renderTiles) {
-        assert(dynamic_cast<SymbolBucket*>(tile.tile.getBucket(*baseImpl)));
-        SymbolBucket& bucket = *reinterpret_cast<SymbolBucket*>(tile.tile.getBucket(*baseImpl));
+        auto bucket_ = tile.tile.getBucket<SymbolBucket>(*baseImpl);
+        if (!bucket_) {
+            continue;
+        }
+        SymbolBucket& bucket = *bucket_;
 
         const auto& layout = bucket.layout;
-
-        parameters.frameHistory.bind(parameters.context, 1);
 
         auto draw = [&] (auto& program,
                          auto&& uniformValues,
@@ -91,28 +91,37 @@ void RenderSymbolLayer::render(PaintParameters& parameters, RenderSource*) {
                          const auto& binders,
                          const auto& paintProperties)
         {
-            // We clip symbols to their tile extent in still mode.
-            const bool needsClipping = parameters.mapMode == MapMode::Still;
+            auto& programInstance = program.get(paintProperties);
 
-            program.get(paintProperties).draw(
+            const auto allUniformValues = programInstance.computeAllUniformValues(
+                std::move(uniformValues),
+                *symbolSizeBinder,
+                binders,
+                paintProperties,
+                parameters.state.getZoom()
+            );
+            const auto allAttributeBindings = programInstance.computeAllAttributeBindings(
+                *buffers.vertexBuffer,
+                *buffers.dynamicVertexBuffer,
+                *buffers.opacityVertexBuffer,
+                binders,
+                paintProperties
+            );
+
+            checkRenderability(parameters, programInstance.activeBindingCount(allAttributeBindings));
+
+            programInstance.draw(
                 parameters.context,
                 gl::Triangles(),
                 values_.pitchAlignment == AlignmentType::Map
                     ? parameters.depthModeForSublayer(0, gl::DepthMode::ReadOnly)
                     : gl::DepthMode::disabled(),
-                needsClipping
-                    ? parameters.stencilModeForClipping(tile.clip)
-                    : gl::StencilMode::disabled(),
+                gl::StencilMode::disabled(),
                 parameters.colorModeForRenderPass(),
-                std::move(uniformValues),
-                *buffers.vertexBuffer,
-                *buffers.dynamicVertexBuffer,
-                *symbolSizeBinder,
                 *buffers.indexBuffer,
                 buffers.segments,
-                binders,
-                paintProperties,
-                parameters.state.getZoom(),
+                allUniformValues,
+                allAttributeBindings,
                 getID()
             );
         };
@@ -124,7 +133,7 @@ void RenderSymbolLayer::render(PaintParameters& parameters, RenderSource*) {
             auto values = iconPropertyValues(layout);
             auto paintPropertyValues = iconPaintProperties();
 
-            const bool alongLine = layout.get<SymbolPlacement>() == SymbolPlacementType::Line &&
+            const bool alongLine = layout.get<SymbolPlacement>() != SymbolPlacementType::Point &&
                 layout.get<IconRotationAlignment>() == AlignmentType::Map;
 
             if (alongLine) {
@@ -134,8 +143,7 @@ void RenderSymbolLayer::render(PaintParameters& parameters, RenderSource*) {
                                     values,
                                     tile,
                                     *bucket.iconSizeBinder,
-                                    parameters.state,
-                                    parameters.frameHistory);
+                                    parameters.state);
 
                 parameters.context.updateVertexBuffer(*bucket.icon.dynamicVertexBuffer, std::move(bucket.icon.dynamicVertices));
             }
@@ -152,7 +160,7 @@ void RenderSymbolLayer::render(PaintParameters& parameters, RenderSource*) {
             if (bucket.sdfIcons) {
                 if (values.hasHalo) {
                     draw(parameters.programs.symbolIconSDF,
-                         SymbolSDFIconProgram::uniformValues(false, values, texsize, parameters.pixelsToGLUnits, alongLine, tile, parameters.state, SymbolSDFPart::Halo),
+                         SymbolSDFIconProgram::uniformValues(false, values, texsize, parameters.pixelsToGLUnits, alongLine, tile, parameters.state, parameters.symbolFadeChange, SymbolSDFPart::Halo),
                          bucket.icon,
                          bucket.iconSizeBinder,
                          values,
@@ -162,7 +170,7 @@ void RenderSymbolLayer::render(PaintParameters& parameters, RenderSource*) {
 
                 if (values.hasFill) {
                     draw(parameters.programs.symbolIconSDF,
-                         SymbolSDFIconProgram::uniformValues(false, values, texsize, parameters.pixelsToGLUnits, alongLine, tile, parameters.state, SymbolSDFPart::Fill),
+                         SymbolSDFIconProgram::uniformValues(false, values, texsize, parameters.pixelsToGLUnits, alongLine, tile, parameters.state, parameters.symbolFadeChange, SymbolSDFPart::Fill),
                          bucket.icon,
                          bucket.iconSizeBinder,
                          values,
@@ -171,7 +179,7 @@ void RenderSymbolLayer::render(PaintParameters& parameters, RenderSource*) {
                 }
             } else {
                 draw(parameters.programs.symbolIcon,
-                     SymbolIconProgram::uniformValues(false, values, texsize, parameters.pixelsToGLUnits, alongLine, tile, parameters.state),
+                     SymbolIconProgram::uniformValues(false, values, texsize, parameters.pixelsToGLUnits, alongLine, tile, parameters.state, parameters.symbolFadeChange),
                      bucket.icon,
                      bucket.iconSizeBinder,
                      values,
@@ -186,7 +194,7 @@ void RenderSymbolLayer::render(PaintParameters& parameters, RenderSource*) {
             auto values = textPropertyValues(layout);
             auto paintPropertyValues = textPaintProperties();
 
-            const bool alongLine = layout.get<SymbolPlacement>() == SymbolPlacementType::Line &&
+            const bool alongLine = layout.get<SymbolPlacement>() != SymbolPlacementType::Point &&
                 layout.get<TextRotationAlignment>() == AlignmentType::Map;
 
             if (alongLine) {
@@ -196,8 +204,7 @@ void RenderSymbolLayer::render(PaintParameters& parameters, RenderSource*) {
                                     values,
                                     tile,
                                     *bucket.textSizeBinder,
-                                    parameters.state,
-                                    parameters.frameHistory);
+                                    parameters.state);
 
                 parameters.context.updateVertexBuffer(*bucket.text.dynamicVertexBuffer, std::move(bucket.text.dynamicVertices));
             }
@@ -206,7 +213,7 @@ void RenderSymbolLayer::render(PaintParameters& parameters, RenderSource*) {
 
             if (values.hasHalo) {
                 draw(parameters.programs.symbolGlyph,
-                     SymbolSDFTextProgram::uniformValues(true, values, texsize, parameters.pixelsToGLUnits, alongLine, tile, parameters.state, SymbolSDFPart::Halo),
+                     SymbolSDFTextProgram::uniformValues(true, values, texsize, parameters.pixelsToGLUnits, alongLine, tile, parameters.state, parameters.symbolFadeChange, SymbolSDFPart::Halo),
                      bucket.text,
                      bucket.textSizeBinder,
                      values,
@@ -216,7 +223,7 @@ void RenderSymbolLayer::render(PaintParameters& parameters, RenderSource*) {
 
             if (values.hasFill) {
                 draw(parameters.programs.symbolGlyph,
-                     SymbolSDFTextProgram::uniformValues(true, values, texsize, parameters.pixelsToGLUnits, alongLine, tile, parameters.state, SymbolSDFPart::Fill),
+                     SymbolSDFTextProgram::uniformValues(true, values, texsize, parameters.pixelsToGLUnits, alongLine, tile, parameters.state, parameters.symbolFadeChange, SymbolSDFPart::Fill),
                      bucket.text,
                      bucket.textSizeBinder,
                      values,
@@ -229,23 +236,27 @@ void RenderSymbolLayer::render(PaintParameters& parameters, RenderSource*) {
             static const style::Properties<>::PossiblyEvaluated properties {};
             static const CollisionBoxProgram::PaintPropertyBinders paintAttributeData(properties, 0);
 
+            auto pixelRatio = tile.id.pixelsToTileUnits(1, parameters.state.getZoom());
+            const float scale = std::pow(2, parameters.state.getZoom() - tile.tile.id.overscaledZ);
+            std::array<float,2> extrudeScale =
+                {{
+                    parameters.pixelsToGLUnits[0] / (pixelRatio * scale),
+                    parameters.pixelsToGLUnits[1] / (pixelRatio * scale)
+                    
+                }};
             parameters.programs.collisionBox.draw(
                 parameters.context,
                 gl::Lines { 1.0f },
                 gl::DepthMode::disabled(),
-                parameters.stencilModeForClipping(tile.clip),
+                gl::StencilMode::disabled(),
                 parameters.colorModeForRenderPass(),
                 CollisionBoxProgram::UniformValues {
                     uniforms::u_matrix::Value{ tile.matrix },
-                    uniforms::u_scale::Value{ std::pow(2.0f, float(parameters.state.getZoom() - tile.tile.id.overscaledZ)) },
-                    uniforms::u_zoom::Value{ float(parameters.state.getZoom() * 10) },
-                    uniforms::u_maxzoom::Value{ float((tile.id.canonical.z + 1) * 10) },
-                    uniforms::u_collision_y_stretch::Value{ tile.tile.yStretch() },
-                    uniforms::u_camera_to_center_distance::Value{ parameters.state.getCameraToCenterDistance() },
-                    uniforms::u_pitch::Value{ parameters.state.getPitch() },
-                    uniforms::u_fadetexture::Value{ 1 }
+                    uniforms::u_extrude_scale::Value{ extrudeScale },
+                    uniforms::u_camera_to_center_distance::Value{ parameters.state.getCameraToCenterDistance() }
                 },
                 *bucket.collisionBox.vertexBuffer,
+                *bucket.collisionBox.dynamicVertexBuffer,
                 *bucket.collisionBox.indexBuffer,
                 bucket.collisionBox.segments,
                 paintAttributeData,
@@ -253,6 +264,42 @@ void RenderSymbolLayer::render(PaintParameters& parameters, RenderSource*) {
                 parameters.state.getZoom(),
                 getID()
             );
+        }
+        if (bucket.hasCollisionCircleData()) {
+            static const style::Properties<>::PossiblyEvaluated properties {};
+            static const CollisionBoxProgram::PaintPropertyBinders paintAttributeData(properties, 0);
+
+            auto pixelRatio = tile.id.pixelsToTileUnits(1, parameters.state.getZoom());
+            const float scale = std::pow(2, parameters.state.getZoom() - tile.tile.id.overscaledZ);
+            std::array<float,2> extrudeScale =
+                {{
+                    parameters.pixelsToGLUnits[0] / (pixelRatio * scale),
+                    parameters.pixelsToGLUnits[1] / (pixelRatio * scale)
+                    
+                }};
+
+            parameters.programs.collisionCircle.draw(
+                parameters.context,
+                gl::Triangles(),
+                gl::DepthMode::disabled(),
+                gl::StencilMode::disabled(),
+                parameters.colorModeForRenderPass(),
+                CollisionCircleProgram::UniformValues {
+                    uniforms::u_matrix::Value{ tile.matrix },
+                    uniforms::u_extrude_scale::Value{ extrudeScale },
+                    uniforms::u_overscale_factor::Value{ float(tile.tile.id.overscaleFactor()) },
+                    uniforms::u_camera_to_center_distance::Value{ parameters.state.getCameraToCenterDistance() }
+                },
+                *bucket.collisionCircle.vertexBuffer,
+                *bucket.collisionCircle.dynamicVertexBuffer,
+                *bucket.collisionCircle.indexBuffer,
+                bucket.collisionCircle.segments,
+                paintAttributeData,
+                properties,
+                parameters.state.getZoom(),
+                getID()
+            );
+
         }
     }
 }
@@ -291,24 +338,11 @@ style::SymbolPropertyValues RenderSymbolLayer::iconPropertyValues(const style::S
             evaluated.get<style::IconTranslateAnchor>(),
             evaluated.get<style::IconHaloColor>().constantOr(Color::black()).a > 0 &&
             evaluated.get<style::IconHaloWidth>().constantOr(1),
-            evaluated.get<style::IconColor>().constantOr(Color::black()).a > 0,
-            10.0f
+            evaluated.get<style::IconColor>().constantOr(Color::black()).a > 0
     };
 }
 
 style::SymbolPropertyValues RenderSymbolLayer::textPropertyValues(const style::SymbolLayoutProperties::PossiblyEvaluated& layout_) const {
-    // We hide line labels with viewport alignment as they move into the distance
-    // because the approximations we use for drawing their glyphs get progressively worse
-    // The "1.5" here means we start hiding them when the distance from the label
-    // to the camera is 50% greater than the distance from the center of the map
-    // to the camera. Depending on viewport properties, you might expect this to filter
-    // the top third of the screen at pitch 60, and do almost nothing at pitch 45
-    // "10" is effectively infinite at any pitch we support
-    const bool limitMaxDistance =
-        layout_.get<style::SymbolPlacement>() == style::SymbolPlacementType::Line
-        && layout_.get<style::TextRotationAlignment>() == style::AlignmentType::Map
-        && layout_.get<style::TextPitchAlignment>() == style::AlignmentType::Viewport;
-
     return style::SymbolPropertyValues {
             layout_.get<style::TextPitchAlignment>(),
             layout_.get<style::TextRotationAlignment>(),
@@ -317,8 +351,7 @@ style::SymbolPropertyValues RenderSymbolLayer::textPropertyValues(const style::S
             evaluated.get<style::TextTranslateAnchor>(),
             evaluated.get<style::TextHaloColor>().constantOr(Color::black()).a > 0 &&
             evaluated.get<style::TextHaloWidth>().constantOr(1),
-            evaluated.get<style::TextColor>().constantOr(Color::black()).a > 0,
-            limitMaxDistance ? 1.5f : 10.0f
+            evaluated.get<style::TextColor>().constantOr(Color::black()).a > 0
     };
 }
 

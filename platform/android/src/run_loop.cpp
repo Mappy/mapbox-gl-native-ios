@@ -5,6 +5,7 @@
 #include <mbgl/util/thread.hpp>
 #include <mbgl/util/timer.hpp>
 #include <mbgl/actor/scheduler.hpp>
+#include <mbgl/util/event.hpp>
 
 #include <android/looper.h>
 
@@ -17,6 +18,7 @@
 
 #include <fcntl.h>
 #include <unistd.h>
+#include <mbgl/util/logging.hpp>
 
 #define PIPE_OUT 0
 #define PIPE_IN  1
@@ -88,11 +90,13 @@ RunLoop::Impl::Impl(RunLoop* runLoop_, RunLoop::Type type) : runLoop(runLoop_) {
     ALooper_acquire(loop);
 
     if (pipe(fds)) {
-        throw std::runtime_error("Failed to create pipe.");
+//        throw std::runtime_error("Failed to create pipe.");
+        return;
     }
 
     if (fcntl(fds[PIPE_OUT], F_SETFL, O_NONBLOCK)) {
-        throw std::runtime_error("Failed to set pipe read end non-blocking.");
+//        throw std::runtime_error("Failed to set pipe read end non-blocking.");
+        return;
     }
 
     int ret = 0;
@@ -119,11 +123,11 @@ RunLoop::Impl::~Impl() {
     alarm.reset();
 
     if (ALooper_removeFd(loop, fds[PIPE_OUT]) != 1) {
-        throw std::runtime_error("Failed to remove file descriptor from Looper.");
+        Log::Error(mbgl::Event::General, "Failed to remove file descriptor from Looper");
     }
 
     if (close(fds[PIPE_IN]) || close(fds[PIPE_OUT])) {
-        throw std::runtime_error("Failed to close file descriptor.");
+        Log::Error(mbgl::Event::General, "Failed to close file descriptor.");
     }
 
     ALooper_release(loop);
@@ -165,6 +169,7 @@ void RunLoop::Impl::removeRunnable(Runnable* runnable) {
 }
 
 void RunLoop::Impl::initRunnable(Runnable* runnable) {
+    std::lock_guard<std::recursive_mutex> lock(mtx);
     runnable->iter = runnables.end();
 }
 
@@ -216,11 +221,8 @@ LOOP_HANDLE RunLoop::getLoopHandle() {
     return Get()->impl.get();
 }
 
-void RunLoop::push(std::shared_ptr<WorkTask> task) {
-    withMutex([&] {
-        queue.push(std::move(task));
-        impl->wake();
-    });
+void RunLoop::wake() {
+    impl->wake();
 }
 
 void RunLoop::run() {
