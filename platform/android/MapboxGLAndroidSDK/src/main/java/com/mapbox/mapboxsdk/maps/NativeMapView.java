@@ -120,7 +120,6 @@ final class NativeMapView {
   public void destroy() {
     destroyed = true;
     onMapChangedListeners.clear();
-    viewCallback = null;
     nativeDestroy();
   }
 
