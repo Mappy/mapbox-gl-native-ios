@@ -3,6 +3,7 @@
 #include <mbgl/style/expression/compound_expression.hpp>
 #include <mbgl/style/expression/check_subtype.hpp>
 #include <mbgl/style/expression/util.hpp>
+#include <mbgl/style/conversion_impl.hpp>
 #include <mbgl/tile/geometry_tile_data.hpp>
 #include <mbgl/math/log2.hpp>
 #include <mbgl/util/i18n.hpp>
@@ -308,24 +309,6 @@ std::unordered_map<std::string, CompoundExpressionRegistry::Definition> initiali
 
     define("typeof", [](const Value& v) -> Result<std::string> { return toString(typeOf(v)); });
 
-    define("to-string", [](const Value& value) -> Result<std::string> {
-        return value.match(
-            [](const NullValue&) -> Result<std::string> { return std::string(); },
-            [](const Color& c) -> Result<std::string> { return c.stringify(); }, // avoid quoting
-            [](const std::string& s) -> Result<std::string> { return s; }, // avoid quoting
-            [](const auto& v) -> Result<std::string> { return stringify(v); }
-        );
-    });
-
-    define("to-boolean", [](const Value& v) -> Result<bool> {
-        return v.match(
-            [&] (double f) { return static_cast<bool>(f); },
-            [&] (const std::string& s) { return s.length() > 0; },
-            [&] (bool b) { return b; },
-            [&] (const NullValue&) { return false; },
-            [&] (const auto&) { return true; }
-        );
-    });
     define("to-rgba", [](const Color& color) -> Result<std::array<double, 4>> {
         return color.toArray();
     });
@@ -346,6 +329,15 @@ std::unordered_map<std::string, CompoundExpressionRegistry::Definition> initiali
         if (!params.colorRampParameter) {
             return EvaluationError {
                 "The 'heatmap-density' expression is unavailable in the current evaluation context."
+            };
+        }
+        return *(params.colorRampParameter);
+    });
+
+    define("line-progress", [](const EvaluationContext& params) -> Result<double> {
+        if (!params.colorRampParameter) {
+            return EvaluationError {
+                "The 'line-progress' expression is unavailable in the current evaluation context."
             };
         }
         return *(params.colorRampParameter);
@@ -457,7 +449,7 @@ std::unordered_map<std::string, CompoundExpressionRegistry::Definition> initiali
     define("sqrt", [](double x) -> Result<double> { return sqrt(x); });
     define("log10", [](double x) -> Result<double> { return log10(x); });
     define("ln", [](double x) -> Result<double> { return log(x); });
-    define("log2", [](double x) -> Result<double> { return log2(x); });
+    define("log2", [](double x) -> Result<double> { return util::log2(x); });
     define("sin", [](double x) -> Result<double> { return sin(x); });
     define("cos", [](double x) -> Result<double> { return cos(x); });
     define("tan", [](double x) -> Result<double> { return tan(x); });
@@ -497,10 +489,10 @@ std::unordered_map<std::string, CompoundExpressionRegistry::Definition> initiali
     define("downcase", [](const std::string& input) -> Result<std::string> {
         return platform::lowercase(input);
     });
-    define("concat", [](const Varargs<std::string>& args) -> Result<std::string> {
+    define("concat", [](const Varargs<Value>& args) -> Result<std::string> {
         std::string s;
-        for (const std::string& arg : args) {
-            s += arg;
+        for (const Value& arg : args) {
+            s += toString(arg);
         }
         return s;
     });

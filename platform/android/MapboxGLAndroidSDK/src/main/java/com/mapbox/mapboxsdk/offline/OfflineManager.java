@@ -2,27 +2,35 @@ package com.mapbox.mapboxsdk.offline;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.os.Environment;
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Keep;
 import android.support.annotation.NonNull;
 
 import com.mapbox.mapboxsdk.LibraryLoader;
+import com.mapbox.mapboxsdk.MapStrictMode;
 import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.geometry.LatLngBounds;
+import com.mapbox.mapboxsdk.log.Logger;
 import com.mapbox.mapboxsdk.net.ConnectivityReceiver;
 import com.mapbox.mapboxsdk.storage.FileSource;
+import com.mapbox.mapboxsdk.utils.FileUtils;
 
 import java.io.File;
-
-import timber.log.Timber;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.nio.channels.FileChannel;
 
 /**
  * The offline manager is the main entry point for offline-related functionality.
  * It'll help you list and create offline regions.
  */
 public class OfflineManager {
+
+  private static final String TAG = "Mbgl - OfflineManager";
 
   //
   // Static methods
@@ -93,6 +101,27 @@ public class OfflineManager {
     void onError(String error);
   }
 
+  /**
+   * This callback receives an asynchronous response containing a list of all
+   * OfflineRegion added to the database during the merge.
+   */
+  @Keep
+  public interface MergeOfflineRegionsCallback {
+    /**
+     * Receives the list of merged offline regions.
+     *
+     * @param offlineRegions the offline region array
+     */
+    void onMerge(OfflineRegion[] offlineRegions);
+
+    /**
+     * Receives the error message.
+     *
+     * @param error the error message
+     */
+    void onError(String error);
+  }
+
   /*
    * Constructor
    */
@@ -111,14 +140,15 @@ public class OfflineManager {
       @Override
       public void run() {
         try {
-          String path = context.getCacheDir().getAbsolutePath() + File.separator + "mbgl-cache.db";
+          String path = FileSource.getInternalCachePath(context) + File.separator + "mbgl-cache.db";
           File file = new File(path);
           if (file.exists()) {
             file.delete();
-            Timber.d("Old ambient cache database deleted to save space: %s", path);
+            Logger.d(TAG, String.format("Old ambient cache database deleted to save space: %s", path));
           }
         } catch (Exception exception) {
-          Timber.e(exception, "Failed to delete old ambient cache database: ");
+          Logger.e(TAG, "Failed to delete old ambient cache database: ", exception);
+          MapStrictMode.strictModeViolation(exception);
         }
       }
     }).start();
@@ -181,6 +211,155 @@ public class OfflineManager {
           @Override
           public void run() {
             fileSource.deactivate();
+            callback.onError(error);
+          }
+        });
+      }
+    });
+  }
+
+  /**
+   * Merge offline regions from a secondary database into the main offline database.
+   * <p>
+   * When the merge is completed, or fails, the {@link MergeOfflineRegionsCallback} will be invoked on the main thread.
+   * <p>
+   * The secondary database may need to be upgraded to the latest schema.
+   * This is done in-place and requires write-access to the provided path.
+   * If the app's process doesn't have write-access to the provided path,
+   * the file will be copied to the temporary, internal directory for the duration of the merge.
+   * <p>
+   * Only resources and tiles that belong to a region will be copied over. Identical
+   * regions will be flattened into a single new region in the main database.
+   * <p>
+   * The operation will be aborted and {@link MergeOfflineRegionsCallback#onError(String)} with an appropriate message
+   * will be invoked if the merge would result in the offline tile count limit being exceeded.
+   * <p>
+   * Merged regions may not be in a completed status if the secondary database
+   * does not contain all the tiles or resources required by the region definition.
+   *
+   * @param path     secondary database writable path
+   * @param callback completion/error callback
+   */
+  public void mergeOfflineRegions(@NonNull String path, @NonNull final MergeOfflineRegionsCallback callback) {
+    File src = new File(path);
+    new FileUtils.CheckFileReadPermissionTask(new FileUtils.OnCheckFileReadPermissionListener() {
+      @Override
+      public void onReadPermissionGranted() {
+        new FileUtils.CheckFileWritePermissionTask(new FileUtils.OnCheckFileWritePermissionListener() {
+          @Override
+          public void onWritePermissionGranted() {
+            // path writable, merge and update schema in place if necessary
+            mergeOfflineDatabaseFiles(src, callback, false);
+          }
+
+          @Override
+          public void onError() {
+            // path not writable, copy the the file to temp directory, then merge and update schema on a copy if
+            // necessary
+            File dst = new File(FileSource.getInternalCachePath(context), src.getName());
+            new CopyTempDatabaseFileTask(OfflineManager.this, callback).execute(src, dst);
+          }
+        }).execute(src);
+      }
+
+      @Override
+      public void onError() {
+        // path not readable, abort
+        callback.onError("Secondary database needs to be located in a readable path.");
+      }
+    }).execute(src);
+  }
+
+  private static final class CopyTempDatabaseFileTask extends AsyncTask<Object, Void, Object> {
+    private final WeakReference<OfflineManager> offlineManagerWeakReference;
+    private final WeakReference<MergeOfflineRegionsCallback> callbackWeakReference;
+
+    CopyTempDatabaseFileTask(OfflineManager offlineManager, MergeOfflineRegionsCallback callback) {
+      this.offlineManagerWeakReference = new WeakReference<>(offlineManager);
+      this.callbackWeakReference = new WeakReference<>(callback);
+    }
+
+    @Override
+    protected Object doInBackground(Object... objects) {
+      File src = (File) objects[0];
+      File dst = (File) objects[1];
+
+      try {
+        copyTempDatabaseFile(src, dst);
+        return dst;
+      } catch (IOException ex) {
+        return ex.getMessage();
+      }
+    }
+
+    @Override
+    protected void onPostExecute(Object object) {
+      MergeOfflineRegionsCallback callback = callbackWeakReference.get();
+      if (callback != null) {
+        OfflineManager offlineManager = offlineManagerWeakReference.get();
+        if (object instanceof File && offlineManager != null) {
+          // successfully copied the file, perform merge
+          File dst = (File) object;
+          offlineManager.mergeOfflineDatabaseFiles(dst, callback, true);
+        } else if (object instanceof String) {
+          // error occurred
+          callback.onError((String) object);
+        }
+      }
+    }
+  }
+
+  private static void copyTempDatabaseFile(File sourceFile, File destFile) throws IOException {
+    if (!destFile.exists() && !destFile.createNewFile()) {
+      throw new IOException("Unable to copy database file for merge.");
+    }
+
+    FileChannel source = null;
+    FileChannel destination = null;
+
+    try {
+      source = new FileInputStream(sourceFile).getChannel();
+      destination = new FileOutputStream(destFile).getChannel();
+      destination.transferFrom(source, 0, source.size());
+    } catch (IOException ex) {
+      throw new IOException(String.format("Unable to copy database file for merge. %s", ex.getMessage()));
+    } finally {
+      if (source != null) {
+        source.close();
+      }
+      if (destination != null) {
+        destination.close();
+      }
+    }
+  }
+
+  private void mergeOfflineDatabaseFiles(@NonNull File file, @NonNull final MergeOfflineRegionsCallback callback,
+                                         boolean isTemporaryFile) {
+    fileSource.activate();
+    mergeOfflineRegions(fileSource, file.getAbsolutePath(), new MergeOfflineRegionsCallback() {
+      @Override
+      public void onMerge(OfflineRegion[] offlineRegions) {
+        getHandler().post(new Runnable() {
+          @Override
+          public void run() {
+            fileSource.deactivate();
+            if (isTemporaryFile) {
+              file.delete();
+            }
+            callback.onMerge(offlineRegions);
+          }
+        });
+      }
+
+      @Override
+      public void onError(String error) {
+        getHandler().post(new Runnable() {
+          @Override
+          public void run() {
+            fileSource.deactivate();
+            if (isTemporaryFile) {
+              file.delete();
+            }
             callback.onError(error);
           }
         });
@@ -281,6 +460,9 @@ public class OfflineManager {
   private native void createOfflineRegion(FileSource fileSource, OfflineRegionDefinition definition,
                                           byte[] metadata, CreateOfflineRegionCallback callback);
 
-    private native void cleanAmbientCache(FileSource fileSource);
+  @Keep
+  private native void cleanAmbientCache(FileSource fileSource);
 
+  @Keep
+  private native void mergeOfflineRegions(FileSource fileSource, String path, MergeOfflineRegionsCallback callback);
 }

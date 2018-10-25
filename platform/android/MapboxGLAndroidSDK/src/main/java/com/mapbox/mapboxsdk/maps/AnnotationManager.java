@@ -8,7 +8,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.util.LongSparseArray;
 import android.view.View;
-
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.annotations.Annotation;
@@ -21,12 +20,11 @@ import com.mapbox.mapboxsdk.annotations.Polygon;
 import com.mapbox.mapboxsdk.annotations.PolygonOptions;
 import com.mapbox.mapboxsdk.annotations.Polyline;
 import com.mapbox.mapboxsdk.annotations.PolylineOptions;
+import com.mapbox.mapboxsdk.log.Logger;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import timber.log.Timber;
 
 /**
  * Responsible for managing and tracking state of Annotations linked to Map. All events related to
@@ -40,6 +38,8 @@ import timber.log.Timber;
  * </p>
  */
 class AnnotationManager {
+
+  private static final String TAG = "Mbgl-AnnotationManager";
 
   private static final long NO_ANNOTATION_ID = -1;
 
@@ -395,7 +395,9 @@ class AnnotationManager {
   }
 
   private void logNonAdded(Annotation annotation) {
-    Timber.w("Attempting to update non-added %s with value %s", annotation.getClass().getCanonicalName(), annotation);
+    Logger.w(TAG, String.format(
+      "Attempting to update non-added %s with value %s", annotation.getClass().getCanonicalName(), annotation)
+    );
   }
 
   //
@@ -403,36 +405,17 @@ class AnnotationManager {
   //
 
   boolean onTap(PointF tapPoint) {
-    ShapeAnnotationHit shapeAnnotationHit = getShapeAnnotationHitFromTap(tapPoint);
-    Annotation annotation = new ShapeAnnotationHitResolver(shapeAnnotations).execute(shapeAnnotationHit);
-    if (annotation != null) {
-      if (handleClickForShapeAnnotation(annotation)) {
+    MarkerHit markerHit = getMarkerHitFromTouchArea(tapPoint);
+    long markerId = new MarkerHitResolver(mapboxMap).execute(markerHit);
+    if (markerId != NO_ANNOTATION_ID) {
+      if (isClickHandledForMarker(markerId)) {
         return true;
       }
     }
 
-    List<MarkerView> markerViews = new ArrayList<>();
-    final List<Marker> markers = mapboxMap.getMarkers();
-    for (Marker marker : markers) {
-      if (marker.getClass().equals(MarkerView.class)) {
-        final MarkerView markerView = (MarkerView) marker;
-        if (markerView.isVisible()) {
-          RectF drawRect = markerView.getDrawRect();
-          if (drawRect.contains(tapPoint.x, tapPoint.y)) {
-            markerViews.add(markerView);
-          }
-        }
-      }
-    }
-
-    boolean hasSelectedMarkerView = !markerViews.isEmpty();
-    if (hasSelectedMarkerView) {
-      Collections.sort(markerViews);
-      final MarkerView selectedMarker = markerViews.get(markerViews.size() - 1);
-      isClickHandledForMarker(selectedMarker);
-    }
-
-    return hasSelectedMarkerView;
+    ShapeAnnotationHit shapeAnnotationHit = getShapeAnnotationHitFromTap(tapPoint);
+    Annotation annotation = new ShapeAnnotationHitResolver(shapeAnnotations).execute(shapeAnnotationHit);
+    return annotation != null && handleClickForShapeAnnotation(annotation);
   }
 
   private ShapeAnnotationHit getShapeAnnotationHitFromTap(PointF tapPoint) {

@@ -56,11 +56,15 @@ bool RenderHillshadeLayer::hasTransition() const {
     return unevaluated.hasTransition();
 }
 
+bool RenderHillshadeLayer::hasCrossfade() const {
+    return false;
+}
+
 void RenderHillshadeLayer::render(PaintParameters& parameters, RenderSource* src) {
     if (parameters.pass != RenderPass::Translucent && parameters.pass != RenderPass::Pass3D)
         return;
-    
-    RenderRasterDEMSource* demsrc = dynamic_cast<RenderRasterDEMSource*>(src);
+
+    RenderRasterDEMSource* demsrc = static_cast<RenderRasterDEMSource*>(src);
     const uint8_t TERRAIN_RGB_MAXZOOM = 15;
     const uint8_t maxzoom = demsrc != nullptr ? demsrc->getMaxZoom() : TERRAIN_RGB_MAXZOOM;
 
@@ -75,13 +79,13 @@ void RenderHillshadeLayer::render(PaintParameters& parameters, RenderSource* src
 
         const auto allUniformValues = programInstance.computeAllUniformValues(
             HillshadeProgram::UniformValues {
-                uniforms::u_matrix::Value{ matrix },
-                uniforms::u_image::Value{ 0 },
-                uniforms::u_highlight::Value{ evaluated.get<HillshadeHighlightColor>() },
-                uniforms::u_shadow::Value{ evaluated.get<HillshadeShadowColor>() },
-                uniforms::u_accent::Value{ evaluated.get<HillshadeAccentColor>() },
-                uniforms::u_light::Value{ getLight(parameters) },
-                uniforms::u_latrange::Value{ getLatRange(id) },
+                uniforms::u_matrix::Value( matrix ),
+                uniforms::u_image::Value( 0 ),
+                uniforms::u_highlight::Value( evaluated.get<HillshadeHighlightColor>() ),
+                uniforms::u_shadow::Value( evaluated.get<HillshadeShadowColor>() ),
+                uniforms::u_accent::Value( evaluated.get<HillshadeAccentColor>() ),
+                uniforms::u_light::Value( getLight(parameters) ),
+                uniforms::u_latrange::Value( getLatRange(id) ),
             },
             paintAttributeData,
             evaluated,
@@ -101,6 +105,7 @@ void RenderHillshadeLayer::render(PaintParameters& parameters, RenderSource* src
             parameters.depthModeForSublayer(0, gl::DepthMode::ReadOnly),
             gl::StencilMode::disabled(),
             parameters.colorModeForRenderPass(),
+            gl::CullFaceMode::disabled(),
             indexBuffer,
             segments,
             allUniformValues,
@@ -137,11 +142,11 @@ void RenderHillshadeLayer::render(PaintParameters& parameters, RenderSource* src
 
             const auto allUniformValues = programInstance.computeAllUniformValues(
                 HillshadePrepareProgram::UniformValues {
-                    uniforms::u_matrix::Value { mat },
-                    uniforms::u_dimension::Value { {{uint16_t(tilesize * 2), uint16_t(tilesize * 2) }} },
-                    uniforms::u_zoom::Value{ float(tile.id.canonical.z) },
-                    uniforms::u_maxzoom::Value{ float(maxzoom) },
-                    uniforms::u_image::Value{ 0 }
+                    uniforms::u_matrix::Value( mat ),
+                    uniforms::u_dimension::Value( {{uint16_t(tilesize * 2), uint16_t(tilesize * 2)}} ),
+                    uniforms::u_zoom::Value( float(tile.id.canonical.z) ),
+                    uniforms::u_maxzoom::Value( float(maxzoom) ),
+                    uniforms::u_image::Value( 0 )
                 },
                 paintAttributeData,
                 properties,
@@ -161,6 +166,7 @@ void RenderHillshadeLayer::render(PaintParameters& parameters, RenderSource* src
                 parameters.depthModeForSublayer(0, gl::DepthMode::ReadOnly),
                 gl::StencilMode::disabled(),
                 parameters.colorModeForRenderPass(),
+                gl::CullFaceMode::disabled(),
                 parameters.staticData.quadTriangleIndexBuffer,
                 parameters.staticData.rasterSegments,
                 allUniformValues,

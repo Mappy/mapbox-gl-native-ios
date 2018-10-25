@@ -14,6 +14,7 @@
 #include <mbgl/renderer/layers/render_background_layer.hpp>
 #include <mbgl/renderer/layers/render_custom_layer.hpp>
 #include <mbgl/renderer/layers/render_fill_extrusion_layer.hpp>
+#include <mbgl/renderer/layers/render_fill_layer.hpp>
 #include <mbgl/renderer/layers/render_heatmap_layer.hpp>
 #include <mbgl/renderer/layers/render_hillshade_layer.hpp>
 #include <mbgl/renderer/style_diff.hpp>
@@ -60,7 +61,7 @@ Renderer::Impl::Impl(RendererBackend& backend_,
     , sourceImpls(makeMutable<std::vector<Immutable<style::Source::Impl>>>())
     , layerImpls(makeMutable<std::vector<Immutable<style::Layer::Impl>>>())
     , renderLight(makeMutable<Light::Impl>())
-    , placement(std::make_unique<Placement>(TransformState{}, MapMode::Static)) {
+    , placement(std::make_unique<Placement>(TransformState{}, MapMode::Static, true)) {
     glyphManager->setObserver(this);
 }
 
@@ -173,6 +174,10 @@ void Renderer::Impl::render(const UpdateParameters& updateParameters) {
         renderLayers.at(entry.first)->setImpl(entry.second.after);
     }
 
+    if (!layerDiff.removed.empty() || !layerDiff.added.empty() || !layerDiff.changed.empty()) {
+        glyphManager->evict(fontStacks(*updateParameters.layers));
+    }
+
     // Update layers for class and zoom changes.
     for (const auto& entry : renderLayers) {
         RenderLayer& layer = *entry.second;
@@ -185,9 +190,13 @@ void Renderer::Impl::render(const UpdateParameters& updateParameters) {
             if (layer.is<RenderHeatmapLayer>()) {
                 layer.as<RenderHeatmapLayer>()->updateColorRamp();
             }
+
+            if (layer.is<RenderLineLayer>()) {
+                layer.as<RenderLineLayer>()->updateColorRamp();
+            }
         }
 
-        if (layerAdded || layerChanged || zoomChanged || layer.hasTransition()) {
+        if (layerAdded || layerChanged || zoomChanged || layer.hasTransition() || layer.hasCrossfade()) {
             layer.evaluate(evaluationParameters);
         }
     }
@@ -352,6 +361,9 @@ void Renderer::Impl::render(const UpdateParameters& updateParameters) {
         }
 
         std::vector<std::reference_wrapper<RenderTile>> sortedTilesForInsertion;
+        const bool fillLayer = layer->is<RenderFillLayer>();
+        const bool lineLayer = layer->is<RenderLineLayer>();
+
         for (auto& sortedTile : sortedTiles) {
             auto& tile = sortedTile.get();
             if (!tile.tile.isRenderable()) {
@@ -363,8 +375,8 @@ void Renderer::Impl::render(const UpdateParameters& updateParameters) {
                 sortedTilesForInsertion.emplace_back(tile);
                 tile.used = true;
 
-                // We only need clipping when we're _not_ drawing a symbol layer.
-                if (!symbolLayer) {
+                // We only need clipping when we're drawing fill or line layers.
+                if (fillLayer || lineLayer) {
                     tile.needsClipping = true;
                 }
             }
@@ -389,7 +401,7 @@ void Renderer::Impl::render(const UpdateParameters& updateParameters) {
     if (!placement->stillRecent(parameters.timePoint)) {
         placementChanged = true;
 
-        auto newPlacement = std::make_unique<Placement>(parameters.state, parameters.mapMode);
+        auto newPlacement = std::make_unique<Placement>(parameters.state, parameters.mapMode, updateParameters.crossSourceCollisions);
         std::set<std::string> usedSymbolLayers;
         for (auto it = order.rbegin(); it != order.rend(); ++it) {
             if (it->layer.is<RenderSymbolLayer>()) {
@@ -500,11 +512,12 @@ void Renderer::Impl::render(const UpdateParameters& updateParameters) {
                     gl::StencilMode::Replace
                 },
                 gl::ColorMode::disabled(),
+                gl::CullFaceMode::disabled(),
                 parameters.staticData.quadTriangleIndexBuffer,
                 parameters.staticData.tileTriangleSegments,
                 program.computeAllUniformValues(
                     ClippingMaskProgram::UniformValues {
-                        uniforms::u_matrix::Value{ parameters.matrixForTile(clipID.first) },
+                        uniforms::u_matrix::Value( parameters.matrixForTile(clipID.first) ),
                     },
                     paintAttributeData,
                     properties,

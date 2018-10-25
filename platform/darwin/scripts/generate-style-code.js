@@ -102,6 +102,7 @@ global.objCTestValue = function (property, layerType, arraysAsStructs, indent) {
             return property.default ? '@"false"' : '@"true"';
         case 'number':
             return '@"1"';
+        case 'formatted':
         case 'string':
             return `@"'${_.startCase(propertyName)}'"`;
         case 'enum':
@@ -146,6 +147,7 @@ global.mbglTestValue = function (property, layerType) {
             return property.default ? 'false' : 'true';
         case 'number':
             return '1.0';
+        case 'formatted':
         case 'string':
             return `"${_.startCase(propertyName)}"`;
         case 'enum': {
@@ -218,6 +220,7 @@ global.testHelperMessage = function (property, layerType, isFunction) {
             return 'testBool' + fnSuffix;
         case 'number':
             return 'testNumber' + fnSuffix;
+        case 'formatted':
         case 'string':
             return 'testString' + fnSuffix;
         case 'enum':
@@ -364,6 +367,8 @@ global.propertyReqs = function (property, propertiesByName, type) {
             return '`' + camelizeWithLeadingLowercase(req['!']) + '` is set to `nil`';
         } else {
             let name = Object.keys(req)[0];
+            if (name === 'source')
+                return 'the data source requirements are met';
             return '`' + camelizeWithLeadingLowercase(name) + '` is set to an expression that evaluates to ' + describeValue(req[name], propertiesByName[name], type);
         }
     }).join(', and ') + '. Otherwise, it is ignored.';
@@ -385,6 +390,7 @@ global.describeType = function (property) {
             return 'Boolean';
         case 'number':
             return 'numeric';
+        case 'formatted':
         case 'string':
             return 'string';
         case 'enum':
@@ -428,6 +434,7 @@ global.describeValue = function (value, property, layerType) {
             return value ? '`YES`' : '`NO`';
         case 'number':
             return 'the float ' + '`' + formatNumber(value) + '`';
+        case 'formatted':
         case 'string':
             if (value === '') {
                 return 'the empty string';
@@ -509,6 +516,7 @@ global.propertyType = function (property) {
             return 'NSNumber *';
         case 'number':
             return 'NSNumber *';
+        case 'formatted':
         case 'string':
             return 'NSString *';
         case 'enum':
@@ -539,7 +547,8 @@ global.isInterpolatable = function (property) {
     const type = property.type === 'array' ? property.value : property.type;
     return type !== 'boolean' &&
         type !== 'enum' &&
-        type !== 'string';
+        type !== 'string' &&
+        type !== 'formatted';
 };
 
 global.valueTransformerArguments = function (property) {
@@ -549,6 +558,7 @@ global.valueTransformerArguments = function (property) {
             return ['bool', objCType];
         case 'number':
             return ['float', objCType];
+        case 'formatted':
         case 'string':
             return ['std::string', objCType];
         case 'enum':
@@ -582,6 +592,7 @@ global.mbglType = function(property) {
             return 'bool';
         case 'number':
             return 'float';
+        case 'formatted':
         case 'string':
             return 'std::string';
         case 'enum': {

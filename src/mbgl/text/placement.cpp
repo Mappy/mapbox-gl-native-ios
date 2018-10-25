@@ -33,11 +33,33 @@ JointOpacityState::JointOpacityState(const JointOpacityState& prevOpacityState, 
 bool JointOpacityState::isHidden() const {
     return icon.isHidden() && text.isHidden();
 }
+    
+const CollisionGroups::CollisionGroup& CollisionGroups::get(const std::string& sourceID) {
+    // The predicate/groupID mechanism allows for arbitrary grouping,
+    // but the current interface defines one source == one group when
+    // crossSourceCollisions == true.
+    if (!crossSourceCollisions) {
+        if (collisionGroups.find(sourceID) == collisionGroups.end()) {
+            uint16_t nextGroupID = ++maxGroupID;
+            collisionGroups.emplace(sourceID, CollisionGroup(
+                nextGroupID,
+                optional<Predicate>([nextGroupID](const IndexedSubfeature& feature) -> bool {
+                    return feature.collisionGroupId == nextGroupID;
+                })
+            ));
+        }
+        return collisionGroups[sourceID];
+    } else {
+        static CollisionGroup nullGroup{0, nullopt};
+        return nullGroup;
+    }
+}
 
-Placement::Placement(const TransformState& state_, MapMode mapMode_)
+Placement::Placement(const TransformState& state_, MapMode mapMode_, const bool crossSourceCollisions)
     : collisionIndex(state_)
     , state(state_)
     , mapMode(mapMode_)
+    , collisionGroups(crossSourceCollisions)
 {}
 
 void Placement::placeLayer(RenderSymbolLayer& symbolLayer, const mat4& projMatrix, bool showCollisionBoxes) {
@@ -48,7 +70,7 @@ void Placement::placeLayer(RenderSymbolLayer& symbolLayer, const mat4& projMatri
         if (!renderTile.tile.isRenderable()) {
             continue;
         }
-        assert(dynamic_cast<GeometryTile*>(&renderTile.tile));
+        assert(renderTile.tile.kind == Tile::Kind::Geometry);
         GeometryTile& geometryTile = static_cast<GeometryTile&>(renderTile.tile);
 
         auto bucket = renderTile.tile.getBucket<SymbolBucket>(*symbolLayer.baseImpl);
@@ -92,7 +114,9 @@ void Placement::placeLayer(RenderSymbolLayer& symbolLayer, const mat4& projMatri
                                   std::forward_as_tuple(symbolBucket.bucketInstanceId),
                                   std::forward_as_tuple(symbolBucket.bucketInstanceId, geometryTile.getFeatureIndex(), geometryTile.id));
         
-        placeLayerBucket(symbolBucket, posMatrix, textLabelPlaneMatrix, iconLabelPlaneMatrix, scale, textPixelRatio, showCollisionBoxes, seenCrossTileIDs, renderTile.tile.holdForFade());
+        const auto collisionGroup = collisionGroups.get(geometryTile.sourceID);
+        
+        placeLayerBucket(symbolBucket, posMatrix, textLabelPlaneMatrix, iconLabelPlaneMatrix, scale, textPixelRatio, showCollisionBoxes, seenCrossTileIDs, renderTile.tile.holdForFade(), collisionGroup);
     }
 }
 
@@ -105,11 +129,38 @@ void Placement::placeLayerBucket(
         const float textPixelRatio,
         const bool showCollisionBoxes,
         std::unordered_set<uint32_t>& seenCrossTileIDs,
-        const bool holdingForFade) {
+        const bool holdingForFade,
+        const CollisionGroups::CollisionGroup& collisionGroup) {
 
     auto partiallyEvaluatedTextSize = bucket.textSizeBinder->evaluateForZoom(state.getZoom());
     auto partiallyEvaluatedIconSize = bucket.iconSizeBinder->evaluateForZoom(state.getZoom());
 
+    optional<CollisionTileBoundaries> avoidEdges;
+    if (mapMode == MapMode::Tile &&
+        (bucket.layout.get<style::SymbolAvoidEdges>() ||
+         bucket.layout.get<style::SymbolPlacement>() == style::SymbolPlacementType::Line)) {
+        avoidEdges = collisionIndex.projectTileBoundaries(posMatrix);
+    }
+    
+    const bool textAllowOverlap = bucket.layout.get<style::TextAllowOverlap>();
+    const bool iconAllowOverlap = bucket.layout.get<style::IconAllowOverlap>();
+    // This logic is similar to the "defaultOpacityState" logic below in updateBucketOpacities
+    // If we know a symbol is always supposed to show, force it to be marked visible even if
+    // it wasn't placed into the collision index (because some or all of it was outside the range
+    // of the collision grid).
+    // There is a subtle edge case here we're accepting:
+    //  Symbol A has text-allow-overlap: true, icon-allow-overlap: true, icon-optional: false
+    //  A's icon is outside the grid, so doesn't get placed
+    //  A's text would be inside grid, but doesn't get placed because of icon-optional: false
+    //  We still show A because of the allow-overlap settings.
+    //  Symbol B has allow-overlap: false, and gets placed where A's text would be
+    //  On panning in, there is a short period when Symbol B and Symbol A will overlap
+    //  This is the reverse of our normal policy of "fade in on pan", but should look like any other
+    //  collision and hopefully not be too noticeable.
+    // See https://github.com/mapbox/mapbox-gl-native/issues/12683
+    const bool alwaysShowText = textAllowOverlap && (iconAllowOverlap || !bucket.hasIconData() || bucket.layout.get<style::IconOptional>());
+    const bool alwaysShowIcon = iconAllowOverlap && (textAllowOverlap || !bucket.hasTextData() || bucket.layout.get<style::TextOptional>());
+    
     for (auto& symbolInstance : bucket.symbolInstances) {
 
         if (seenCrossTileIDs.count(symbolInstance.crossTileID) == 0) {
@@ -133,7 +184,7 @@ void Placement::placeLayerBucket(
                         placedSymbol, scale, fontSize,
                         bucket.layout.get<style::TextAllowOverlap>(),
                         bucket.layout.get<style::TextPitchAlignment>() == style::AlignmentType::Map,
-                        showCollisionBoxes);
+                        showCollisionBoxes, avoidEdges, collisionGroup.second);
                 placeText = placed.first;
                 offscreen &= placed.second;
             }
@@ -147,7 +198,7 @@ void Placement::placeLayerBucket(
                         placedSymbol, scale, fontSize,
                         bucket.layout.get<style::IconAllowOverlap>(),
                         bucket.layout.get<style::IconPitchAlignment>() == style::AlignmentType::Map,
-                        showCollisionBoxes);
+                        showCollisionBoxes, avoidEdges, collisionGroup.second);
                 placeIcon = placed.first;
                 offscreen &= placed.second;
             }
@@ -165,11 +216,11 @@ void Placement::placeLayerBucket(
             }
 
             if (placeText) {
-                collisionIndex.insertFeature(symbolInstance.textCollisionFeature, bucket.layout.get<style::TextIgnorePlacement>(), bucket.bucketInstanceId);
+                collisionIndex.insertFeature(symbolInstance.textCollisionFeature, bucket.layout.get<style::TextIgnorePlacement>(), bucket.bucketInstanceId, collisionGroup.first);
             }
 
             if (placeIcon) {
-                collisionIndex.insertFeature(symbolInstance.iconCollisionFeature, bucket.layout.get<style::IconIgnorePlacement>(), bucket.bucketInstanceId);
+                collisionIndex.insertFeature(symbolInstance.iconCollisionFeature, bucket.layout.get<style::IconIgnorePlacement>(), bucket.bucketInstanceId, collisionGroup.first);
             }
 
             assert(symbolInstance.crossTileID != 0);
@@ -180,7 +231,7 @@ void Placement::placeLayerBucket(
                 placements.erase(symbolInstance.crossTileID);
             }
             
-            placements.emplace(symbolInstance.crossTileID, JointPlacement(placeText, placeIcon, offscreen || bucket.justReloaded));
+            placements.emplace(symbolInstance.crossTileID, JointPlacement(placeText || alwaysShowText, placeIcon || alwaysShowIcon, offscreen || bucket.justReloaded));
             seenCrossTileIDs.insert(symbolInstance.crossTileID);
         }
     } 
@@ -254,17 +305,17 @@ void Placement::updateBucketOpacities(SymbolBucket& bucket, std::set<uint32_t>& 
 
     JointOpacityState duplicateOpacityState(false, false, true);
 
-	const bool textAllowOverlap = bucket.layout.get<style::TextAllowOverlap>();
-	const bool iconAllowOverlap = bucket.layout.get<style::IconAllowOverlap>();
-
-	// If allow-overlap is true, we can show symbols before placement runs on them
-	// But we have to wait for placement if we potentially depend on a paired icon/text
-	// with allow-overlap: false.
-	// See https://github.com/mapbox/mapbox-gl-native/issues/12483
-	JointOpacityState defaultOpacityState(
-										  textAllowOverlap && (iconAllowOverlap || !bucket.hasIconData() || bucket.layout.get<style::IconOptional>()),
-										  iconAllowOverlap && (textAllowOverlap || !bucket.hasTextData() || bucket.layout.get<style::TextOptional>()),
-										  true);
+    const bool textAllowOverlap = bucket.layout.get<style::TextAllowOverlap>();
+    const bool iconAllowOverlap = bucket.layout.get<style::IconAllowOverlap>();
+    
+    // If allow-overlap is true, we can show symbols before placement runs on them
+    // But we have to wait for placement if we potentially depend on a paired icon/text
+    // with allow-overlap: false.
+    // See https://github.com/mapbox/mapbox-gl-native/issues/12483
+    JointOpacityState defaultOpacityState(
+            textAllowOverlap && (iconAllowOverlap || !bucket.hasIconData() || bucket.layout.get<style::IconOptional>()),
+            iconAllowOverlap && (textAllowOverlap || !bucket.hasTextData() || bucket.layout.get<style::TextOptional>()),
+            true);
 
     for (SymbolInstance& symbolInstance : bucket.symbolInstances) {
         bool isDuplicate = seenCrossTileIDs.count(symbolInstance.crossTileID) > 0;

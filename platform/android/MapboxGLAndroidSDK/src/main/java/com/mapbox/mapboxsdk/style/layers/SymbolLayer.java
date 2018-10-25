@@ -28,7 +28,7 @@ public class SymbolLayer extends Layer {
    * @param nativePtr pointer used by core
    */
   @Keep
-  public SymbolLayer(long nativePtr) {
+  SymbolLayer(long nativePtr) {
     super(nativePtr);
   }
 
@@ -65,6 +65,16 @@ public class SymbolLayer extends Layer {
   public SymbolLayer withSourceLayer(String sourceLayer) {
     setSourceLayer(sourceLayer);
     return this;
+  }
+
+  /**
+   * Get the source id.
+   *
+   * @return id of the source
+   */
+  public String getSourceId() {
+    checkThread();
+    return nativeGetSourceId();
   }
 
   /**
@@ -158,6 +168,17 @@ public class SymbolLayer extends Layer {
   public PropertyValue<Boolean> getSymbolAvoidEdges() {
     checkThread();
     return (PropertyValue<Boolean>) new PropertyValue("symbol-avoid-edges", nativeGetSymbolAvoidEdges());
+  }
+
+  /**
+   * Get the SymbolZOrder property
+   *
+   * @return property wrapper value around String
+   */
+  @SuppressWarnings("unchecked")
+  public PropertyValue<String> getSymbolZOrder() {
+    checkThread();
+    return (PropertyValue<String>) new PropertyValue("symbol-z-order", nativeGetSymbolZOrder());
   }
 
   /**
@@ -993,6 +1014,9 @@ public class SymbolLayer extends Layer {
 
   @Keep
   private native Object nativeGetSymbolAvoidEdges();
+
+  @Keep
+  private native Object nativeGetSymbolZOrder();
 
   @Keep
   private native Object nativeGetIconAllowOverlap();

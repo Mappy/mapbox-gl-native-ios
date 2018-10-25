@@ -45,6 +45,10 @@ bool RenderHeatmapLayer::hasTransition() const {
     return unevaluated.hasTransition();
 }
 
+bool RenderHeatmapLayer::hasCrossfade() const {
+    return false;
+}
+
 void RenderHeatmapLayer::render(PaintParameters& parameters, RenderSource*) {
     if (parameters.pass == RenderPass::Opaque) {
         return;
@@ -101,9 +105,9 @@ void RenderHeatmapLayer::render(PaintParameters& parameters, RenderSource*) {
        
             const auto allUniformValues = programInstance.computeAllUniformValues(
                 HeatmapProgram::UniformValues {
-                    uniforms::u_intensity::Value{ evaluated.get<style::HeatmapIntensity>() },
-                    uniforms::u_matrix::Value{ tile.matrix },
-                    uniforms::heatmap::u_extrude_scale::Value{ extrudeScale }
+                    uniforms::u_intensity::Value( evaluated.get<style::HeatmapIntensity>() ),
+                    uniforms::u_matrix::Value( tile.matrix ),
+                    uniforms::heatmap::u_extrude_scale::Value( extrudeScale )
                 },
                 paintPropertyBinders,
                 evaluated,
@@ -123,6 +127,7 @@ void RenderHeatmapLayer::render(PaintParameters& parameters, RenderSource*) {
                 parameters.depthModeForSublayer(0, gl::DepthMode::ReadOnly),
                 stencilMode,
                 gl::ColorMode::additive(),
+                gl::CullFaceMode::disabled(),
                 *bucket.indexBuffer,
                 bucket.segments,
                 allUniformValues,
@@ -147,10 +152,10 @@ void RenderHeatmapLayer::render(PaintParameters& parameters, RenderSource*) {
 
         const auto allUniformValues = programInstance.computeAllUniformValues(
             HeatmapTextureProgram::UniformValues{
-                uniforms::u_matrix::Value{ viewportMat }, uniforms::u_world::Value{ size },
-                uniforms::u_image::Value{ 0 },
-                uniforms::u_color_ramp::Value{ 1 },
-                uniforms::u_opacity::Value{ evaluated.get<HeatmapOpacity>() }
+                uniforms::u_matrix::Value( viewportMat ), uniforms::u_world::Value( size ),
+                uniforms::u_image::Value( 0 ),
+                uniforms::u_color_ramp::Value( 1 ),
+                uniforms::u_opacity::Value( evaluated.get<HeatmapOpacity>() )
             },
             paintAttributeData,
             properties,
@@ -170,6 +175,7 @@ void RenderHeatmapLayer::render(PaintParameters& parameters, RenderSource*) {
             gl::DepthMode::disabled(),
             gl::StencilMode::disabled(),
             parameters.colorModeForRenderPass(),
+            gl::CullFaceMode::disabled(),
             parameters.staticData.quadTriangleIndexBuffer,
             parameters.staticData.extrusionTextureSegments,
             allUniformValues,

@@ -35,6 +35,10 @@ public:
     void setMinZoom(float) final;
     void setMaxZoom(float) final;
 
+    // Dynamic properties
+    optional<conversion::Error> setLayoutProperty(const std::string& name, const conversion::Convertible& value) final;
+    optional<conversion::Error> setPaintProperty(const std::string& name, const conversion::Convertible& value) final;
+
     // Layout properties
 
     static PropertyValue<SymbolPlacementType> getDefaultSymbolPlacement();
@@ -48,6 +52,10 @@ public:
     static PropertyValue<bool> getDefaultSymbolAvoidEdges();
     PropertyValue<bool> getSymbolAvoidEdges() const;
     void setSymbolAvoidEdges(PropertyValue<bool>);
+
+    static PropertyValue<SymbolZOrderType> getDefaultSymbolZOrder();
+    PropertyValue<SymbolZOrderType> getSymbolZOrder() const;
+    void setSymbolZOrder(PropertyValue<SymbolZOrderType>);
 
     static PropertyValue<bool> getDefaultIconAllowOverlap();
     PropertyValue<bool> getIconAllowOverlap() const;

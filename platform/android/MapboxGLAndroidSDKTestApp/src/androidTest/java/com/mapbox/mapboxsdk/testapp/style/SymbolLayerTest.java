@@ -51,6 +51,18 @@ public class SymbolLayerTest extends BaseActivityTest {
   }
 
   @Test
+  public void testSourceId() {
+    validateTestSetup();
+    setupLayer();
+    Timber.i("SourceId");
+    invoke(mapboxMap, (uiController, mapboxMap) -> {
+      assertNotNull(layer);
+      // Get source id
+      assertEquals(layer.getSourceId(), "composite");
+    });
+  }
+
+  @Test
   public void testSetVisibility() {
     validateTestSetup();
     setupLayer();
@@ -144,6 +156,20 @@ public class SymbolLayerTest extends BaseActivityTest {
       // Set and Get
       layer.setProperties(symbolAvoidEdges(true));
       assertEquals((Boolean) layer.getSymbolAvoidEdges().getValue(), (Boolean) true);
+    });
+  }
+
+  @Test
+  public void testSymbolZOrderAsConstant() {
+    validateTestSetup();
+    setupLayer();
+    Timber.i("symbol-z-order");
+    invoke(mapboxMap, (uiController, mapboxMap) -> {
+      assertNotNull(layer);
+
+      // Set and Get
+      layer.setProperties(symbolZOrder(SYMBOL_Z_ORDER_VIEWPORT_Y));
+      assertEquals((String) layer.getSymbolZOrder().getValue(), (String) SYMBOL_Z_ORDER_VIEWPORT_Y);
     });
   }
 

@@ -47,6 +47,7 @@ struct NodeMap::RenderOptions {
 };
 
 Nan::Persistent<v8::Function> NodeMap::constructor;
+Nan::Persistent<v8::Object> NodeMap::parseError;
 
 static const char* releasedMessage() {
     return "Map resources have already been released";
@@ -57,6 +58,20 @@ void NodeMapObserver::onDidFailLoadingMap(std::exception_ptr error) {
 }
 
 void NodeMap::Init(v8::Local<v8::Object> target) {
+    // Define a custom error class for parse errors
+    auto script = Nan::New<v8::UnboundScript>(Nan::New(R"JS(
+class ParseError extends Error {
+  constructor(...params) {
+    super(...params);
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, ParseError);
+    }
+  }
+}
+ParseError)JS").ToLocalChecked()).ToLocalChecked();
+    parseError.Reset(Nan::To<v8::Object>(Nan::RunScript(script).ToLocalChecked()).ToLocalChecked());
+    Nan::Set(target, Nan::New("ParseError").ToLocalChecked(), Nan::New(parseError));
+
     v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
 
     tpl->SetClassName(Nan::New("Map").ToLocalChecked());
@@ -216,6 +231,8 @@ void NodeMap::Load(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
     try {
         nodeMap->map->getStyle().loadJSON(style);
+    } catch (const mbgl::util::StyleParseException& ex) {
+        return Nan::ThrowError(ParseError(ex.what()));
     } catch (const std::exception &ex) {
         return Nan::ThrowError(ex.what());
     }
@@ -408,9 +425,11 @@ void NodeMap::Render(const Nan::FunctionCallbackInfo<v8::Value>& info) {
         nodeMap->req = std::make_unique<RenderRequest>(Nan::To<v8::Function>(info[1]).ToLocalChecked());
 
         nodeMap->startRender(std::move(options));
-    } catch (mbgl::style::conversion::Error& err) {
+    } catch (const mbgl::style::conversion::Error& err) {
         return Nan::ThrowTypeError(err.message.c_str());
-    } catch (mbgl::util::Exception &ex) {
+    } catch (const mbgl::util::StyleParseException& ex) {
+        return Nan::ThrowError(ParseError(ex.what()));
+    } catch (const mbgl::util::Exception &ex) {
         return Nan::ThrowError(ex.what());
     }
 
@@ -459,6 +478,11 @@ void NodeMap::startRender(NodeMap::RenderOptions options) {
     uv_ref(reinterpret_cast<uv_handle_t *>(async));
 }
 
+v8::Local<v8::Value> NodeMap::ParseError(const char* msg) {
+    v8::Local<v8::Value> argv[] = { Nan::New(msg).ToLocalChecked() };
+    return Nan::CallAsConstructor(Nan::New(parseError), 1, argv).ToLocalChecked();
+}
+
 void NodeMap::renderFinished() {
     assert(req);
 
@@ -480,16 +504,19 @@ void NodeMap::renderFinished() {
     v8::Local<v8::Object> target = Nan::New<v8::Object>();
 
     if (error) {
-        std::string errorMessage;
+        v8::Local<v8::Value> err;
 
         try {
             std::rethrow_exception(error);
+            assert(false);
+        } catch (const mbgl::util::StyleParseException& ex) {
+            err = ParseError(ex.what());
         } catch (const std::exception& ex) {
-            errorMessage = ex.what();
+            err = Nan::Error(ex.what());
         }
 
         v8::Local<v8::Value> argv[] = {
-            Nan::Error(errorMessage.c_str())
+            err
         };
 
         // This must be empty to be prepared for the next render call.
@@ -594,7 +621,10 @@ void NodeMap::cancel() {
 
     frontend = std::make_unique<mbgl::HeadlessFrontend>(mbgl::Size{ 256, 256 }, pixelRatio, *this, threadpool);
     map = std::make_unique<mbgl::Map>(*frontend, mapObserver, frontend->getSize(), pixelRatio,
-                                      *this, threadpool, mode);
+                                      *this, threadpool, mode,
+                                      mbgl::ConstrainMode::HeightOnly,
+                                      mbgl::ViewportMode::Default,
+                                      crossSourceCollisions);
 
     // FIXME: Reload the style after recreating the map. We need to find
     // a better way of canceling an ongoing rendering on the core level
@@ -822,7 +852,7 @@ void NodeMap::SetLayoutProperty(const Nan::FunctionCallbackInfo<v8::Value>& info
         return Nan::ThrowTypeError("Second argument must be a string");
     }
 
-    mbgl::optional<Error> error = setLayoutProperty(*layer, *Nan::Utf8String(info[1]), Convertible(info[2]));
+    mbgl::optional<Error> error = layer->setLayoutProperty(*Nan::Utf8String(info[1]), Convertible(info[2]));
     if (error) {
         return Nan::ThrowTypeError(error->message.c_str());
     }
@@ -854,7 +884,7 @@ void NodeMap::SetPaintProperty(const Nan::FunctionCallbackInfo<v8::Value>& info)
         return Nan::ThrowTypeError("Second argument must be a string");
     }
 
-    mbgl::optional<Error> error = setPaintProperty(*layer, *Nan::Utf8String(info[1]), Convertible(info[2]));
+    mbgl::optional<Error> error = layer->setPaintProperty(*Nan::Utf8String(info[1]), Convertible(info[2]));
     if (error) {
         return Nan::ThrowTypeError(error->message.c_str());
     }
@@ -1185,6 +1215,14 @@ NodeMap::NodeMap(v8::Local<v8::Object> options)
                 return mbgl::MapMode::Static;
             }
       }())
+    , crossSourceCollisions([&] {
+        Nan::HandleScope scope;
+        return Nan::Has(options, Nan::New("crossSourceCollisions").ToLocalChecked()).FromJust()
+            ? Nan::Get(options, Nan::New("crossSourceCollisions").ToLocalChecked())
+                .ToLocalChecked()
+                ->BooleanValue()
+            : true;
+    }())
     , mapObserver(NodeMapObserver())
     , frontend(std::make_unique<mbgl::HeadlessFrontend>(mbgl::Size { 256, 256 }, pixelRatio, *this, threadpool))
     , map(std::make_unique<mbgl::Map>(*frontend,
@@ -1193,7 +1231,10 @@ NodeMap::NodeMap(v8::Local<v8::Object> options)
                                       pixelRatio,
                                       *this,
                                       threadpool,
-                                      mode)),
+                                      mode,
+                                      mbgl::ConstrainMode::HeightOnly,
+                                      mbgl::ViewportMode::Default,
+                                      crossSourceCollisions)),
       async(new uv_async_t) {
 
     async->data = this;

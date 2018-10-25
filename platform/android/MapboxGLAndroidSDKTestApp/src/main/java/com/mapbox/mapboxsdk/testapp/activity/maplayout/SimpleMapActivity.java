@@ -20,16 +20,14 @@ public class SimpleMapActivity extends AppCompatActivity {
 
     private MapView mapView;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_map_simple);
-
-        mapView = (MapView) findViewById(R.id.mapView);
-//        mapView.setStyleUrl("https://map.mappyrecette.net/map/1.0/vector/standard_v1.json");
-        mapView.onCreate(savedInstanceState);
-    }
-
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_map_simple);
+    mapView = (MapView) findViewById(R.id.mapView);
+    // mapView.setStyleUrl("https://map.mappyrecette.net/map/1.0/vector/standard_v1.json");
+    mapView.onCreate(savedInstanceState);
+  }
     @Override
     protected void onStart() {
         super.onStart();
