@@ -36,7 +36,7 @@ import static com.mapbox.mapboxsdk.module.http.HttpRequestUtil.toHumanReadableAs
 public class HttpRequestImpl implements HttpRequest {
 
   //Mappy modifs
-  static HttpRequestHeaderProvider httpRequestHeaderProvider;
+  public static HttpRequestHeaderProvider httpRequestHeaderProvider;
 
   private static final String userAgentString = toHumanReadableAscii(
     String.format("%s %s (%s) Android/%s (%s)",
@@ -189,10 +189,5 @@ public class HttpRequestImpl implements HttpRequest {
     // https://github.com/mapbox/mapbox-gl-native/blob/master/platform/android/src/http_file_source.cpp#L192
     dispatcher.setMaxRequestsPerHost(20);
     return dispatcher;
-  }
-
-  //Mappy modifs
-  public interface HttpRequestHeaderProvider {
-    void addHeader(Request.Builder builder);
   }
 }

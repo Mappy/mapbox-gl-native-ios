@@ -1,5 +1,7 @@
 package com.mapbox.mapboxsdk.http;
 
+import okhttp3.Request;
+
 /**
  * Interface definition for performing http requests.
  * <p>
@@ -28,4 +30,9 @@ public interface HttpRequest {
      * Cancels the request.
      */
     void cancelRequest();
+
+    //Mappy modifs
+    interface HttpRequestHeaderProvider {
+        void addHeader(Request.Builder builder);
+    }
 }
