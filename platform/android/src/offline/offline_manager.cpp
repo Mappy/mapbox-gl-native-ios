@@ -42,7 +42,7 @@ void OfflineManager::listOfflineRegions(jni::JNIEnv& env_, const jni::Object<Fil
     });
 }
 
-void OfflineManager::cleanAmbientCache(jni::JNIEnv&, jni::Object<FileSource>) {
+void OfflineManager::cleanAmbientCache(jni::JNIEnv&, jni::Object<FileSource>&) {
     fileSource.cleanAmbientCache();
 }
 
