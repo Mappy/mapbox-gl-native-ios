@@ -33,7 +33,7 @@ std::set<FontStack> fontStacks(const std::vector<Immutable<style::Layer::Impl>>&
         impl.layout.get<TextFont>().match(
             [&] (Undefined) {
                 //mappy modif
-                Log::Warning(Event::ParseStyle, "No font defined while parsing layer '%s' : will use default font \" Condensed\".", layer->getID().c_str());
+                Log::Warning(Event::ParseStyle, "No font defined while parsing layer '%s' : will use default font \" Condensed\".", layer->id.c_str());
                 result.insert({"DejaVu Sans Condensed"});
                 //end mappy modif
             },
