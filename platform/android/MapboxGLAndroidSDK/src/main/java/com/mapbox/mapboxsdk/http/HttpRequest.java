@@ -30,9 +30,4 @@ public interface HttpRequest {
      * Cancels the request.
      */
     void cancelRequest();
-
-    //Mappy modifs
-    interface HttpRequestHeaderProvider {
-        void addHeader(Request.Builder builder);
-    }
 }

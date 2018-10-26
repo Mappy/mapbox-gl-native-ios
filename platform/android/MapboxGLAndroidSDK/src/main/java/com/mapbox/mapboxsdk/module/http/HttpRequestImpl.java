@@ -190,4 +190,9 @@ public class HttpRequestImpl implements HttpRequest {
     dispatcher.setMaxRequestsPerHost(20);
     return dispatcher;
   }
+
+  //Mappy modifs
+  interface HttpRequestHeaderProvider {
+    void addHeader(Request.Builder builder);
+  }
 }
