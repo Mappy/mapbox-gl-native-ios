@@ -110,6 +110,9 @@ public class ColorUtils {
    */
   public static void setTintList(@NonNull ImageView imageView, @ColorInt int tintColor) {
     Drawable originalDrawable = imageView.getDrawable();
+    if(originalDrawable == null) {
+      return;
+    }
     Drawable wrappedDrawable = DrawableCompat.wrap(originalDrawable);
     DrawableCompat.setTintList(wrappedDrawable, getSelector(tintColor));
   }
