@@ -1,7 +1,5 @@
 package com.mapbox.mapboxsdk.http;
 
-import okhttp3.Request;
-
 /**
  * Interface definition for performing http requests.
  * <p>
