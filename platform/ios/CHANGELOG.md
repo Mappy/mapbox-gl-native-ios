@@ -2,22 +2,101 @@
 
 Mapbox welcomes participation and contributions from everyone. Please read [CONTRIBUTING.md](../../CONTRIBUTING.md) to get started.
 
-## 4.3.0
+## 4.5.0 - October 10, 2018
+
+### Styles and rendering
+
+* Added support for 120 frames per second on capable devices. ([#12979](https://github.com/mapbox/mapbox-gl-native/pull/12979))
+* Added an `MGLSymbolStyleLayer.symbolZOrder` property for forcing point features in a symbol layer to be layered in the same order that they are specified in the layer’s associated source. ([#12783](https://github.com/mapbox/mapbox-gl-native/pull/12783))
+* Fixed a crash when a style layer `*-pattern` property evaluates to nil for a particular feature. ([#12896](https://github.com/mapbox/mapbox-gl-native/pull/12896))
+* Fixed an issue with view annotations (including the user location annotation) and the GL map lagging relative to each other. ([#12895](https://github.com/mapbox/mapbox-gl-native/pull/12895))
+* Fixed an issue where fill and line layers would occasionally flicker on zoom ([#12982](https://github.com/mapbox/mapbox-gl-native/pull/12982))
+
+### User location
+* Added `-[MGLMapViewDelegate mapViewUserLocationAnchorPoint:]` to customize the position of the user location annotation.. ([#12907](https://github.com/mapbox/mapbox-gl-native/pull/12907))
+* Marked `-[MGLMapView setUserLocationVerticalAlignment:]` as deprecated. Use `-[MGLMapViewDelegate mapViewUserLocationAnchorPoint:]` instead. ([#12907](https://github.com/mapbox/mapbox-gl-native/pull/12907))
+* Added the `-[MGLMapView updateUserLocationAnnotationView]` and `-[MGLMapView updateUserLocationAnnotationView:animated:]` methods to update the position of the user location annotation between location updates. ([#12907](https://github.com/mapbox/mapbox-gl-native/pull/12907))
+* Fixed an issue where the user location annotation was positioned incorrectly when the map view had a left or right content inset. ([#12907](https://github.com/mapbox/mapbox-gl-native/pull/12907))
+
+### Offline maps
+
+* Added `-[MGLOfflineStorage addContentsOfFile:withCompletionHandler:]` and `-[MGLOfflineStorage addContentsOfURL:withCompletionHandler:]` methods to add pregenerated offline packs to offline storage. ([#12791](https://github.com/mapbox/mapbox-gl-native/pull/12791))
+* Fixed an issue where some tiles weren't rendered correctly when no internet connectivity was available ([#12931](https://github.com/mapbox/mapbox-gl-native/pull/12931))
+
+### Other changes	
+
+* Added `MGLAltitudeForZoomLevel` and `MGLZoomLevelForAltitude` to public API for conversion between zoom levels and altitudes. ([#12986](https://github.com/mapbox/mapbox-gl-native/pull/12986))
+* Deprecated the `+[MGLMapCamera cameraLookingAtCenterCoordinate:fromDistance:pitch:heading:]` method in favor of `+[MGLMapCamera cameraLookingAtCenterCoordinate:altitude:pitch:heading:]` and `+[MGLMapCamera cameraLookingAtCenterCoordinate:acrossDistance:pitch:heading:]`. ([#12966](https://github.com/mapbox/mapbox-gl-native/pull/12966))
+* Fixed an issue where `+[MGLMapCamera cameraLookingAtCenterCoordinate:fromEyeCoordinate:eyeAltitude:]` created a camera looking from the wrong eye coordinate. ([#12966](https://github.com/mapbox/mapbox-gl-native/pull/12966))
+* Added an `MGLMapCamera.viewingDistance` property based on the existing `MGLMapCamera.altitude` property. ([#12966](https://github.com/mapbox/mapbox-gl-native/pull/12966))
+* Fixed an issue where `-[MGLMapSnapshotter startWithQueue:completionHandler:]` failed to call its completion handler in some cases. ([#12355](https://github.com/mapbox/mapbox-gl-native/pull/12355))
+* Fixed bugs in coercion expression operators ("to-array" applied to empty arrays, "to-color" applied to colors, and "to-number" applied to null) [#12864](https://github.com/mapbox/mapbox-gl-native/pull/12864)
+* Added the `MGLCollisionBehaviorPre4_0` Info.plist key for applications that require the collision detection behavior in version v3.7 of the SDK. ([#12941](https://github.com/mapbox/mapbox-gl-native/pull/12941))
+* Fixed an issue where symbols from the events library could be duplicated when the maps SDK was used in conjunction with another Mapbox framework. ([#13008](https://github.com/mapbox/mapbox-gl-native/pull/13008))
+
+## 4.4.1 - September 13, 2018
+
+* Fixed several crashes related to telemetry collection. ([#12825](https://github.com/mapbox/mapbox-gl-native/pull/12825))
+* Fixed a crash when the network connection was offline. ([#12889](https://github.com/mapbox/mapbox-gl-native/pull/12889))
+
+## 4.4.0 - September 12, 2018
+
+### Styles and rendering
+
+* When a symbol in an `MGLSymbolStyleLayer` has both an icon and text, both are shown or hidden together based on available space. ([#12521](https://github.com/mapbox/mapbox-gl-native/pull/12521))
+* Invalid values of `MGLSymbolStyleLayer.textFontNames` are treated as warnings instead of errors. ([#12414](https://github.com/mapbox/mapbox-gl-native/pull/12414))
+* Added an `MGLLineStyleLayer.lineGradient` property that can be used to define a gradient with which to color a line feature. ([#12575](https://github.com/mapbox/mapbox-gl-native/pull/12575))
+* The `MGLLineStyleLayer.linePattern`, `MGLFillStyleLayer.fillPattern`, and `MGLFillStyleLayer.fillExtrusionPattern` properties can now be set to expressions that refer to feature attributes. ([#12284](https://github.com/mapbox/mapbox-gl-native/pull/12284))
+* Reduced the amount of memory consumed by font data after changing the style. ([#12414](https://github.com/mapbox/mapbox-gl-native/pull/12414))
+* `-[MGLShapeSource initWithIdentifier:shape:options:]` warns about possible attribute loss when passing in an `MGLShapeCollection` object. ([#12625](https://github.com/mapbox/mapbox-gl-native/pull/12625))
+* Added an `MGLShapeSourceOptionLineDistanceMetrics` option that enables or disables calculating line distance metrics. ([#12604](https://github.com/mapbox/mapbox-gl-native/pull/12604))
+* Fixed an issue where the `cubic-bezier` curve type for `mgl_interpolate:withCurveType:parameters:stops:` expressions was misinterpreted for some style layer properties. ([#12826](https://github.com/mapbox/mapbox-gl-native/pull/12826))
+* Fixed an issue that could cause symbols to fade in during pan operations instead of always showing when using `MGLSymbolStyleLayer.iconAllowsOverlap` or `MGLSymbolStyleLayer.textAllowsOverlap` properties. ([#12698](https://github.com/mapbox/mapbox-gl-native/pull/12698))
+
+### Offline maps
+
+* Added the `MGLShapeOfflineRegion` class for creating an offline pack that covers an arbitrary shape. ([#11447](https://github.com/mapbox/mapbox-gl-native/pull/11447))
+* Fixed crashes when offline storage encountered certain SQLite errors. ([#12224](https://github.com/mapbox/mapbox-gl-native/pull/12224))
+
+### Other changes
+
+* The predefined values of `MGLMapView.decelerationRate` are now typed as `MGLMapViewDecelerationRate`s for improved bridging to Swift. ([#12584](https://github.com/mapbox/mapbox-gl-native/pull/12584))
+* Added an `-[MGLMapViewDelegate mapView:shapeAnnotationIsEnabled:]` method to specify whether an annotation is selectable. ([#12352](https://github.com/mapbox/mapbox-gl-native/pull/12352))
+* The `-[MGLMapView visibleFeaturesAtPoint:]` method can now return features near tile boundaries at high zoom levels. ([#12570](https://github.com/mapbox/mapbox-gl-native/pull/12570))
+* Fixed inconsistencies in exception naming. ([#12583](https://github.com/mapbox/mapbox-gl-native/issues/12583))
+* Fixed an issue where `-[MGLMapView convertCoordinateBounds:toRectToView:]` would return an empty CGRect if the bounds crossed the antimeridian. ([#12758](https://github.com/mapbox/mapbox-gl-native/pull/12758))
+
+## 4.3.0 - August 15, 2018
 
 ### Styles and rendering
 
 * Added an `MGLMapView.preferredFramesPerSecond` property that controls the rate at which the map view is rendered. The default rate now adapts to device capabilities to provide a smoother experience. ([#12501](https://github.com/mapbox/mapbox-gl-native/issues/12501))
+* Token string syntax (`"{token}"`) in `MGLSymbolStyleLayer` `text` and `iconImageName` properties is now correctly converted to the appropriate `NSExpression` equivalent. ([#11659](https://github.com/mapbox/mapbox-gl-native/issues/11659))
+* Fixed a crash when switching between two styles having layers with the same identifier but different layer types. ([#12432](https://github.com/mapbox/mapbox-gl-native/issues/12432))
+* Added a new option to `MGLSymbolPlacement`, `MGLSymbolPlacementLineCenter`, that places the label relative to the center of the geometry. ([#12337](https://github.com/mapbox/mapbox-gl-native/pull/12337))
+
+### User location
+
+* Added an `MGLMapView.locationManager` property and `MGLLocationManager` protocol for tracking user location using a custom alternative to `CLLocationManager`. ([#12013](https://github.com/mapbox/mapbox-gl-native/pull/12013))
+* Fixed a crash that occurred when `MMELocationManager` was deallocated and the delegate was reporting updates. ([#12542](https://github.com/mapbox/mapbox-gl-native/pull/12542))
 
 ### Other changes
 
 * Fixed a crash that occurred when the user started a gesture before the drift animation for a previous gesture was complete. ([#12148](https://github.com/mapbox/mapbox-gl-native/pull/12148))
-* Token string syntax (`"{token}"`) in `MGLSymbolStyleLayer` `text` and `iconImageName` properties is now correctly converted to the appropriate `NSExpression` equivalent. ([#11659](https://github.com/mapbox/mapbox-gl-native/issues/11659))
-* Added an `MGLMapView.locationManager` property and `MGLLocationManager` protocol for tracking user location using a custom alternative to `CLLocationManager`. ([#12013](https://github.com/mapbox/mapbox-gl-native/pull/12013))
-* Fixed a crash when switching between two styles having layers with the same identifier but different layer types. ([#12432](https://github.com/mapbox/mapbox-gl-native/issues/12432))
 * Fixed an issue where the symbols for `MGLMapPointForCoordinate` could not be found. ([#12445](https://github.com/mapbox/mapbox-gl-native/issues/12445))
 * Fixed an issue causing country and ocean labels to disappear after calling `-[MGLStyle localizeLabelsIntoLocale:]` when the system language is set to Simplified Chinese. ([#12164](https://github.com/mapbox/mapbox-gl-native/issues/12164))
-* Fixed a crash that occurred when `MMELocationManager` was deallocated and the delegate was reporting updates. ([#12542](https://github.com/mapbox/mapbox-gl-native/pull/12542))
-* Various security related improvements.
+* Closed a security vulnerability introduced in 4.1.0 that would potentially allow the owner of a style to compromise apps loading that style. ([#12571](https://github.com/mapbox/mapbox-gl-native/pull/12571))
+* Reduced binary size and improved performance by enabling LTO. ([#12502](https://github.com/mapbox/mapbox-gl-native/pull/12502))
+
+## 4.0.5 - August 15, 2018
+
+### Packaging
+
+* When integrating this framework using CocoaPods, the included bcsymbolmap files are now preserved. If you have bitcode enabled and you are seeing incorrectly symbolicated crash logs, you should create a build phase in your Xcode project that copies these bcsymbolmap files to your app’s Products Directory when installing. ([#12257](https://github.com/mapbox/mapbox-gl-native/pull/12257))
+
+### Other changes
+
+* Added an `MGLMapView.locationManager` property and `MGLLocationManager` protocol for tracking user location using a custom alternative to `CLLocationManager`. ([#12013](https://github.com/mapbox/mapbox-gl-native/pull/12013))
 
 ## 4.2.0 - July 18, 2018
 
@@ -44,6 +123,10 @@ Mapbox welcomes participation and contributions from everyone. Please read [CONT
 * Added `-[MGLMapSnapshot coordinateForPoint:]` that returns a map coordinate for a specified snapshot image point. ([#12221](https://github.com/mapbox/mapbox-gl-native/pull/12221))
 * Reduced memory usage when collision debug mode is disabled. ([#12294](https://github.com/mapbox/mapbox-gl-native/issues/12294))
 * Fixed a bug with annotation view touch handling when a non-zero `centerOffset` is specified. ([#12234](https://github.com/mapbox/mapbox-gl-native/pull/12234))
+
+## 4.0.4 - June 27, 2018
+
+* Improved compatibility with Mapbox China APIs. ([#12233](https://github.com/mapbox/mapbox-gl-native/pull/12233))
 
 ## 4.0.3 - June 22, 2018
 

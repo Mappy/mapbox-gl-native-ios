@@ -74,7 +74,8 @@ MACOS_XCODEBUILD = xcodebuild \
 
 $(MACOS_PROJ_PATH): $(BUILD_DEPS) $(MACOS_USER_DATA_PATH)/WorkspaceSettings.xcsettings
 	mkdir -p $(MACOS_OUTPUT_PATH)
-	(cd $(MACOS_OUTPUT_PATH) && cmake -G Xcode ../..)
+	(cd $(MACOS_OUTPUT_PATH) && cmake -G Xcode ../.. \
+		-DWITH_EGL=${WITH_EGL})
 
 $(MACOS_USER_DATA_PATH)/WorkspaceSettings.xcsettings: platform/macos/WorkspaceSettings.xcsettings
 	mkdir -p "$(MACOS_USER_DATA_PATH)"
@@ -174,6 +175,7 @@ $(MACOS_COMPDB_PATH)/Makefile:
 	mkdir -p $(MACOS_COMPDB_PATH)
 	(cd $(MACOS_COMPDB_PATH) && cmake ../../../.. \
 		-DCMAKE_BUILD_TYPE=$(BUILDTYPE) \
+		-DWITH_EGL=${WITH_EGL} \
 		-DCMAKE_EXPORT_COMPILE_COMMANDS=ON)
 
 .PHONY:
@@ -250,24 +252,18 @@ ios-sanitize-address: $(IOS_PROJ_PATH)
 ios-static-analyzer: $(IOS_PROJ_PATH)
 	set -o pipefail && $(IOS_XCODEBUILD_SIM) analyze -scheme 'CI' test $(XCPRETTY)
 
+.PHONY: ios-check-events-symbols
+ios-check-events-symbols:
+	./platform/ios/scripts/check-events-symbols.sh
+
 .PHONY: ipackage
-ipackage: $(IOS_PROJ_PATH)
-	FORMAT=$(FORMAT) BUILD_DEVICE=$(BUILD_DEVICE) SYMBOLS=$(SYMBOLS) \
-	./platform/ios/scripts/package.sh
-
-.PHONY: ipackage-strip
-ipackage-strip: $(IOS_PROJ_PATH)
-	FORMAT=$(FORMAT) BUILD_DEVICE=$(BUILD_DEVICE) SYMBOLS=NO \
-	./platform/ios/scripts/package.sh
-
-.PHONY: ipackage-sim
-ipackage-sim: $(IOS_PROJ_PATH)
-	BUILDTYPE=Debug FORMAT=dynamic BUILD_DEVICE=false SYMBOLS=$(SYMBOLS) \
-	./platform/ios/scripts/package.sh
+ipackage: ipackage*
+ipackage%:
+	@echo make ipackage is deprecated — use make iframework.
 
 .PHONY: iframework
 iframework: $(IOS_PROJ_PATH)
-	FORMAT=dynamic BUILD_DEVICE=$(BUILD_DEVICE) SYMBOLS=$(SYMBOLS) \
+	FORMAT=$(FORMAT) BUILD_DEVICE=$(BUILD_DEVICE) SYMBOLS=$(SYMBOLS) \
 	./platform/ios/scripts/package.sh
 
 .PHONY: ideploy
@@ -288,9 +284,10 @@ style-code: darwin-style-code
 darwin-update-examples:
 	node platform/darwin/scripts/update-examples.js
 
-.PHONY: check-public-symbols
-check-public-symbols:
+.PHONY: darwin-check-public-symbols
+darwin-check-public-symbols:
 	node platform/darwin/scripts/check-public-symbols.js macOS iOS
+
 endif
 
 #### Linux targets #####################################################
@@ -506,6 +503,7 @@ test-node-recycle-map: node
 	npm test
 	npm run test-render -- --recycle-map --shuffle
 	npm run test-query
+	npm run test-expressions
 
 #### Android targets ###########################################################
 
@@ -519,7 +517,8 @@ MBGL_ANDROID_LIBDIR = lib$(if $(filter arm-v8 x86-64,$1),64)
 MBGL_ANDROID_DALVIKVM = dalvikvm$(if $(filter arm-v8 x86-64,$1),64,32)
 MBGL_ANDROID_APK_SUFFIX = $(if $(filter Release,$(BUILDTYPE)),release-unsigned,debug)
 MBGL_ANDROID_CORE_TEST_DIR = platform/android/MapboxGLAndroidSDK/.externalNativeBuild/cmake/$(buildtype)/$2/core-tests
-MBGL_ANDROID_GRADLE = ./gradlew --parallel --max-workers=$(JOBS) -Pmapbox.buildtype=$(buildtype)
+MBGL_ANDROID_STL ?= c++_static
+MBGL_ANDROID_GRADLE = ./gradlew --parallel --max-workers=$(JOBS) -Pmapbox.buildtype=$(buildtype) -Pmapbox.stl=$(MBGL_ANDROID_STL)
 
 # Lists all devices, and extracts the identifiers, then obtains the ABI for every one.
 # Some devices return \r\n, so we'll have to remove the carriage return before concatenating.

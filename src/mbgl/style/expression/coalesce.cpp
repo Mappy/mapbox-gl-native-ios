@@ -1,5 +1,6 @@
 #include <mbgl/style/expression/coalesce.hpp>
 #include <mbgl/style/expression/check_subtype.hpp>
+#include <mbgl/style/conversion_impl.hpp>
 
 namespace mbgl {
 namespace style {
@@ -56,7 +57,7 @@ ParseResult Coalesce::parse(const Convertible& value, ParsingContext& ctx) {
     Coalesce::Args args;
     args.reserve(length - 1);
     for (std::size_t i = 1; i < length; i++) {
-        auto parsed = ctx.parse(arrayMember(value, i), i, outputType, ParsingContext::omitTypeAnnotations);
+        auto parsed = ctx.parse(arrayMember(value, i), i, outputType, TypeAnnotationOption::omit);
         if (!parsed) {
             return parsed;
         }

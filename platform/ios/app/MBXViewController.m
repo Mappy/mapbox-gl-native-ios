@@ -9,6 +9,7 @@
 #import "MBXEmbeddedMapViewController.h"
 
 #import <Mapbox/Mapbox.h>
+#import "../src/MGLMapView_Experimental.h"
 
 #import <objc/runtime.h>
 
@@ -195,7 +196,7 @@ CLLocationCoordinate2D randomWorldCoordinate() {
 @property (nonatomic) BOOL customUserLocationAnnnotationEnabled;
 @property (nonatomic, getter=isLocalizingLabels) BOOL localizingLabels;
 @property (nonatomic) BOOL reuseQueueStatsEnabled;
-@property (nonatomic) BOOL showZoomLevelEnabled;
+@property (nonatomic) BOOL mapInfoHUDEnabled;
 @property (nonatomic) BOOL shouldLimitCameraChanges;
 @property (nonatomic) BOOL randomWalk;
 @end
@@ -270,6 +271,16 @@ CLLocationCoordinate2D randomWorldCoordinate() {
 
         [self presentViewController:alertController animated:YES completion:nil];
     }
+
+    // Add fall-through single tap gesture recognizer. This will be called when
+    // the map view's tap recognizers fail.
+    UITapGestureRecognizer *singleTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleSingleTap:)];
+    for (UIGestureRecognizer *gesture in self.mapView.gestureRecognizers) {
+        if ([gesture isKindOfClass:[UITapGestureRecognizer class]]) {
+            [singleTap requireGestureRecognizerToFail:gesture];
+        }
+    }
+    [self.mapView addGestureRecognizer:singleTap];
 }
 
 - (void)saveState:(__unused NSNotification *)notification
@@ -280,7 +291,7 @@ CLLocationCoordinate2D randomWorldCoordinate() {
     [defaults setInteger:self.mapView.userTrackingMode forKey:@"MBXUserTrackingMode"];
     [defaults setBool:self.mapView.showsUserLocation forKey:@"MBXShowsUserLocation"];
     [defaults setInteger:self.mapView.debugMask forKey:@"MBXDebugMask"];
-    [defaults setBool:self.showZoomLevelEnabled forKey:@"MBXShowsZoomLevelHUD"];
+    [defaults setBool:self.mapInfoHUDEnabled forKey:@"MBXShowsZoomLevelHUD"];
     [defaults synchronize];
 }
 
@@ -308,7 +319,7 @@ CLLocationCoordinate2D randomWorldCoordinate() {
     }
     if ([defaults boolForKey:@"MBXShowsZoomLevelHUD"])
     {
-        self.showZoomLevelEnabled = YES;
+        self.mapInfoHUDEnabled = YES;
         [self updateHUD];
     }
 }
@@ -439,7 +450,7 @@ CLLocationCoordinate2D randomWorldCoordinate() {
                 [NSString stringWithFormat:@"%@ Reuse Queue Stats", (_reuseQueueStatsEnabled ? @"Hide" :@"Show")],
                 @"Start World Tour",
                 @"Random Tour",
-                [NSString stringWithFormat:@"%@ Zoom/Pitch/Direction Label", (_showZoomLevelEnabled ? @"Hide" :@"Show")],
+                [NSString stringWithFormat:@"%@ Map Info HUD", (_mapInfoHUDEnabled ? @"Hide" :@"Show")],
                 @"Embedded Map View",
                 [NSString stringWithFormat:@"%@ Second Map", ([self.view viewWithTag:2] == nil ? @"Show" : @"Hide")],
                 [NSString stringWithFormat:@"Show Labels in %@", (_localizingLabels ? @"Default Language" : [[NSLocale currentLocale] displayNameForKey:NSLocaleIdentifier value:[self bestLanguageForUser]])],
@@ -657,14 +668,14 @@ CLLocationCoordinate2D randomWorldCoordinate() {
                 {
                     self.reuseQueueStatsEnabled = !self.reuseQueueStatsEnabled;
                     self.hudLabel.hidden = !self.reuseQueueStatsEnabled;
-                    self.showZoomLevelEnabled = NO;
+                    self.mapInfoHUDEnabled = NO;
                     [self updateHUD];
                     break;
                 }
                 case MBXSettingsMiscellaneousShowZoomLevel:
                 {
-                    self.showZoomLevelEnabled = !self.showZoomLevelEnabled;
-                    self.hudLabel.hidden = !self.showZoomLevelEnabled;
+                    self.mapInfoHUDEnabled = !self.mapInfoHUDEnabled;
+                    self.hudLabel.hidden = !self.mapInfoHUDEnabled;
                     self.reuseQueueStatsEnabled = NO;
                     [self updateHUD];
                     break;
@@ -1550,7 +1561,7 @@ CLLocationCoordinate2D randomWorldCoordinate() {
 
     [annotations removeObjectAtIndex:0];
     MGLMapCamera *camera = [MGLMapCamera cameraLookingAtCenterCoordinate:nextAnnotation.coordinate
-                                                            fromDistance:10
+                                                          acrossDistance:10
                                                                    pitch:arc4random_uniform(60)
                                                                  heading:arc4random_uniform(360)];
     __weak MBXViewController *weakSelf = self;
@@ -1729,7 +1740,7 @@ CLLocationCoordinate2D randomWorldCoordinate() {
     [self addAnnotations:50 aroundCoordinate:annotation.coordinate radius:100000.0]; // 100km
 
     MGLMapCamera *camera = [MGLMapCamera cameraLookingAtCenterCoordinate:annotation.coordinate
-                                                            fromDistance:10000.0
+                                                                altitude:10000.0
                                                                    pitch:drand48()*60.0
                                                                  heading:drand48()*360];
     [self.mapView flyToCamera:camera
@@ -1828,6 +1839,14 @@ CLLocationCoordinate2D randomWorldCoordinate() {
 }
 
 #pragma mark - User Actions
+
+- (void)handleSingleTap:(UITapGestureRecognizer *)singleTap {
+    [self.navigationController setNavigationBarHidden:!self.navigationController.navigationBarHidden animated:YES];
+
+    // This is how you'd get the coordinate for the point where the user tapped:
+    //    CGPoint tapPoint = [singleTap locationInView:self.mapView];
+    //    CLLocationCoordinate2D tapCoordinate = [self.mapView convertPoint:tapPoint toCoordinateFromView:nil];
+}
 
 - (IBAction)handleLongPress:(UILongPressGestureRecognizer *)longPress
 {
@@ -2191,7 +2210,7 @@ CLLocationCoordinate2D randomWorldCoordinate() {
 }
 
 - (void)updateHUD {
-    if (!self.reuseQueueStatsEnabled && !self.showZoomLevelEnabled) return;
+    if (!self.reuseQueueStatsEnabled && !self.mapInfoHUDEnabled) return;
 
     if (self.hudLabel.hidden) self.hudLabel.hidden = NO;
 
@@ -2203,8 +2222,11 @@ CLLocationCoordinate2D randomWorldCoordinate() {
             queuedAnnotations += queue.count;
         }
         hudString = [NSString stringWithFormat:@"Visible: %ld  Queued: %ld", (unsigned long)self.mapView.visibleAnnotations.count, (unsigned long)queuedAnnotations];
-    } else if (self.showZoomLevelEnabled) {
-        hudString = [NSString stringWithFormat:@"%.2f ∕ ↕\U0000FE0E%.f° ∕ %.f°", self.mapView.zoomLevel, self.mapView.camera.pitch, self.mapView.direction];
+    } else if (self.mapInfoHUDEnabled) {
+        if (!self.mapView.experimental_enableFrameRateMeasurement) self.mapView.experimental_enableFrameRateMeasurement = YES;
+        hudString = [NSString stringWithFormat:@"%.f FPS (%.1fms) ∕ %.2f ∕ ↕\U0000FE0E%.f° ∕ %.f°",
+                     roundf(self.mapView.averageFrameRate), self.mapView.averageFrameTime,
+                     self.mapView.zoomLevel, self.mapView.camera.pitch, self.mapView.direction];
     }
 
     [self.hudLabel setTitle:hudString forState:UIControlStateNormal];

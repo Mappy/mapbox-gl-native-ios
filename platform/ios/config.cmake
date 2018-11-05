@@ -1,4 +1,4 @@
-add_definitions(-DMBGL_USE_GLES2=1)
+set(USE_GLES2 ON)
 
 macro(initialize_ios_target target)
     set_xcode_property(${target} IPHONEOS_DEPLOYMENT_TARGET "9.0")
@@ -12,7 +12,9 @@ macro(initialize_ios_target target)
 endmacro()
 
 
+include(cmake/icu.cmake)
 include(cmake/loop-darwin.cmake)
+initialize_ios_target(icu)
 initialize_ios_target(mbgl-loop-darwin)
 
 
@@ -61,7 +63,6 @@ macro(mbgl_platform_core)
 
     target_add_mason_package(mbgl-core PUBLIC geojson)
     target_add_mason_package(mbgl-core PUBLIC polylabel)
-    target_add_mason_package(mbgl-core PRIVATE icu)
 
     target_include_directories(mbgl-core
         PUBLIC platform/darwin
@@ -69,6 +70,7 @@ macro(mbgl_platform_core)
     )
 
     target_link_libraries(mbgl-core
+        PRIVATE icu
         PUBLIC "-lz"
         PUBLIC "-framework Foundation"
         PUBLIC "-framework CoreText"
@@ -84,13 +86,8 @@ endmacro()
 macro(mbgl_filesource)
     initialize_ios_target(mbgl-filesource)
 
-    target_sources(mbgl-filesource
-        # File source
-        PRIVATE platform/darwin/src/http_file_source.mm
-
-        # Database
-        PRIVATE platform/default/sqlite3.cpp
-    )
+    # Modify platform/darwin/filesource-files.txt to change the source files for this target.
+    target_sources_from_file(mbgl-filesource PRIVATE platform/darwin/filesource-files.txt)
 
     target_link_libraries(mbgl-filesource
         PUBLIC "-lsqlite3"

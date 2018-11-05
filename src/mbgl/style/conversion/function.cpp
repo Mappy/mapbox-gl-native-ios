@@ -1,10 +1,11 @@
 #include <mbgl/style/conversion/function.hpp>
+#include <mbgl/style/conversion/position.hpp>
+#include <mbgl/style/conversion_impl.hpp>
 #include <mbgl/style/expression/dsl.hpp>
 #include <mbgl/style/expression/step.hpp>
 #include <mbgl/style/expression/interpolate.hpp>
 #include <mbgl/style/expression/match.hpp>
 #include <mbgl/style/expression/case.hpp>
-#include <mbgl/style/expression/array_assertion.hpp>
 #include <mbgl/util/string.hpp>
 
 #include <cassert>
@@ -51,7 +52,7 @@ std::unique_ptr<Expression> convertTokenStringToExpression(const std::string& so
         if (pos != end) {
             for (brace++; brace != end && tokenReservedChars.find(*brace) == std::string::npos; brace++);
             if (brace != end && *brace == '}') {
-                inputs.push_back(toString(get(literal(std::string(pos + 1, brace)))));
+                inputs.push_back(get(literal(std::string(pos + 1, brace))));
                 pos = brace + 1;
             } else {
                 inputs.push_back(literal(std::string(pos, brace)));
@@ -64,11 +65,79 @@ std::unique_ptr<Expression> convertTokenStringToExpression(const std::string& so
     case 0:
         return literal(source);
     case 1:
-        return std::move(inputs[0]);
+        return toString(std::move(inputs[0]));
     default:
         return concat(std::move(inputs));
     }
 }
+
+template <class T>
+optional<PropertyExpression<T>> convertFunctionToExpression(const Convertible& value, Error& error, bool convertTokens) {
+    auto expression = convertFunctionToExpression(expression::valueTypeToExpressionType<T>(), value, error, convertTokens);
+    if (!expression) {
+        return nullopt;
+    }
+
+    optional<T> defaultValue;
+
+    auto defaultValueValue = objectMember(value, "default");
+    if (defaultValueValue) {
+        defaultValue = convert<T>(*defaultValueValue, error);
+        if (!defaultValue) {
+            error.message = R"(wrong type for "default": )" + error.message;
+            return nullopt;
+        }
+    }
+
+    return PropertyExpression<T>(std::move(*expression), defaultValue);
+}
+
+template optional<PropertyExpression<AlignmentType>>
+    convertFunctionToExpression<AlignmentType>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<bool>>
+    convertFunctionToExpression<bool>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<CirclePitchScaleType>>
+    convertFunctionToExpression<CirclePitchScaleType>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<float>>
+    convertFunctionToExpression<float>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<HillshadeIlluminationAnchorType>>
+    convertFunctionToExpression<HillshadeIlluminationAnchorType>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<IconTextFitType>>
+    convertFunctionToExpression<IconTextFitType>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<LightAnchorType>>
+    convertFunctionToExpression<LightAnchorType>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<LineCapType>>
+    convertFunctionToExpression<LineCapType>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<LineJoinType>>
+    convertFunctionToExpression<LineJoinType>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<Color>>
+    convertFunctionToExpression<Color>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<Position>>
+    convertFunctionToExpression<Position>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<RasterResamplingType>>
+    convertFunctionToExpression<RasterResamplingType>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<std::array<float, 2>>>
+    convertFunctionToExpression<std::array<float, 2>>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<std::array<float, 4>>>
+    convertFunctionToExpression<std::array<float, 4>>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<std::string>>
+    convertFunctionToExpression<std::string>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<std::vector<float>>>
+    convertFunctionToExpression<std::vector<float>>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<std::vector<std::string>>>
+    convertFunctionToExpression<std::vector<std::string>>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<SymbolAnchorType>>
+    convertFunctionToExpression<SymbolAnchorType>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<SymbolPlacementType>>
+    convertFunctionToExpression<SymbolPlacementType>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<SymbolZOrderType>>
+    convertFunctionToExpression<SymbolZOrderType>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<TextJustifyType>>
+    convertFunctionToExpression<TextJustifyType>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<TextTransformType>>
+    convertFunctionToExpression<TextTransformType>(const Convertible&, Error&, bool);
+template optional<PropertyExpression<TranslateAnchorType>>
+    convertFunctionToExpression<TranslateAnchorType>(const Convertible&, Error&, bool);
 
 // Ad-hoc Converters for double and int64_t. We should replace float with double wholesale,
 // and promote the int64_t Converter to general use (and it should check that the input is
@@ -609,8 +678,7 @@ optional<std::unique_ptr<Expression>> convertFunctionToExpression(type::Type typ
                 return toColor(get(literal(*property)));
             },
             [&] (const type::Array& array) -> optional<std::unique_ptr<Expression>> {
-                return std::unique_ptr<Expression>(
-                    std::make_unique<ArrayAssertion>(array, get(literal(*property))));
+                return assertion(array, get(literal(*property)));
             },
             [&] (const auto&) -> optional<std::unique_ptr<Expression>>  {
                 assert(false); // No properties use this type.

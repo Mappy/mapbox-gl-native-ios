@@ -19,14 +19,11 @@ import com.mapbox.android.gestures.RotateGestureDetector;
 import com.mapbox.android.gestures.ShoveGestureDetector;
 import com.mapbox.android.gestures.StandardGestureDetector;
 import com.mapbox.android.gestures.StandardScaleGestureDetector;
-import com.mapbox.android.telemetry.Event;
-import com.mapbox.android.telemetry.MapEventFactory;
-import com.mapbox.android.telemetry.MapState;
-import com.mapbox.android.telemetry.MapboxTelemetry;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
+import com.mapbox.mapboxsdk.constants.TelemetryConstants;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.utils.MathUtils;
 
@@ -226,16 +223,19 @@ final class MapGestureDetector {
       case MotionEvent.ACTION_UP:
         transform.setGestureInProgress(false);
 
-        // Start all awaiting velocity animations
-        animationsTimeoutHandler.removeCallbacksAndMessages(null);
-        for (Animator animator : scheduledAnimators) {
-          animator.start();
+        if (!scheduledAnimators.isEmpty()) {
+          // Start all awaiting velocity animations
+          animationsTimeoutHandler.removeCallbacksAndMessages(null);
+          for (Animator animator : scheduledAnimators) {
+            animator.start();
+          }
+          scheduledAnimators.clear();
         }
-        scheduledAnimators.clear();
         break;
 
       case MotionEvent.ACTION_CANCEL:
         scheduledAnimators.clear();
+        transform.cancelTransitions();
         transform.setGestureInProgress(false);
         break;
     }
@@ -249,6 +249,8 @@ final class MapGestureDetector {
 
     cancelAnimator(scaleAnimator);
     cancelAnimator(rotateAnimator);
+
+    dispatchCameraIdle();
   }
 
   private void cancelAnimator(Animator animator) {
@@ -347,7 +349,7 @@ final class MapGestureDetector {
         notifyOnMapClickListeners(tapPoint);
       }
 
-      sendTelemetryEvent(Telemetry.SINGLE_TAP, new PointF(motionEvent.getX(), motionEvent.getY()));
+      sendTelemetryEvent(TelemetryConstants.SINGLE_TAP, new PointF(motionEvent.getX(), motionEvent.getY()));
 
       return true;
     }
@@ -378,7 +380,7 @@ final class MapGestureDetector {
 
         zoomInAnimated(zoomFocalPoint, false);
 
-        sendTelemetryEvent(Telemetry.DOUBLE_TAP, new PointF(motionEvent.getX(), motionEvent.getY()));
+        sendTelemetryEvent(TelemetryConstants.DOUBLE_TAP, new PointF(motionEvent.getX(), motionEvent.getY()));
 
         return true;
       }
@@ -439,10 +441,8 @@ final class MapGestureDetector {
         return false;
       }
 
-      transform.cancelTransitions();
-      cameraChangeDispatcher.onMoveDueToScrollBegin();
-
-      sendTelemetryEvent(Telemetry.PAN, detector.getFocalPoint());
+      cancelTransitionsIfRequired();
+      sendTelemetryEvent(TelemetryConstants.PAN, detector.getFocalPoint());
       notifyOnMoveBeginListeners(detector);
       return true;
     }
@@ -465,8 +465,7 @@ final class MapGestureDetector {
 
     @Override
     public void onMoveEnd(MoveGestureDetector detector, float velocityX, float velocityY) {
-      cameraChangeDispatcher.onMoveDueToScrollEnd();
-      cameraChangeDispatcher.onCameraIdle();
+      dispatchCameraIdle();
       notifyOnMoveEndListeners(detector);
     }
   }
@@ -488,7 +487,7 @@ final class MapGestureDetector {
         return false;
       }
 
-      transform.cancelTransitions();
+      cancelTransitionsIfRequired();
 
       quickZoom = detector.getPointersCount() == 1;
       if (quickZoom) {
@@ -508,7 +507,7 @@ final class MapGestureDetector {
       // setting focalPoint in #onScaleBegin() as well, because #onScale() might not get called before #onScaleEnd()
       setScaleFocalPoint(detector);
 
-      sendTelemetryEvent(Telemetry.PINCH, scaleFocalPoint);
+      sendTelemetryEvent(TelemetryConstants.PINCH, scaleFocalPoint);
 
       notifyOnScaleBeginListeners(detector);
 
@@ -533,8 +532,6 @@ final class MapGestureDetector {
 
     @Override
     public void onScaleEnd(StandardScaleGestureDetector detector, float velocityX, float velocityY) {
-      cameraChangeDispatcher.onCameraIdle();
-
       if (quickZoom) {
         //if quickzoom, re-enabling move gesture detector
         gesturesManager.getMoveGestureDetector().setEnabled(true);
@@ -549,18 +546,19 @@ final class MapGestureDetector {
 
       notifyOnScaleEndListeners(detector);
 
-      if (!uiSettings.isScaleVelocityAnimationEnabled()) {
+      float velocityXY = Math.abs(velocityX) + Math.abs(velocityY);
+
+      if (!uiSettings.isScaleVelocityAnimationEnabled() || velocityXY < minimumVelocity) {
+        // notifying listeners that camera is idle only if there is no follow-up animation
+        dispatchCameraIdle();
         return;
       }
 
-      float velocityXY = Math.abs(velocityX) + Math.abs(velocityY);
-      if (velocityXY > minimumVelocity) {
-        double zoomAddition = calculateScale(velocityXY, detector.isScalingOut());
-        double currentZoom = transform.getRawZoom();
-        long animationTime = (long) (Math.abs(zoomAddition) * 1000 / 4);
-        scaleAnimator = createScaleAnimator(currentZoom, zoomAddition, scaleFocalPoint, animationTime);
-        scheduleAnimator(scaleAnimator);
-      }
+      double zoomAddition = calculateScale(velocityXY, detector.isScalingOut());
+      double currentZoom = transform.getRawZoom();
+      long animationTime = (long) (Math.abs(zoomAddition) * 1000 / 4);
+      scaleAnimator = createScaleAnimator(currentZoom, zoomAddition, scaleFocalPoint, animationTime);
+      scheduleAnimator(scaleAnimator);
     }
 
     private void setScaleFocalPoint(StandardScaleGestureDetector detector) {
@@ -617,7 +615,7 @@ final class MapGestureDetector {
         return false;
       }
 
-      transform.cancelTransitions();
+      cancelTransitionsIfRequired();
 
       if (uiSettings.isIncreaseScaleThresholdWhenRotating()) {
         // when rotation starts, interrupting scale and increasing the threshold
@@ -629,7 +627,7 @@ final class MapGestureDetector {
       // setting in #onRotateBegin() as well, because #onRotate() might not get called before #onRotateEnd()
       setRotateFocalPoint(detector);
 
-      sendTelemetryEvent(Telemetry.ROTATION, rotateFocalPoint);
+      sendTelemetryEvent(TelemetryConstants.ROTATION, rotateFocalPoint);
 
       notifyOnRotateBeginListeners(detector);
 
@@ -657,8 +655,6 @@ final class MapGestureDetector {
 
     @Override
     public void onRotateEnd(RotateGestureDetector detector, float velocityX, float velocityY, float angularVelocity) {
-      cameraChangeDispatcher.onCameraIdle();
-
       if (uiSettings.isIncreaseScaleThresholdWhenRotating()) {
         // resetting default scale threshold values
         gesturesManager.getStandardScaleGestureDetector().setSpanSinceStartThreshold(defaultSpanSinceStartThreshold);
@@ -666,11 +662,9 @@ final class MapGestureDetector {
 
       notifyOnRotateEndListeners(detector);
 
-      if (!uiSettings.isRotateVelocityAnimationEnabled()) {
-        return;
-      }
-
-      if (Math.abs(angularVelocity) < minimumAngularVelocity) {
+      if (!uiSettings.isRotateVelocityAnimationEnabled() || Math.abs(angularVelocity) < minimumAngularVelocity) {
+        // notifying listeners that camera is idle only if there is no follow-up animation
+        dispatchCameraIdle();
         return;
       }
 
@@ -724,12 +718,12 @@ final class MapGestureDetector {
 
         @Override
         public void onAnimationCancel(Animator animation) {
-          cameraChangeDispatcher.onCameraIdle();
+          transform.cancelTransitions();
         }
 
         @Override
         public void onAnimationEnd(Animator animation) {
-          cameraChangeDispatcher.onCameraIdle();
+          dispatchCameraIdle();
         }
       });
 
@@ -744,9 +738,9 @@ final class MapGestureDetector {
         return false;
       }
 
-      transform.cancelTransitions();
+      cancelTransitionsIfRequired();
 
-      sendTelemetryEvent(Telemetry.PITCH, detector.getFocalPoint());
+      sendTelemetryEvent(TelemetryConstants.PITCH, detector.getFocalPoint());
 
       // disabling move gesture during shove
       gesturesManager.getMoveGestureDetector().setEnabled(false);
@@ -776,7 +770,7 @@ final class MapGestureDetector {
 
     @Override
     public void onShoveEnd(ShoveGestureDetector detector, float velocityX, float velocityY) {
-      cameraChangeDispatcher.onCameraIdle();
+      dispatchCameraIdle();
 
       // re-enabling move gesture
       gesturesManager.getMoveGestureDetector().setEnabled(true);
@@ -795,7 +789,7 @@ final class MapGestureDetector {
       transform.cancelTransitions();
       cameraChangeDispatcher.onCameraMoveStarted(REASON_API_GESTURE);
 
-      sendTelemetryEvent(Telemetry.TWO_FINGER_TAP, detector.getFocalPoint());
+      sendTelemetryEvent(TelemetryConstants.TWO_FINGER_TAP, detector.getFocalPoint());
 
       PointF zoomFocalPoint;
       // Single finger double tap
@@ -841,7 +835,7 @@ final class MapGestureDetector {
 
       @Override
       public void onAnimationEnd(Animator animation) {
-        cameraChangeDispatcher.onCameraIdle();
+        dispatchCameraIdle();
       }
     });
     return animator;
@@ -886,20 +880,41 @@ final class MapGestureDetector {
     }
   }
 
+  private void dispatchCameraIdle() {
+    // we need to dispatch camera idle callback only if there is no other gestures in progress
+    if (noGesturesInProgress()) {
+      cameraChangeDispatcher.onCameraIdle();
+    }
+  }
+
+  private void cancelTransitionsIfRequired() {
+    // we need to cancel core transitions only if there is no started gesture yet
+    if (noGesturesInProgress()) {
+      transform.cancelTransitions();
+    }
+  }
+
+  private boolean noGesturesInProgress() {
+    return (!uiSettings.isScrollGesturesEnabled() || !gesturesManager.getMoveGestureDetector().isInProgress())
+      && (!uiSettings.isZoomGesturesEnabled() || !gesturesManager.getStandardScaleGestureDetector().isInProgress())
+      && (!uiSettings.isRotateGesturesEnabled() || !gesturesManager.getRotateGestureDetector().isInProgress())
+      && (!uiSettings.isTiltGesturesEnabled() || !gesturesManager.getShoveGestureDetector().isInProgress());
+  }
+
   private void sendTelemetryEvent(String eventType, PointF focalPoint) {
     if (!Mapbox.ENABLE_METRICS_ON_MAPPY) {
         return;
     }
-    CameraPosition cameraPosition = transform.getCameraPosition();
-    if (cameraPosition != null) {
-      double zoom = cameraPosition.zoom;
-      if (isZoomValid(zoom)) {
-        MapboxTelemetry telemetry = Telemetry.obtainTelemetry();
-        MapEventFactory mapEventFactory = new MapEventFactory();
-        LatLng latLng = projection.fromScreenLocation(focalPoint);
-        MapState state = new MapState(latLng.getLatitude(), latLng.getLongitude(), zoom);
-        state.setGesture(eventType);
-        telemetry.push(mapEventFactory.createMapGestureEvent(Event.Type.MAP_CLICK, state));
+
+    TelemetryDefinition telemetry = Mapbox.getTelemetry();
+    if (telemetry != null) {
+      CameraPosition cameraPosition = transform.getCameraPosition();
+      if (cameraPosition != null) {
+        double zoom = cameraPosition.zoom;
+        if (isZoomValid(zoom)) {
+          LatLng latLng = projection.fromScreenLocation(focalPoint);
+          telemetry.onGestureInteraction(eventType, latLng.getLatitude(), latLng.getLongitude(), zoom);
+        }
       }
     }
   }

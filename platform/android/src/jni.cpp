@@ -48,7 +48,7 @@
 #include "snapshotter/map_snapshot.hpp"
 #include "text/collator_jni.hpp"
 #include "text/local_glyph_rasterizer_jni.hpp"
-#include "java/lang.hpp"
+#include "logger.hpp"
 
 namespace mbgl {
 namespace android {
@@ -114,11 +114,6 @@ void registerNatives(JavaVM *vm) {
     java::util::registerNative(env);
     PointF::registerNative(env);
     RectF::registerNative(env);
-    java::lang::Number::registerNative(env);
-    java::lang::Float::registerNative(env);
-    java::lang::Boolean::registerNative(env);
-    java::lang::Double::registerNative(env);
-    java::lang::Long::registerNative(env);
 
     // GeoJSON
     geojson::Feature::registerNative(env);
@@ -180,6 +175,7 @@ void registerNatives(JavaVM *vm) {
     OfflineRegion::registerNative(env);
     OfflineRegionDefinition::registerNative(env);
     OfflineTilePyramidRegionDefinition::registerNative(env);
+    OfflineGeometryRegionDefinition::registerNative(env);
     OfflineRegionError::registerNative(env);
     OfflineRegionStatus::registerNative(env);
 
@@ -191,6 +187,10 @@ void registerNatives(JavaVM *vm) {
     LocalGlyphRasterizer::registerNative(env);
     Locale::registerNative(env);
     Collator::registerNative(env);
+    StringUtils::registerNative(env);
+
+    // Logger
+    Logger::registerNative(env);
 }
 
 } // namespace android

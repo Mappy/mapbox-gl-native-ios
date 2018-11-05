@@ -28,7 +28,7 @@ public class RasterLayer extends Layer {
    * @param nativePtr pointer used by core
    */
   @Keep
-  public RasterLayer(long nativePtr) {
+  RasterLayer(long nativePtr) {
     super(nativePtr);
   }
 
@@ -65,6 +65,16 @@ public class RasterLayer extends Layer {
   public RasterLayer withSourceLayer(String sourceLayer) {
     setSourceLayer(sourceLayer);
     return this;
+  }
+
+  /**
+   * Get the source id.
+   *
+   * @return id of the source
+   */
+  public String getSourceId() {
+    checkThread();
+    return nativeGetSourceId();
   }
 
   /**

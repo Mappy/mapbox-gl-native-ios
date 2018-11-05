@@ -36,7 +36,7 @@ std::unique_ptr<Bucket> RenderSymbolLayer::createBucket(const BucketParameters&,
     return nullptr;
 }
 
-std::unique_ptr<SymbolLayout> RenderSymbolLayer::createLayout(const BucketParameters& parameters,
+std::unique_ptr<Layout> RenderSymbolLayer::createLayout(const BucketParameters& parameters,
                                                               const std::vector<const RenderLayer*>& group,
                                                               std::unique_ptr<GeometryTileLayer> layer,
                                                               GlyphDependencies& glyphDependencies,
@@ -67,6 +67,10 @@ void RenderSymbolLayer::evaluate(const PropertyEvaluationParameters& parameters)
 
 bool RenderSymbolLayer::hasTransition() const {
     return unevaluated.hasTransition();
+}
+
+bool RenderSymbolLayer::hasCrossfade() const {
+    return false;
 }
 
 void RenderSymbolLayer::render(PaintParameters& parameters, RenderSource*) {
@@ -118,6 +122,7 @@ void RenderSymbolLayer::render(PaintParameters& parameters, RenderSource*) {
                     : gl::DepthMode::disabled(),
                 gl::StencilMode::disabled(),
                 parameters.colorModeForRenderPass(),
+                gl::CullFaceMode::disabled(),
                 *buffers.indexBuffer,
                 buffers.segments,
                 allUniformValues,
@@ -126,7 +131,7 @@ void RenderSymbolLayer::render(PaintParameters& parameters, RenderSource*) {
             );
         };
 
-        assert(dynamic_cast<GeometryTile*>(&tile.tile));
+        assert(tile.tile.kind == Tile::Kind::Geometry);
         GeometryTile& geometryTile = static_cast<GeometryTile&>(tile.tile);
 
         if (bucket.hasIconData()) {
@@ -250,10 +255,11 @@ void RenderSymbolLayer::render(PaintParameters& parameters, RenderSource*) {
                 gl::DepthMode::disabled(),
                 gl::StencilMode::disabled(),
                 parameters.colorModeForRenderPass(),
+                gl::CullFaceMode::disabled(),
                 CollisionBoxProgram::UniformValues {
-                    uniforms::u_matrix::Value{ tile.matrix },
-                    uniforms::u_extrude_scale::Value{ extrudeScale },
-                    uniforms::u_camera_to_center_distance::Value{ parameters.state.getCameraToCenterDistance() }
+                    uniforms::u_matrix::Value( tile.matrix ),
+                    uniforms::u_extrude_scale::Value( extrudeScale ),
+                    uniforms::u_camera_to_center_distance::Value( parameters.state.getCameraToCenterDistance() )
                 },
                 *bucket.collisionBox.vertexBuffer,
                 *bucket.collisionBox.dynamicVertexBuffer,
@@ -284,11 +290,12 @@ void RenderSymbolLayer::render(PaintParameters& parameters, RenderSource*) {
                 gl::DepthMode::disabled(),
                 gl::StencilMode::disabled(),
                 parameters.colorModeForRenderPass(),
+                gl::CullFaceMode::disabled(),
                 CollisionCircleProgram::UniformValues {
-                    uniforms::u_matrix::Value{ tile.matrix },
-                    uniforms::u_extrude_scale::Value{ extrudeScale },
-                    uniforms::u_overscale_factor::Value{ float(tile.tile.id.overscaleFactor()) },
-                    uniforms::u_camera_to_center_distance::Value{ parameters.state.getCameraToCenterDistance() }
+                    uniforms::u_matrix::Value( tile.matrix ),
+                    uniforms::u_extrude_scale::Value( extrudeScale ),
+                    uniforms::u_overscale_factor::Value( float(tile.tile.id.overscaleFactor()) ),
+                    uniforms::u_camera_to_center_distance::Value( parameters.state.getCameraToCenterDistance() )
                 },
                 *bucket.collisionCircle.vertexBuffer,
                 *bucket.collisionCircle.dynamicVertexBuffer,
