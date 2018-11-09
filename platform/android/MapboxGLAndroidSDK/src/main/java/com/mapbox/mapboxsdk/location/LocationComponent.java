@@ -316,6 +316,18 @@ public final class LocationComponent {
     return locationLayerController.getRenderMode();
   }
 
+  // Mappy modifs : Sometimes we need to show / hide Location marker
+
+  public void hide() {
+    locationLayerController.hide();
+  }
+
+  public void show() {
+    locationLayerController.show();
+  }
+
+  // End of Mappy modifs
+  
   /**
    * Returns the current location options being used.
    *
