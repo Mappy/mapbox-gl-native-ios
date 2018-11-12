@@ -67,8 +67,9 @@ public class HttpRequestImpl implements HttpRequest {
 
       final Request.Builder builder = new Request.Builder()
         .url(resourceUrl)
-        .tag(resourceUrl.toLowerCase(MapboxConstants.MAPBOX_LOCALE))
-        .addHeader("User-Agent", userAgentString);
+        .tag(resourceUrl.toLowerCase(MapboxConstants.MAPBOX_LOCALE));
+        // Mappy Modif : User-Agent is set later
+        //.addHeader("User-Agent", userAgentString);
       if (etag.length() > 0) {
         builder.addHeader("If-None-Match", etag);
       } else if (modified.length() > 0) {
@@ -78,8 +79,7 @@ public class HttpRequestImpl implements HttpRequest {
       //Mappy modifs
       if (httpRequestHeaderProvider != null) {
         httpRequestHeaderProvider.addHeader(builder);
-      }
-      else {
+      } else {
         builder.addHeader("User-Agent", userAgentString); //Use MapBox Header only if mappy Header is null
       }
 
