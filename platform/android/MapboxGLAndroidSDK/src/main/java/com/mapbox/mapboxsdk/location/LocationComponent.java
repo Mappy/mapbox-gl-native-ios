@@ -477,21 +477,22 @@ public final class LocationComponent {
     locationAnimatorCoordinator.cancelTiltAnimation();
   }
 
-  /**
-   * Use to either force a location update or to manually control when the user location gets
-   * updated.
-   *
-   * @param location where the location icon is placed on the map
-   */
-  public void forceLocationUpdate(@Nullable Location location) {
-    updateLocation(location, false);
-  }
+    /**
+     * Use to either force a location update or to manually control when the user location gets
+     * updated.
+     *
+     * @param location where the location icon is placed on the map
+     * @param forceShow (Mappy Modif) whether to force rendering of Location Marker
+     */
+    public void forceLocationUpdate(@Nullable Location location, /* Mappy Modif */ boolean forceShow) {
+        updateLocation(location, false, forceShow);
+    }
 
   /**
    * Set the location engine to update the current user location.
    * <p>
    * If {@code null} is passed in, all updates will have to occur through the
-   * {@link LocationComponent#forceLocationUpdate(Location)} method.
+   * {@link LocationComponent#forceLocationUpdate(Location, boolean)} method.
    *
    * @param locationEngine a {@link LocationEngine} this component should use to handle updates
    */
@@ -838,20 +839,23 @@ public final class LocationComponent {
     mapboxMap.setMinZoomPreference(options.minZoom());
   }
 
-  /**
-   * Updates the user location icon.
-   *
-   * @param location the latest user location
-   */
-  private void updateLocation(final Location location, boolean fromLastLocation) {
-    if (location == null) {
-      return;
-    } else if (!isLayerReady) {
-      lastLocation = location;
-      return;
-    }
+    /**
+     * Updates the user location icon.
+     *
+     * @param location the latest user location
+     * @param forceShow (Mappy Modif) whether to force rendering of Location Marker
+     */
+    private void updateLocation(final Location location, boolean fromLastLocation, /* Mappy Modif */ boolean forceShow) {
+        if (location == null) {
+            return;
+        } else if (!isLayerReady) {
+            lastLocation = location;
+            return;
+        }
 
-    showLocationLayerIfHidden();
+        if (forceShow) {
+            showLocationLayerIfHidden();
+        }
 
     if (!fromLastLocation) {
       staleStateManager.updateLatestLocationTime();
