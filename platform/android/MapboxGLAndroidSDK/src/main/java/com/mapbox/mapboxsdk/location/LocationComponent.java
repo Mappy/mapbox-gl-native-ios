@@ -884,7 +884,7 @@ public final class LocationComponent {
    */
   @SuppressLint("MissingPermission")
   private void setLastLocation() {
-    updateLocation(getLastKnownLocation(), true);
+    updateLocation(getLastKnownLocation(), true, true);
   }
 
   private void setLastCompassHeading() {
@@ -995,7 +995,7 @@ public final class LocationComponent {
 
     @Override
     public void onLocationChanged(Location location) {
-      updateLocation(location, false);
+      updateLocation(location, false, true);
     }
   };
 
