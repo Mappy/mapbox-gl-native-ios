@@ -28,7 +28,7 @@ public class HillshadeLayer extends Layer {
    * @param nativePtr pointer used by core
    */
   @Keep
-  public HillshadeLayer(long nativePtr) {
+  HillshadeLayer(long nativePtr) {
     super(nativePtr);
   }
 
@@ -65,6 +65,16 @@ public class HillshadeLayer extends Layer {
   public HillshadeLayer withSourceLayer(String sourceLayer) {
     setSourceLayer(sourceLayer);
     return this;
+  }
+
+  /**
+   * Get the source id.
+   *
+   * @return id of the source
+   */
+  public String getSourceId() {
+    checkThread();
+    return nativeGetSourceId();
   }
 
   /**

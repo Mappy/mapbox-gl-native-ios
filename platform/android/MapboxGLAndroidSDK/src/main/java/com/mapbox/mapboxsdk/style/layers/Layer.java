@@ -18,7 +18,7 @@ public abstract class Layer {
   private boolean invalidated;
 
   @Keep
-  public Layer(long nativePtr) {
+  protected Layer(long nativePtr) {
     checkThread();
     this.nativePtr = nativePtr;
   }
@@ -107,6 +107,9 @@ public abstract class Layer {
 
   @Keep
   protected native String nativeGetSourceLayer();
+
+  @Keep
+  protected native String nativeGetSourceId();
 
   @Keep
   protected native float nativeGetMinZoom();

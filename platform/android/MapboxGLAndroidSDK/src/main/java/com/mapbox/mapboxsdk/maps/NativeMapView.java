@@ -17,6 +17,7 @@ import android.util.Log;
 import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.Geometry;
 import com.mapbox.mapboxsdk.LibraryLoader;
+import com.mapbox.mapboxsdk.MapStrictMode;
 import com.mapbox.mapboxsdk.annotations.Icon;
 import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.Polygon;
@@ -26,6 +27,7 @@ import com.mapbox.mapboxsdk.exceptions.CalledFromWorkerThreadException;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.geometry.LatLngBounds;
 import com.mapbox.mapboxsdk.geometry.ProjectedMeters;
+import com.mapbox.mapboxsdk.log.Logger;
 import com.mapbox.mapboxsdk.maps.renderer.MapRenderer;
 import com.mapbox.mapboxsdk.storage.FileSource;
 import com.mapbox.mapboxsdk.style.expressions.Expression;
@@ -46,6 +48,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 // Class that wraps the native methods for convenience
 final class NativeMapView {
+
+  private static final String TAG = "Mbgl-NativeMapView";
 
   //Hold a reference to prevent it from being GC'd as long as it's used on the native side
   private final FileSource fileSource;
@@ -82,18 +86,19 @@ final class NativeMapView {
   // Constructors
   //
 
-  public NativeMapView(final Context context, final ViewCallback viewCallback, final MapRenderer mapRenderer) {
-    this(context, context.getResources().getDisplayMetrics().density, viewCallback, mapRenderer);
+  public NativeMapView(final Context context, final boolean crossSourceCollisions, final ViewCallback viewCallback,
+                       final MapRenderer mapRenderer) {
+    this(context, context.getResources().getDisplayMetrics().density, crossSourceCollisions, viewCallback, mapRenderer);
   }
 
-  public NativeMapView(final Context context, float pixelRatio,
+  public NativeMapView(final Context context, final float pixelRatio, final boolean crossSourceCollisions,
                        final ViewCallback viewCallback, final MapRenderer mapRenderer) {
     this.mapRenderer = mapRenderer;
     this.viewCallback = viewCallback;
     this.fileSource = FileSource.getInstance(context);
     this.pixelRatio = pixelRatio;
     this.thread = Thread.currentThread();
-    nativeInitialize(this, fileSource, mapRenderer, pixelRatio);
+    nativeInitialize(this, fileSource, mapRenderer, pixelRatio, crossSourceCollisions);
   }
 
   //
@@ -112,7 +117,12 @@ final class NativeMapView {
 
     // validate if map has already been destroyed
     if (destroyed && !TextUtils.isEmpty(callingMethod)) {
-      Log.e("NativeMapView", "You're calling `"+callingMethod+"` after the `MapView` was destroyed, were you invoking it after `onDestroy()`?");
+      String message = String.format(
+        "You're calling `%s` after the `MapView` was destroyed, were you invoking it after `onDestroy()`?",
+        callingMethod);
+      Logger.e(TAG, message);
+
+      MapStrictMode.strictModeViolation(message);
     }
     return destroyed;
   }
@@ -148,13 +158,17 @@ final class NativeMapView {
 
     if (width > 65535) {
       // we have seen edge cases where devices return incorrect values #6111
-      Log.e("NativeMapView", "Device returned an out of range width size, capping value at 65535 instead of " + width);
+      Logger.e(TAG, String.format("Device returned an out of range width size, "
+        + "capping value at 65535 instead of %s", width)
+      );
       width = 65535;
     }
 
     if (height > 65535) {
       // we have seen edge cases where devices return incorrect values #6111
-      Log.e("NativeMapView", "Device returned an out of range height size, capping value at 65535 instead of " + height);
+      Logger.e(TAG, String.format("Device returned an out of range height size, "
+        + "capping value at 65535 instead of %s", height)
+      );
       height = 65535;
     }
 
@@ -828,7 +842,9 @@ final class NativeMapView {
       try {
         onMapChangedListener.onMapChanged(rawChange);
       } catch (RuntimeException err) {
-        Log.e("NativeMapView", Log.getStackTraceString(err));
+
+        Logger.e(TAG, "Exception in MapView.OnMapChangedListener " + Log.getStackTraceString(err));
+        MapStrictMode.strictModeViolation(err);
       }
     }
   }
@@ -853,7 +869,8 @@ final class NativeMapView {
   private native void nativeInitialize(NativeMapView nativeMapView,
                                        FileSource fileSource,
                                        MapRenderer mapRenderer,
-                                       float pixelRatio);
+                                       float pixelRatio,
+                                       boolean crossSourceCollisions);
 
   @Keep
   private native void nativeDestroy();

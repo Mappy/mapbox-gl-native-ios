@@ -24,7 +24,7 @@ if(WITH_OSMESA AND WITH_EGL)
 endif()
 
 if(WITH_EGL)
-    add_definitions(-DMBGL_USE_GLES2=1)
+    set(USE_GLES2 ON)
 endif()
 
 if($ENV{CI})
@@ -54,12 +54,13 @@ if(WITH_COVERAGE)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --coverage")
 endif(WITH_COVERAGE)
 
-set(CMAKE_CONFIGURATION_TYPES Debug Release RelWithDebugInfo Sanitize)
+set(CMAKE_CONFIGURATION_TYPES Debug Release RelWithDebInfo Sanitize)
 
 # Compiler configuration
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
@@ -89,9 +90,11 @@ if(APPLE AND CMAKE_CXX_COMPILER_ID MATCHES ".*Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=unused-command-line-argument")
 endif()
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Os -DNDEBUG")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Os -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O3 -DNDEBUG")
+set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -O3 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_SANITIZE "${CMAKE_CXX_FLAGS_SANITIZE} -O1 -g -fno-omit-frame-pointer -fno-optimize-sibling-calls")
-
+set(CMAKE_C_FLAGS_SANITIZE "${CMAKE_C_FLAGS_SANITIZE} -O1 -g -fno-omit-frame-pointer -fno-optimize-sibling-calls")
 
 if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=unknown-warning-option")
@@ -99,6 +102,9 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
     # https://svn.boost.org/trac/boost/ticket/9240
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fext-numeric-literals")
 endif()
+
+set(CMAKE_SHARED_LINKER_FLAGS_SANITIZE "${CMAKE_SHARED_LINKER_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS_SANITIZE "${CMAKE_EXE_LINKER_FLAGS}")
 
 # Technique from https://crascit.com/2016/04/09/using-ccache-with-cmake/
 find_program(CCACHE_PROGRAM ccache)
@@ -136,26 +142,33 @@ else()
     message(STATUS "Can't find ccache — consider installing ccache to improve recompilation performance")
 endif()
 
+include(cmake/codecvt.cmake)
+
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/platform/${MBGL_PLATFORM}/config.cmake)
     message(ERROR "Can't find config.cmake file for platform ${MBGL_PLATFORM}")
 endif()
 
 include(platform/${MBGL_PLATFORM}/config.cmake)
 
+if(WITH_EGL)
+    add_definitions(-DMBGL_WITH_EGL=1)
+endif()
+
+if(USE_GLES2)
+    add_definitions(-DMBGL_USE_GLES2=1)
+endif()
+
 if (COMMAND mbgl_filesource)
     include(cmake/filesource.cmake)
 endif()
 
-include(cmake/core-files.cmake)
 include(cmake/core.cmake)
 
 if(COMMAND mbgl_platform_test)
-    include(cmake/test-files.cmake)
     include(cmake/test.cmake)
 endif()
 
 if(COMMAND mbgl_platform_benchmark)
-    include(cmake/benchmark-files.cmake)
     include(cmake/benchmark.cmake)
 endif()
 
@@ -176,8 +189,10 @@ if(WITH_NODEJS AND COMMAND mbgl_platform_node)
 endif()
 
 if(CMAKE_GENERATOR STREQUAL "Xcode")
-    write_xcconfig_target_properties(
-        mbgl-core
-        mbgl-filesource
+    set_xcconfig_target_properties(mbgl-core)
+    set_xcconfig_target_properties(mbgl-filesource)
+    file(GENERATE
+        OUTPUT "${CMAKE_BINARY_DIR}/config.xcconfig"
+        INPUT "${CMAKE_SOURCE_DIR}/scripts/config.xcconfig.in"
     )
 endif()

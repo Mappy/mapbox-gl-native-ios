@@ -306,6 +306,23 @@ namespace mbgl {
     return transition;
 }
 
+- (void)setLineGradient:(NSExpression *)lineGradient {
+    MGLAssertStyleLayerIsValid();
+
+    auto mbglValue = MGLStyleValueTransformer<mbgl::Color, MGLColor *>().toPropertyValue<mbgl::style::ColorRampPropertyValue>(lineGradient);
+    self.rawLayer->setLineGradient(mbglValue);
+}
+
+- (NSExpression *)lineGradient {
+    MGLAssertStyleLayerIsValid();
+
+    auto propertyValue = self.rawLayer->getLineGradient();
+    if (propertyValue.isUndefined()) {
+        propertyValue = self.rawLayer->getDefaultLineGradient();
+    }
+    return MGLStyleValueTransformer<mbgl::Color, MGLColor *>().toExpression(propertyValue);
+}
+
 - (void)setLineOffset:(NSExpression *)lineOffset {
     MGLAssertStyleLayerIsValid();
 
@@ -379,7 +396,7 @@ namespace mbgl {
 - (void)setLinePattern:(NSExpression *)linePattern {
     MGLAssertStyleLayerIsValid();
 
-    auto mbglValue = MGLStyleValueTransformer<std::string, NSString *>().toPropertyValue<mbgl::style::PropertyValue<std::string>>(linePattern, false);
+    auto mbglValue = MGLStyleValueTransformer<std::string, NSString *>().toPropertyValue<mbgl::style::PropertyValue<std::string>>(linePattern, true);
     self.rawLayer->setLinePattern(mbglValue);
 }
 

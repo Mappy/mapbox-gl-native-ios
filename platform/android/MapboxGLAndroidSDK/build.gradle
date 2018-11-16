@@ -1,20 +1,21 @@
 apply plugin: 'com.android.library'
 
-
 //mappy modif
 apply from: '../configuration.gradle'
 apply from: '../gradle/dependencies.gradle'
 //end mappy modif
 
+apply plugin: 'kotlin-android'
+
 dependencies {
-//    mappy modif
-//    lintChecks project(":MapboxGLAndroidSDKLint")
-    api (dependenciesList.mapboxAndroidTelemetry) {
+    //    mappy modif
+    // lintChecks project(":MapboxGLAndroidSDKLint")
+    api(dependenciesList.mapboxAndroidTelemetry) {
         transitive = true
         exclude group: 'com.android.support', module: 'appcompat-v7'
     }
     api dependenciesList.mapboxJavaGeoJSON
-    api (dependenciesList.mapboxAndroidGestures) {
+    api(dependenciesList.mapboxAndroidGestures) {
         exclude group: 'com.android.support', module: 'appcompat-v7'
     }
 
@@ -22,9 +23,16 @@ dependencies {
     api dependenciesList.supportFragmentV4
     api dependenciesList.timber
     api dependenciesList.okhttp3
+
+    implementation dependenciesList.mapboxJavaTurf
+    implementation dependenciesList.supportAppcompatV7
+    implementation dependenciesList.supportAnnotations
+    implementation dependenciesList.supportFragmentV4
+    implementation dependenciesList.okhttp3
     testImplementation dependenciesList.junit
     testImplementation dependenciesList.mockito
     testImplementation dependenciesList.robolectric
+    testImplementation dependenciesList.kotlinLib
 }
 
 android {
@@ -32,13 +40,14 @@ android {
     buildToolsVersion androidVersions.buildToolsVersion
 
     defaultConfig {
+        vectorDrawables.useSupportLibrary = true
         minSdkVersion androidVersions.minSdkVersion
         targetSdkVersion androidVersions.targetSdkVersion
         buildConfigField "String", "GIT_REVISION_SHORT", String.format("\"%s\"", getGitRevision())
         buildConfigField "String", "MAPBOX_SDK_IDENTIFIER", String.format("\"%s\"", "mapbox-maps-android")
         buildConfigField "String", "MAPBOX_SDK_VERSION", String.format("\"%s\"", project.VERSION_NAME)
         buildConfigField "String", "MAPBOX_VERSION_STRING", String.format("\"Mapbox/%s\"", project.VERSION_NAME)
-        buildConfigField "String", "MAPBOX_EVENTS_USER_AGENT", String.format("\"MapboxEventsAndroid/%s\"", project.VERSION_NAME)
+        buildConfigField "String", "MAPBOX_EVENTS_USER_AGENT", String.format("\"mapbox-maps-android/%s\"", project.VERSION_NAME)
     }
 
     defaultPublishConfig "release"
@@ -67,6 +76,12 @@ android {
         }
     }
 
+    // Allow determining the C++ STL we're using when building Mapbox GL.
+    def stl = 'c++_static'
+    if (project.hasProperty("mapbox.stl")) {
+        stl = project.getProperty("mapbox.stl")
+    }
+
     defaultConfig {
         print "build with abi = "+ abi+"\n"
 
@@ -74,7 +89,7 @@ android {
             externalNativeBuild {
                 cmake {
                     arguments "-DANDROID_TOOLCHAIN=clang"
-                    arguments "-DANDROID_STL=c++_static"
+                    arguments "-DANDROID_STL=" + stl
                     arguments "-DANDROID_CPP_FEATURES=rtti;exceptions"
                     arguments "-DMBGL_PLATFORM=android"
                     arguments "-DMASON_PLATFORM=android"

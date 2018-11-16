@@ -4,6 +4,9 @@ import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.support.annotation.NonNull;
 
+import com.mapbox.mapboxsdk.constants.MapboxConstants;
+import com.mapbox.mapboxsdk.log.Logger;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -11,8 +14,6 @@ import java.util.List;
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.egl.EGLDisplay;
-
-import timber.log.Timber;
 
 import static com.mapbox.mapboxsdk.utils.Compare.compare;
 import static javax.microedition.khronos.egl.EGL10.EGL_ALPHA_MASK_SIZE;
@@ -37,6 +38,8 @@ import static javax.microedition.khronos.egl.EGL10.EGL_WINDOW_BIT;
  * Selects the right EGLConfig needed for `mapbox-gl-native`
  */
 public class EGLConfigChooser implements GLSurfaceView.EGLConfigChooser {
+
+  private static final String TAG = "Mbgl-EGLConfigChooser";
 
   /**
    * Requires API level 17
@@ -72,7 +75,7 @@ public class EGLConfigChooser implements GLSurfaceView.EGLConfigChooser {
     // Determine number of possible configurations
     int[] numConfigs = getNumberOfConfigurations(egl, display, configAttribs);
     if (numConfigs[0] < 1) {
-      Timber.e("eglChooseConfig() returned no configs.");
+      Logger.e(TAG, "eglChooseConfig() returned no configs.");
       throw new EGLConfigException("eglChooseConfig() failed");
     }
 
@@ -82,7 +85,7 @@ public class EGLConfigChooser implements GLSurfaceView.EGLConfigChooser {
     // Choose best match
     EGLConfig config = chooseBestMatchConfig(egl, display, possibleConfigurations);
     if (config == null) {
-      Timber.e("No config chosen");
+      Logger.e(TAG, "No config chosen");
       throw new EGLConfigException("No config chosen");
     }
 
@@ -92,7 +95,9 @@ public class EGLConfigChooser implements GLSurfaceView.EGLConfigChooser {
   private int[] getNumberOfConfigurations(EGL10 egl, EGLDisplay display, int[] configAttributes) {
     int[] numConfigs = new int[1];
     if (!egl.eglChooseConfig(display, configAttributes, null, 0, numConfigs)) {
-      Timber.e("eglChooseConfig(NULL) returned error %d", egl.eglGetError());
+      Logger.e(TAG, String.format(
+        MapboxConstants.MAPBOX_LOCALE, "eglChooseConfig(NULL) returned error %d", egl.eglGetError())
+      );
       throw new EGLConfigException("eglChooseConfig() failed");
     }
     return numConfigs;
@@ -102,7 +107,9 @@ public class EGLConfigChooser implements GLSurfaceView.EGLConfigChooser {
                                                 int[] configAttributes, int[] numConfigs) {
     EGLConfig[] configs = new EGLConfig[numConfigs[0]];
     if (!egl.eglChooseConfig(display, configAttributes, configs, numConfigs[0], numConfigs)) {
-      Timber.e("eglChooseConfig() returned error %d", egl.eglGetError());
+      Logger.e(TAG, String.format(
+        MapboxConstants.MAPBOX_LOCALE, "eglChooseConfig() returned error %d", egl.eglGetError())
+      );
       throw new EGLConfigException("eglChooseConfig() failed");
     }
     return configs;
@@ -254,11 +261,11 @@ public class EGLConfigChooser implements GLSurfaceView.EGLConfigChooser {
     Config bestMatch = matches.get(0);
 
     if (bestMatch.isCaveat) {
-      Timber.w("Chosen config has a caveat.");
+      Logger.w(TAG, "Chosen config has a caveat.");
     }
 
     if (bestMatch.isNotConformant) {
-      Timber.w("Chosen config is not conformant.");
+      Logger.w(TAG, "Chosen config is not conformant.");
     }
 
     return bestMatch.config;
@@ -267,15 +274,18 @@ public class EGLConfigChooser implements GLSurfaceView.EGLConfigChooser {
   private int getConfigAttr(EGL10 egl, EGLDisplay display, EGLConfig config, int attributeName) {
     int[] attributevalue = new int[1];
     if (!egl.eglGetConfigAttrib(display, config, attributeName, attributevalue)) {
-      Timber.e("eglGetConfigAttrib(%d) returned error %d", attributeName, egl.eglGetError());
+      Logger.e(TAG, String.format(
+        MapboxConstants.MAPBOX_LOCALE, "eglGetConfigAttrib(%d) returned error %d", attributeName, egl.eglGetError())
+      );
       throw new EGLConfigException("eglGetConfigAttrib() failed");
     }
     return attributevalue[0];
   }
 
   private int[] getConfigAttributes() {
-    boolean emulator = inEmulator() || inGenymotion();
-    Timber.i("In emulator: %s", emulator);
+    // Mappy Modif :  Used to detect genymotion emulator correctly
+    boolean emulator = inEmulator() || isGenymotionEmulator();
+    Logger.i(TAG, String.format("In emulator: %s", emulator));
 
     // Get all configs at least RGB 565 with 16 depth and 8 stencil
     return new int[] {
@@ -310,17 +320,16 @@ public class EGLConfigChooser implements GLSurfaceView.EGLConfigChooser {
 
   private boolean buildModelContainsEmulatorHints() {
     String buildModel = Build.MODEL;
-    return buildModel.startsWith("sdk")
-            || "google_sdk".equals(buildModel)
-            || buildModel.contains("Emulator")
-            || buildModel.contains("Android SDK");
-  }
-
-  /**
-   * Detect if we are in genymotion
-   */
-  private boolean inGenymotion() {
-    return Build.MANUFACTURER.contains("Genymotion");
+    return Build.FINGERPRINT.startsWith("generic")
+      || buildModel.startsWith("sdk")
+      || buildModel.contains("Android SDK")
+      || Build.FINGERPRINT.startsWith("unknown")
+      || Build.MODEL.contains("google_sdk")
+      || Build.MODEL.contains("Emulator")
+      || Build.MODEL.contains("Android SDK built for x86")
+      || (Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic"))
+      || "google_sdk".equals(Build.PRODUCT)
+      || System.getProperty("ro.kernel.qemu") != null;
   }
 
 }

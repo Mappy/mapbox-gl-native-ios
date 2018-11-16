@@ -18,13 +18,15 @@
 #include <mbgl/util/logging.hpp>
 
 // Java -> C++ conversion
-#include <mbgl/style/conversion.hpp>
 #include <mbgl/style/conversion/filter.hpp>
 #include <mbgl/style/conversion/layer.hpp>
 #include <mbgl/style/conversion/source.hpp>
+#include <mbgl/style/conversion_impl.hpp>
 
 // C++ -> Java conversion
 #include "../conversion/property_value.hpp"
+#include "custom_layer.hpp"
+#include "background_layer.hpp"
 #include <mbgl/style/filter.hpp>
 
 #include <string>
@@ -81,7 +83,7 @@ namespace android {
         return std::move(ownedLayer);
     }
 
-    jni::String Layer::getId(jni::JNIEnv& env) {
+    jni::Local<jni::String> Layer::getId(jni::JNIEnv& env) {
         return jni::Make<jni::String>(env, layer.getID());
     }
 
@@ -89,18 +91,18 @@ namespace android {
         return layer;
     }
 
-    void Layer::setLayoutProperty(jni::JNIEnv& env, jni::String jname, jni::Object<> jvalue) {
+    void Layer::setLayoutProperty(jni::JNIEnv& env, const jni::String& jname, const jni::Object<>& jvalue) {
         // Convert and set property
-        optional<mbgl::style::conversion::Error> error = mbgl::style::conversion::setLayoutProperty(layer, jni::Make<std::string>(env, jname), Value(env, jvalue));
+        optional<mbgl::style::conversion::Error> error = layer.setLayoutProperty(jni::Make<std::string>(env, jname), Value(env, jvalue));
         if (error) {
             mbgl::Log::Error(mbgl::Event::JNI, "Error setting property: " + jni::Make<std::string>(env, jname) + " " + error->message);
             return;
         }
     }
 
-    void Layer::setPaintProperty(jni::JNIEnv& env, jni::String jname, jni::Object<> jvalue) {
+    void Layer::setPaintProperty(jni::JNIEnv& env, const jni::String& jname, const jni::Object<>& jvalue) {
         // Convert and set property
-        optional<mbgl::style::conversion::Error> error = mbgl::style::conversion::setPaintProperty(layer, jni::Make<std::string>(env, jname), Value(env, jvalue));
+        optional<mbgl::style::conversion::Error> error = layer.setPaintProperty(jni::Make<std::string>(env, jname), Value(env, jvalue));
         if (error) {
             mbgl::Log::Error(mbgl::Event::JNI, "Error setting property: " + jni::Make<std::string>(env, jname) + " " + error->message);
             return;
@@ -121,7 +123,7 @@ namespace android {
         }
     };
 
-    void Layer::setFilter(jni::JNIEnv& env, jni::Array<jni::Object<>> jfilter) {
+    void Layer::setFilter(jni::JNIEnv& env, const jni::Array<jni::Object<>>& jfilter) {
         using namespace mbgl::style;
         using namespace mbgl::style::conversion;
 
@@ -152,7 +154,7 @@ namespace android {
         }
     };
 
-    jni::Object<gson::JsonElement> Layer::getFilter(jni::JNIEnv& env) {
+    jni::Local<jni::Object<gson::JsonElement>> Layer::getFilter(jni::JNIEnv& env) {
         using namespace mbgl::style;
         using namespace mbgl::style::conversion;
 
@@ -161,7 +163,7 @@ namespace android {
             mbgl::Value expressionValue = (*filter.expression)->serialize();
             return gson::JsonElement::New(env, expressionValue);
         } else {
-            return jni::Object<gson::JsonElement>();
+            return jni::Local<jni::Object<gson::JsonElement>>(env, nullptr);
         }
     }
 
@@ -179,7 +181,7 @@ namespace android {
         }
     };
 
-    void Layer::setSourceLayer(jni::JNIEnv& env, jni::String sourceLayer) {
+    void Layer::setSourceLayer(jni::JNIEnv& env, const jni::String& sourceLayer) {
         layer.accept(SetSourceLayerEvaluator {jni::Make<std::string>(env, sourceLayer)});
     }
 
@@ -200,8 +202,27 @@ namespace android {
         }
     };
 
-    jni::String Layer::getSourceLayer(jni::JNIEnv& env) {
+    jni::Local<jni::String> Layer::getSourceLayer(jni::JNIEnv& env) {
         return jni::Make<jni::String>(env, layer.accept(GetSourceLayerEvaluator()));
+    }
+
+    struct GetSourceIdEvaluator {
+        std::string noop(std::string layerType) {
+            Log::Warning(mbgl::Event::JNI, "%s doesn't support get source id", layerType.c_str());
+            return {};
+        }
+
+        std::string operator()(style::BackgroundLayer&) { return noop("BackgroundLayer"); }
+        std::string operator()(style::CustomLayer&) { return noop("CustomLayer"); }
+
+        template <class LayerType>
+        std::string operator()(LayerType& layer) {
+            return layer.getSourceID();
+        }
+    };
+
+    jni::Local<jni::String> Layer::getSourceId(jni::JNIEnv& env) {
+        return jni::Make<jni::String>(env, layer.accept(GetSourceIdEvaluator()));
     }
 
     jni::jfloat Layer::getMinZoom(jni::JNIEnv&){
@@ -220,21 +241,19 @@ namespace android {
         layer.setMaxZoom(zoom);
     }
 
-    jni::Object<jni::ObjectTag> Layer::getVisibility(jni::JNIEnv& env) {
+    jni::Local<jni::Object<>> Layer::getVisibility(jni::JNIEnv& env) {
         using namespace mbgl::android::conversion;
-        return jni::Object<jni::ObjectTag>(*convert<jni::jobject*>(env, layer.getVisibility()));
+        return std::move(*convert<jni::Local<jni::Object<>>>(env, layer.getVisibility()));
     }
-
-    jni::Class<Layer> Layer::javaClass;
 
     void Layer::registerNative(jni::JNIEnv& env) {
         // Lookup the class
-        Layer::javaClass = *jni::Class<Layer>::Find(env).NewGlobalRef(env).release();
+        static auto& javaClass = jni::Class<Layer>::Singleton(env);
 
         #define METHOD(MethodPtr, name) jni::MakeNativePeerMethod<decltype(MethodPtr), (MethodPtr)>(name)
 
         // Register the peer
-        jni::RegisterNativePeer<Layer>(env, Layer::javaClass, "nativePtr",
+        jni::RegisterNativePeer<Layer>(env, javaClass, "nativePtr",
             METHOD(&Layer::getId, "nativeGetId"),
             METHOD(&Layer::setLayoutProperty, "nativeSetLayoutProperty"),
             METHOD(&Layer::setPaintProperty, "nativeSetPaintProperty"),
@@ -242,6 +261,7 @@ namespace android {
             METHOD(&Layer::getFilter, "nativeGetFilter"),
             METHOD(&Layer::setSourceLayer, "nativeSetSourceLayer"),
             METHOD(&Layer::getSourceLayer, "nativeGetSourceLayer"),
+            METHOD(&Layer::getSourceId, "nativeGetSourceId"),
             METHOD(&Layer::getMinZoom, "nativeGetMinZoom"),
             METHOD(&Layer::getMaxZoom, "nativeGetMaxZoom"),
             METHOD(&Layer::setMinZoom, "nativeSetMinZoom"),

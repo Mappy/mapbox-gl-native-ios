@@ -15,6 +15,9 @@ android {
         versionCode 13
         versionName "6.0.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        vectorDrawables {
+            useSupportLibrary true
+        }
     }
 
     compileOptions {
@@ -38,12 +41,14 @@ android {
 
     buildTypes {
         debug {
-            testCoverageEnabled = true
+            testCoverageEnabled true
             minifyEnabled false
+            shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
         release {
             minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.debug
         }
@@ -58,14 +63,17 @@ android {
 
 dependencies {
     implementation dependenciesList.kotlinLib
+
     api(project(':MapboxGLAndroidSDKTestApp'))
     implementation dependenciesList.mapboxJavaServices
 
-    implementation dependenciesList.mapboxJavaTurf
+    implementation(project(':MapboxGLAndroidSDK'))
+    implementation(dependenciesList.mapboxJavaTurf)
 
     implementation dependenciesList.supportAppcompatV7
     implementation dependenciesList.supportRecyclerView
     implementation dependenciesList.supportDesign
+    implementation dependenciesList.supportConstraintLayout
 
     // implementation dependenciesList.lost
     implementation dependenciesList.gmsLocation

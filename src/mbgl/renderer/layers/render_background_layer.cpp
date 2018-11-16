@@ -34,6 +34,7 @@ void RenderBackgroundLayer::transition(const TransitionParameters &parameters) {
 
 void RenderBackgroundLayer::evaluate(const PropertyEvaluationParameters &parameters) {
     evaluated = unevaluated.evaluate(parameters);
+    crossfade = parameters.getCrossfadeParameters();
 
     passes = evaluated.get<style::BackgroundOpacity>() > 0 ? RenderPass::Translucent
                                                            : RenderPass::None;
@@ -41,6 +42,10 @@ void RenderBackgroundLayer::evaluate(const PropertyEvaluationParameters &paramet
 
 bool RenderBackgroundLayer::hasTransition() const {
     return unevaluated.hasTransition();
+}
+
+bool RenderBackgroundLayer::hasCrossfade() const {
+    return crossfade.t != 1;
 }
 
 void RenderBackgroundLayer::render(PaintParameters& parameters, RenderSource*) {
@@ -71,6 +76,7 @@ void RenderBackgroundLayer::render(PaintParameters& parameters, RenderSource*) {
             parameters.depthModeForSublayer(0, gl::DepthMode::ReadOnly),
             gl::StencilMode::disabled(),
             parameters.colorModeForRenderPass(),
+            gl::CullFaceMode::disabled(),
             parameters.staticData.quadTriangleIndexBuffer,
             parameters.staticData.tileTriangleSegments,
             allUniformValues,
@@ -97,7 +103,7 @@ void RenderBackgroundLayer::render(PaintParameters& parameters, RenderSource*) {
                     parameters.imageManager.getPixelSize(),
                     *imagePosA,
                     *imagePosB,
-                    evaluated.get<BackgroundPattern>(),
+                    crossfade,
                     tileID,
                     parameters.state
                 )
@@ -108,9 +114,9 @@ void RenderBackgroundLayer::render(PaintParameters& parameters, RenderSource*) {
             draw(
                 parameters.programs.background,
                 BackgroundProgram::UniformValues {
-                    uniforms::u_matrix::Value{ parameters.matrixForTile(tileID) },
-                    uniforms::u_color::Value{ evaluated.get<BackgroundColor>() },
-                    uniforms::u_opacity::Value{ evaluated.get<BackgroundOpacity>() },
+                    uniforms::u_matrix::Value( parameters.matrixForTile(tileID) ),
+                    uniforms::u_color::Value( evaluated.get<BackgroundColor>() ),
+                    uniforms::u_opacity::Value( evaluated.get<BackgroundOpacity>() ),
                 }
             );
         }

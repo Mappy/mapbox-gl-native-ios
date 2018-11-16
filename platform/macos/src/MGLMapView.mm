@@ -278,8 +278,9 @@ public:
     MGLRendererConfiguration *config = [MGLRendererConfiguration currentConfiguration];
 
     auto renderer = std::make_unique<mbgl::Renderer>(*_mbglView, config.scaleFactor, *config.fileSource, *_mbglThreadPool, config.contextMode, config.cacheDir, config.localFontFamilyName);
+    BOOL enableCrossSourceCollisions = !config.perSourceCollisions;
     _rendererFrontend = std::make_unique<MGLRenderFrontend>(std::move(renderer), self, *_mbglView, true);
-    _mbglMap = new mbgl::Map(*_rendererFrontend, *_mbglView, self.size, config.scaleFactor, *config.fileSource, *_mbglThreadPool, mbgl::MapMode::Continuous, mbgl::ConstrainMode::None, mbgl::ViewportMode::Default);
+    _mbglMap = new mbgl::Map(*_rendererFrontend, *_mbglView, self.size, config.scaleFactor, *config.fileSource, *_mbglThreadPool, mbgl::MapMode::Continuous, mbgl::ConstrainMode::None, mbgl::ViewportMode::Default, enableCrossSourceCollisions);
 
     // Install the OpenGL layer. Interface Builder’s synchronous drawing means
     // we can’t display a map, so don’t even bother to have a map layer.
@@ -1319,7 +1320,7 @@ public:
                                                           centerCoordinate.latitude,
                                                           self.frame.size);
     return [MGLMapCamera cameraLookingAtCenterCoordinate:centerCoordinate
-                                            fromDistance:altitude
+                                                altitude:altitude
                                                    pitch:pitch
                                                  heading:direction];
 }
@@ -2108,7 +2109,11 @@ public:
             
             if ([annotation isKindOfClass:[MGLMultiPoint class]])
             {
-                return false;
+                if ([self.delegate respondsToSelector:@selector(mapView:shapeAnnotationIsEnabled:)]) {
+                    return !!(![self.delegate mapView:self shapeAnnotationIsEnabled:(MGLMultiPoint *)annotation]);
+                } else {
+                    return false;
+                }
             }
             
             MGLAnnotationImage *annotationImage = [self imageOfAnnotationWithTag:annotationTag];
@@ -2816,17 +2821,33 @@ public:
 }
 
 - (NSRect)convertCoordinateBounds:(MGLCoordinateBounds)bounds toRectToView:(nullable NSView *)view {
-    if (!CLLocationCoordinate2DIsValid(bounds.sw) || !CLLocationCoordinate2DIsValid(bounds.ne)) {
-        return CGRectNull;
-    }
     return [self convertLatLngBounds:MGLLatLngBoundsFromCoordinateBounds(bounds) toRectToView:view];
 }
 
 /// Converts a geographic bounding box to a rectangle in the view’s coordinate
 /// system.
 - (NSRect)convertLatLngBounds:(mbgl::LatLngBounds)bounds toRectToView:(nullable NSView *)view {
-    NSRect rect = { [self convertLatLng:bounds.southwest() toPointToView:view], NSZeroSize };
-    rect = MGLExtendRect(rect, [self convertLatLng:bounds.northeast() toPointToView:view]);
+    auto northwest = bounds.northwest();
+    auto northeast = bounds.northeast();
+    auto southwest = bounds.southwest();
+    auto southeast = bounds.southeast();
+
+    auto center = [self convertPoint:{ NSMidX(view.bounds), NSMidY(view.bounds) } toLatLngFromView:view];
+    
+    // Extend bounds to account for the antimeridian
+    northwest.unwrapForShortestPath(center);
+    northeast.unwrapForShortestPath(center);
+    southwest.unwrapForShortestPath(center);
+    southeast.unwrapForShortestPath(center);
+    
+    auto correctedLatLngBounds = mbgl::LatLngBounds::empty();
+    correctedLatLngBounds.extend(northwest);
+    correctedLatLngBounds.extend(northeast);
+    correctedLatLngBounds.extend(southwest);
+    correctedLatLngBounds.extend(southeast);
+    
+    NSRect rect = { [self convertLatLng:correctedLatLngBounds.southwest() toPointToView:view], CGSizeZero };
+    rect = MGLExtendRect(rect, [self convertLatLng:correctedLatLngBounds.northeast() toPointToView:view]);
     return rect;
 }
 

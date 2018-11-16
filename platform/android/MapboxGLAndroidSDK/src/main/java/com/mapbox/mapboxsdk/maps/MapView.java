@@ -24,13 +24,9 @@ import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ZoomButtonsController;
-import com.mapbox.android.gestures.AndroidGesturesManager;
-import com.mapbox.android.telemetry.AppUserTurnstile;
-import com.mapbox.android.telemetry.Event;
-import com.mapbox.android.telemetry.MapEventFactory;
-import com.mapbox.android.telemetry.MapboxTelemetry;
-import com.mapbox.mapboxsdk.BuildConfig;
 
+import com.mapbox.android.gestures.AndroidGesturesManager;
+import com.mapbox.mapboxsdk.MapStrictMode;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.annotations.Annotation;
@@ -39,18 +35,19 @@ import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
 import com.mapbox.mapboxsdk.constants.Style;
+import com.mapbox.mapboxsdk.geometry.LatLng;
+import com.mapbox.mapboxsdk.location.LocationComponent;
 import com.mapbox.mapboxsdk.maps.renderer.MapRenderer;
 import com.mapbox.mapboxsdk.maps.renderer.glsurfaceview.GLSurfaceViewMapRenderer;
 import com.mapbox.mapboxsdk.maps.renderer.textureview.TextureViewMapRenderer;
 import com.mapbox.mapboxsdk.maps.widgets.CompassView;
 import com.mapbox.mapboxsdk.net.ConnectivityReceiver;
+import com.mapbox.mapboxsdk.offline.OfflineGeometryRegionDefinition;
 import com.mapbox.mapboxsdk.offline.OfflineRegionDefinition;
 import com.mapbox.mapboxsdk.offline.OfflineTilePyramidRegionDefinition;
 import com.mapbox.mapboxsdk.storage.FileSource;
 import com.mapbox.mapboxsdk.utils.BitmapUtils;
 
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL10;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
@@ -58,6 +55,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
 
 import static com.mapbox.mapboxsdk.maps.widgets.CompassView.TIME_MAP_NORTH_ANIMATION;
 import static com.mapbox.mapboxsdk.maps.widgets.CompassView.TIME_WAIT_IDLE;
@@ -179,9 +179,9 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
     Transform transform = new Transform(nativeMapView, annotationManager.getMarkerViewManager(),
       cameraChangeDispatcher);
 
+    // MapboxMap
     mapboxMap = new MapboxMap(nativeMapView, transform, uiSettings, proj, registerTouchListener,
       annotationManager, cameraChangeDispatcher);
-
     mapCallback.attachMapboxMap(mapboxMap);
 
     // user input
@@ -195,8 +195,13 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
       mapGestureDetector, cameraChangeDispatcher, getWidth(), getHeight());
     mapZoomButtonController.bind(uiSettings, zoomListener);
 
+    // compass
     compassView.injectCompassAnimationListener(createCompassAnimationListener(cameraChangeDispatcher));
     compassView.setOnClickListener(createCompassClickListener(cameraChangeDispatcher));
+
+    // LocationComponent
+    mapboxMap.injectLocationComponent(new LocationComponent(mapboxMap));
+
     // inject widgets with MapboxMap
     attrView.setOnClickListener(new AttributionClickListener(context, mapboxMap));
 
@@ -285,12 +290,10 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
   public void onCreate(@Nullable Bundle savedInstanceState) {
     if (savedInstanceState == null) {
       if (Mapbox.ENABLE_METRICS_ON_MAPPY) {
-        MapboxTelemetry telemetry = Telemetry.obtainTelemetry();
-        AppUserTurnstile turnstileEvent = new AppUserTurnstile(BuildConfig.MAPBOX_SDK_IDENTIFIER,
-                BuildConfig.MAPBOX_SDK_VERSION);
-        telemetry.push(turnstileEvent);
-        MapEventFactory mapEventFactory = new MapEventFactory();
-        telemetry.push(mapEventFactory.createMapLoadEvent(Event.Type.MAP_LOAD));
+        TelemetryDefinition telemetry = Mapbox.getTelemetry();
+        if (telemetry != null) {
+          telemetry.onAppUserTurnstileEvent();
+        }
       }
     } else if (savedInstanceState.getBoolean(MapboxConstants.STATE_HAS_SAVED_STATE)) {
       this.savedInstanceState = savedInstanceState;
@@ -326,7 +329,8 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
       addView(glSurfaceView, 0);
     }
 
-    nativeMapView = new NativeMapView(getContext(), getPixelRatio(), this, mapRenderer);
+    boolean crossSourceCollisions = mapboxMapOptions.getCrossSourceCollisions();
+    nativeMapView = new NativeMapView(getContext(), getPixelRatio(), crossSourceCollisions, this, mapRenderer);
     nativeMapView.addOnMapChangedListener(change -> {
       // dispatch events to external listeners
       if (!onMapChangedListeners.isEmpty()) {
@@ -429,6 +433,10 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
     destroyed = true;
     onMapChangedListeners.clear();
     mapCallback.clearOnMapReadyCallbacks();
+
+    if (mapboxMap != null) {
+      mapboxMap.onDestroy();
+    }
 
     if (nativeMapView != null && hasSurface) {
       // null when destroying an activity programmatically mapbox-navigation-android/issues/503
@@ -578,22 +586,46 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
       return;
     }
 
-    OfflineTilePyramidRegionDefinition regionDefinition = (OfflineTilePyramidRegionDefinition) definition;
-    setStyleUrl(regionDefinition.getStyleURL());
-    CameraPosition cameraPosition = new CameraPosition.Builder()
-      .target(regionDefinition.getBounds().getCenter())
-      .zoom(regionDefinition.getMinZoom())
-      .build();
+    if (definition instanceof OfflineTilePyramidRegionDefinition) {
+      setOfflineTilePyramidRegionDefinition((OfflineTilePyramidRegionDefinition) definition);
+    } else if (definition instanceof OfflineGeometryRegionDefinition) {
+      setOfflineGeometryRegionDefinition((OfflineGeometryRegionDefinition) definition);
+    } else {
+      throw new UnsupportedOperationException("OfflineRegionDefintion instance not supported");
+    }
+  }
 
+  private void setOfflineRegionDefinition(String styleUrl, LatLng cameraTarget, double minZoom, double maxZoom) {
+    CameraPosition cameraPosition = new CameraPosition.Builder()
+      .target(cameraTarget)
+      .zoom(minZoom)
+      .build();
+    setStyleUrl(styleUrl);
     if (!isMapInitialized()) {
       mapboxMapOptions.camera(cameraPosition);
-      mapboxMapOptions.minZoomPreference(regionDefinition.getMinZoom());
-      mapboxMapOptions.maxZoomPreference(regionDefinition.getMaxZoom());
+      mapboxMapOptions.minZoomPreference(minZoom);
+      mapboxMapOptions.maxZoomPreference(maxZoom);
       return;
     }
     mapboxMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-    mapboxMap.setMinZoomPreference(regionDefinition.getMinZoom());
-    mapboxMap.setMaxZoomPreference(regionDefinition.getMaxZoom());
+    mapboxMap.setMinZoomPreference(minZoom);
+    mapboxMap.setMaxZoomPreference(maxZoom);
+  }
+
+  private void setOfflineTilePyramidRegionDefinition(OfflineTilePyramidRegionDefinition regionDefinition) {
+    setOfflineRegionDefinition(regionDefinition.getStyleURL(),
+      regionDefinition.getBounds().getCenter(),
+      regionDefinition.getMinZoom(),
+      regionDefinition.getMaxZoom()
+    );
+  }
+
+  private void setOfflineGeometryRegionDefinition(OfflineGeometryRegionDefinition regionDefinition) {
+    setOfflineRegionDefinition(regionDefinition.getStyleURL(),
+      regionDefinition.getBounds().getCenter(),
+      regionDefinition.getMinZoom(),
+      regionDefinition.getMaxZoom()
+    );
   }
 
   //
@@ -1220,11 +1252,17 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
 
     @Override
     public void onMapChanged(@MapChange int change) {
-      if (change == DID_FINISH_LOADING_STYLE && initialLoad) {
-        initialLoad = false;
-        mapboxMap.onPreMapReady();
-        onMapReady();
-        mapboxMap.onPostMapReady();
+      if (change == WILL_START_LOADING_MAP && !initialLoad) {
+        mapboxMap.onStartLoadingMap();
+      } else if (change == DID_FINISH_LOADING_STYLE) {
+        if (initialLoad) {
+          initialLoad = false;
+          mapboxMap.onPreMapReady();
+          onMapReady();
+          mapboxMap.onPostMapReady();
+        } else {
+          mapboxMap.onFinishLoadingStyle();
+        }
       } else if (change == DID_FINISH_RENDERING_FRAME || change == DID_FINISH_RENDERING_FRAME_FULLY_RENDERED) {
         mapboxMap.onUpdateFullyRendered();
       } else if (change == REGION_IS_CHANGING || change == REGION_DID_CHANGE || change == DID_FINISH_LOADING_MAP) {
@@ -1286,7 +1324,18 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
       void onMapBoxMapCreatedListener(MapboxMap mapboxMap);
   }
   private OnMapBoxMapCreatedListener mapBoxMapCreatedListener;
+
   public void setMapBoxMapCreatedListener(OnMapBoxMapCreatedListener mapBoxMapCreatedListener){
       this.mapBoxMapCreatedListener = mapBoxMapCreatedListener;
+  }
+
+  /**
+   * Sets the strict mode that will throw the {@link com.mapbox.mapboxsdk.MapStrictModeException}
+   * whenever the map would fail silently otherwise.
+   *
+   * @param strictModeEnabled true to enable the strict mode, false otherwise
+   */
+  public static void setMapStrictModeEnabled(boolean strictModeEnabled) {
+    MapStrictMode.setStrictModeEnabled(strictModeEnabled);
   }
 }

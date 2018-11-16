@@ -28,7 +28,7 @@ public class CircleLayer extends Layer {
    * @param nativePtr pointer used by core
    */
   @Keep
-  public CircleLayer(long nativePtr) {
+  CircleLayer(long nativePtr) {
     super(nativePtr);
   }
 
@@ -65,6 +65,16 @@ public class CircleLayer extends Layer {
   public CircleLayer withSourceLayer(String sourceLayer) {
     setSourceLayer(sourceLayer);
     return this;
+  }
+
+  /**
+   * Get the source id.
+   *
+   * @return id of the source
+   */
+  public String getSourceId() {
+    checkThread();
+    return nativeGetSourceId();
   }
 
   /**
