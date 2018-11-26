@@ -327,7 +327,7 @@ public final class LocationComponent {
   }
 
   // End of Mappy modifs
-  
+
   /**
    * Returns the current location options being used.
    *
@@ -677,7 +677,7 @@ public final class LocationComponent {
    */
   public void onStart() {
     isComponentStarted = true;
-    onLocationLayerStart();
+    onLocationLayerStart(true);
   }
 
   /**
@@ -704,19 +704,28 @@ public final class LocationComponent {
     onLocationLayerStop();
   }
 
-  /**
-   * Internal use.
-   */
-  public void onFinishLoadingStyle() {
+  public void reInitLayers(boolean show) {
     if (isInitialized) {
       locationLayerController.initializeComponents(options);
       locationCameraController.initializeOptions(options);
     }
-    onLocationLayerStart();
+    onLocationLayerStart(show);
+  }
+
+  /**
+   * Internal use. {@link #reInitLayers(boolean show)}
+   */
+  public void onFinishLoadingStyle() {
+// MAPPY MODIF : see #reInitLayers(boolean show)
+//    if (isInitialized) {
+//      locationLayerController.initializeComponents(options);
+//      locationCameraController.initializeOptions(options);
+//    }
+//    onLocationLayerStart();
   }
 
   @SuppressLint("MissingPermission")
-  private void onLocationLayerStart() {
+  private void onLocationLayerStart(boolean forceShow) {
     if (!isInitialized || !isComponentStarted) {
       return;
     }
@@ -739,7 +748,7 @@ public final class LocationComponent {
         }
       }
       setCameraMode(locationCameraController.getCameraMode());
-      setLastLocation();
+      updateLocation(getLastKnownLocation(), true, forceShow);
       setLastCompassHeading();
     }
   }
@@ -800,7 +809,7 @@ public final class LocationComponent {
     setRenderMode(RenderMode.NORMAL);
     setCameraMode(CameraMode.NONE);
 
-    onLocationLayerStart();
+    onLocationLayerStart(true);
   }
 
   private void initializeLocationEngine(@NonNull Context context) {
@@ -822,7 +831,7 @@ public final class LocationComponent {
 
   private void enableLocationComponent() {
     isEnabled = true;
-    onLocationLayerStart();
+    onLocationLayerStart(true);
   }
 
   private void disableLocationComponent() {
