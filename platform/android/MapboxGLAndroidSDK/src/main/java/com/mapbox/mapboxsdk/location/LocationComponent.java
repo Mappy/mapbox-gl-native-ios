@@ -327,7 +327,7 @@ public final class LocationComponent {
   }
 
   // End of Mappy modifs
-  
+
   /**
    * Returns the current location options being used.
    *
@@ -677,7 +677,7 @@ public final class LocationComponent {
    */
   public void onStart() {
     isComponentStarted = true;
-    onLocationLayerStart();
+    onLocationLayerStart(true);
   }
 
   /**
@@ -704,19 +704,28 @@ public final class LocationComponent {
     onLocationLayerStop();
   }
 
-  /**
-   * Internal use.
-   */
-  public void onFinishLoadingStyle() {
+  public void reInitLayers(boolean show) {
     if (isInitialized) {
       locationLayerController.initializeComponents(options);
       locationCameraController.initializeOptions(options);
     }
-    onLocationLayerStart();
+    onLocationLayerStart(show);
+  }
+
+  /**
+   * Internal use. {@link #reInitLayers(boolean show)}
+   */
+  public void onFinishLoadingStyle() {
+// MAPPY MODIF : see #reInitLayers(boolean show)
+//    if (isInitialized) {
+//      locationLayerController.initializeComponents(options);
+//      locationCameraController.initializeOptions(options);
+//    }
+//    onLocationLayerStart();
   }
 
   @SuppressLint("MissingPermission")
-  private void onLocationLayerStart() {
+  private void onLocationLayerStart(boolean forceShow) {
     if (!isInitialized || !isComponentStarted) {
       return;
     }
@@ -739,7 +748,7 @@ public final class LocationComponent {
         }
       }
       setCameraMode(locationCameraController.getCameraMode());
-      setLastLocation();
+      updateLocation(getLastKnownLocation(), true, forceShow);
       setLastCompassHeading();
     }
   }
@@ -800,7 +809,7 @@ public final class LocationComponent {
     setRenderMode(RenderMode.NORMAL);
     setCameraMode(CameraMode.NONE);
 
-    onLocationLayerStart();
+    onLocationLayerStart(true);
   }
 
   private void initializeLocationEngine(@NonNull Context context) {
@@ -822,7 +831,7 @@ public final class LocationComponent {
 
   private void enableLocationComponent() {
     isEnabled = true;
-    onLocationLayerStart();
+    onLocationLayerStart(true);
   }
 
   private void disableLocationComponent() {
@@ -918,21 +927,21 @@ public final class LocationComponent {
     locationAnimatorCoordinator.feedNewAccuracyRadius(Utils.calculateZoomLevelRadius(mapboxMap, location), noAnimation);
   }
 
-  private OnCameraMoveListener onCameraMoveListener = new OnCameraMoveListener() {
+  private final OnCameraMoveListener onCameraMoveListener = new OnCameraMoveListener() {
     @Override
     public void onCameraMove() {
       updateLayerOffsets(false);
     }
   };
 
-  private OnCameraIdleListener onCameraIdleListener = new OnCameraIdleListener() {
+  private final OnCameraIdleListener onCameraIdleListener = new OnCameraIdleListener() {
     @Override
     public void onCameraIdle() {
       updateLayerOffsets(false);
     }
   };
 
-  private OnMapClickListener onMapClickListener = new OnMapClickListener() {
+  private final OnMapClickListener onMapClickListener = new OnMapClickListener() {
     @Override
     public void onMapClick(@NonNull LatLng point) {
       if (!onLocationClickListeners.isEmpty() && locationLayerController.onMapClick(point)) {
@@ -943,7 +952,7 @@ public final class LocationComponent {
     }
   };
 
-  private MapboxMap.OnMapLongClickListener onMapLongClickListener = new MapboxMap.OnMapLongClickListener() {
+  private final MapboxMap.OnMapLongClickListener onMapLongClickListener = new MapboxMap.OnMapLongClickListener() {
     @Override
     public void onMapLongClick(@NonNull LatLng point) {
       if (!onLocationLongClickListeners.isEmpty() && locationLayerController.onMapClick(point)) {
@@ -954,7 +963,7 @@ public final class LocationComponent {
     }
   };
 
-  private OnLocationStaleListener onLocationStaleListener = new OnLocationStaleListener() {
+  private final OnLocationStaleListener onLocationStaleListener = new OnLocationStaleListener() {
     @Override
     public void onStaleStateChange(boolean isStale) {
       locationLayerController.setLocationsStale(isStale);
@@ -965,14 +974,14 @@ public final class LocationComponent {
     }
   };
 
-  private OnCameraMoveInvalidateListener onCameraMoveInvalidateListener = new OnCameraMoveInvalidateListener() {
+  private final OnCameraMoveInvalidateListener onCameraMoveInvalidateListener = new OnCameraMoveInvalidateListener() {
     @Override
     public void onInvalidateCameraMove() {
       onCameraMoveListener.onCameraMove();
     }
   };
 
-  private CompassListener compassListener = new CompassListener() {
+  private final CompassListener compassListener = new CompassListener() {
     @Override
     public void onCompassChanged(float userHeading) {
       updateCompassHeading(userHeading);
@@ -984,7 +993,7 @@ public final class LocationComponent {
     }
   };
 
-  private LocationEngineListener locationEngineListener = new LocationEngineListener() {
+  private final LocationEngineListener locationEngineListener = new LocationEngineListener() {
     @Override
     @SuppressWarnings( {"MissingPermission"})
     public void onConnected() {
@@ -999,7 +1008,7 @@ public final class LocationComponent {
     }
   };
 
-  private OnCameraTrackingChangedListener cameraTrackingChangedListener = new OnCameraTrackingChangedListener() {
+  private final OnCameraTrackingChangedListener cameraTrackingChangedListener = new OnCameraTrackingChangedListener() {
     @Override
     public void onCameraTrackingDismissed() {
       for (OnCameraTrackingChangedListener listener : onCameraTrackingChangedListeners) {
