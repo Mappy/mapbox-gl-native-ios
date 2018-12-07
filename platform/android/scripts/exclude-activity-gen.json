@@ -35,5 +35,8 @@
   "SymbolGeneratorActivity",
   "TextureViewTransparentBackgroundActivity",
   "SimpleMapActivity",
-  "RenderTestActivity"
+  "RenderTestActivity",
+  "SymbolLayerActivity",
+  "LocationFragmentActivity",
+  "MergeOfflineRegionsActivity"
 ]

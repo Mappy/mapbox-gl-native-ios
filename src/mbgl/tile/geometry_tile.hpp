@@ -37,7 +37,7 @@ public:
     void setShowCollisionBoxes(const bool showCollisionBoxes) override;
 
     void onGlyphsAvailable(GlyphMap) override;
-    void onImagesAvailable(ImageMap, uint64_t imageCorrelationID) override;
+    void onImagesAvailable(ImageMap, ImageMap, uint64_t imageCorrelationID) override;
     
     void getGlyphs(GlyphDependencies);
     void getImages(ImageRequestPair);
@@ -69,27 +69,29 @@ public:
         std::unordered_map<std::string, std::shared_ptr<Bucket>> buckets;
         std::unique_ptr<FeatureIndex> featureIndex;
         optional<AlphaImage> glyphAtlasImage;
-        optional<PremultipliedImage> iconAtlasImage;
+        ImageAtlas iconAtlas;
 
         LayoutResult(std::unordered_map<std::string, std::shared_ptr<Bucket>> buckets_,
                      std::unique_ptr<FeatureIndex> featureIndex_,
                      optional<AlphaImage> glyphAtlasImage_,
-                     optional<PremultipliedImage> iconAtlasImage_)
+                     ImageAtlas iconAtlas_)
             : buckets(std::move(buckets_)),
               featureIndex(std::move(featureIndex_)),
               glyphAtlasImage(std::move(glyphAtlasImage_)),
-              iconAtlasImage(std::move(iconAtlasImage_)) {}
+              iconAtlas(std::move(iconAtlas_)) {}
     };
     void onLayout(LayoutResult, uint64_t correlationID);
 
     void onError(std::exception_ptr, uint64_t correlationID);
-    
+
     bool holdForFade() const override;
     void markRenderedIdeal() override;
     void markRenderedPreviously() override;
     void performedFadePlacement() override;
-    
+    const optional<ImagePosition> getPattern(const std::string& pattern);
     const std::shared_ptr<FeatureIndex> getFeatureIndex() const { return latestFeatureIndex; }
+    
+    const std::string sourceID;
     
 protected:
     const GeometryTileData* getData() {
@@ -98,8 +100,6 @@ protected:
 
 private:
     void markObsolete();
-
-    const std::string sourceID;
 
     // Used to signal the worker that it should abandon parsing this tile as soon as possible.
     std::atomic<bool> obsolete { false };
@@ -117,7 +117,7 @@ private:
     std::shared_ptr<FeatureIndex> latestFeatureIndex;
 
     optional<AlphaImage> glyphAtlasImage;
-    optional<PremultipliedImage> iconAtlasImage;
+    ImageAtlas iconAtlas;
 
     const MapMode mode;
     

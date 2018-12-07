@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <mbgl/style/color_ramp_property_value.hpp>
 #include <mbgl/style/layer.hpp>
 #include <mbgl/style/filter.hpp>
 #include <mbgl/style/property_value.hpp>
@@ -34,6 +35,10 @@ public:
     // Zoom range
     void setMinZoom(float) final;
     void setMaxZoom(float) final;
+
+    // Dynamic properties
+    optional<conversion::Error> setLayoutProperty(const std::string& name, const conversion::Convertible& value) final;
+    optional<conversion::Error> setPaintProperty(const std::string& name, const conversion::Convertible& value) final;
 
     // Layout properties
 
@@ -118,6 +123,12 @@ public:
     // Mappy path
     bool getLineIsMappyPath () const;
     void setLineIsMappyPath(bool);
+
+    static ColorRampPropertyValue getDefaultLineGradient();
+    ColorRampPropertyValue getLineGradient() const;
+    void setLineGradient(ColorRampPropertyValue);
+    void setLineGradientTransition(const TransitionOptions&);
+    TransitionOptions getLineGradientTransition() const;
 
     // Private implementation
 

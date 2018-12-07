@@ -99,12 +99,13 @@ void RenderTile::finishRender(PaintParameters& parameters) {
             gl::DepthMode::disabled(),
             parameters.stencilModeForClipping(clip),
             gl::ColorMode::unblended(),
+            gl::CullFaceMode::disabled(),
             *tile.debugBucket->indexBuffer,
             tile.debugBucket->segments,
             program.computeAllUniformValues(
                 DebugProgram::UniformValues {
-                    uniforms::u_matrix::Value{ matrix },
-                    uniforms::u_color::Value{ Color::white() }
+                    uniforms::u_matrix::Value( matrix ),
+                    uniforms::u_color::Value( Color::white() )
                 },
                 paintAttributeData,
                 properties,
@@ -120,12 +121,13 @@ void RenderTile::finishRender(PaintParameters& parameters) {
             gl::DepthMode::disabled(),
             parameters.stencilModeForClipping(clip),
             gl::ColorMode::unblended(),
+            gl::CullFaceMode::disabled(),
             *tile.debugBucket->indexBuffer,
             tile.debugBucket->segments,
             program.computeAllUniformValues(
                 DebugProgram::UniformValues {
-                    uniforms::u_matrix::Value{ matrix },
-                    uniforms::u_color::Value{ Color::black() }
+                    uniforms::u_matrix::Value( matrix ),
+                    uniforms::u_color::Value( Color::black() )
                 },
                 paintAttributeData,
                 properties,
@@ -143,12 +145,13 @@ void RenderTile::finishRender(PaintParameters& parameters) {
             gl::DepthMode::disabled(),
             parameters.stencilModeForClipping(clip),
             gl::ColorMode::unblended(),
+            gl::CullFaceMode::disabled(),
             parameters.staticData.tileBorderIndexBuffer,
             parameters.staticData.tileBorderSegments,
             program.computeAllUniformValues(
                 DebugProgram::UniformValues {
-                    uniforms::u_matrix::Value{ matrix },
-                    uniforms::u_color::Value{ Color::red() }
+                    uniforms::u_matrix::Value( matrix ),
+                    uniforms::u_color::Value( Color::red() )
                 },
                 paintAttributeData,
                 properties,

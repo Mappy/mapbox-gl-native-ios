@@ -23,6 +23,7 @@ import com.mapbox.android.gestures.ShoveGestureDetector;
 import com.mapbox.android.gestures.StandardScaleGestureDetector;
 import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.Geometry;
+import com.mapbox.mapboxsdk.MapStrictMode;
 import com.mapbox.mapboxsdk.annotations.Annotation;
 import com.mapbox.mapboxsdk.annotations.BaseMarkerOptions;
 import com.mapbox.mapboxsdk.annotations.BaseMarkerViewOptions;
@@ -41,6 +42,8 @@ import com.mapbox.mapboxsdk.constants.MapboxConstants;
 import com.mapbox.mapboxsdk.constants.Style;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.geometry.LatLngBounds;
+import com.mapbox.mapboxsdk.location.LocationComponent;
+import com.mapbox.mapboxsdk.log.Logger;
 import com.mapbox.mapboxsdk.style.expressions.Expression;
 import com.mapbox.mapboxsdk.style.layers.Layer;
 import com.mapbox.mapboxsdk.style.light.Light;
@@ -48,8 +51,6 @@ import com.mapbox.mapboxsdk.style.sources.Source;
 
 import java.util.HashMap;
 import java.util.List;
-
-import timber.log.Timber;
 
 /**
  * The general class to interact with in the Android Mapbox SDK. It exposes the entry point for all
@@ -63,6 +64,8 @@ import timber.log.Timber;
 @UiThread
 public final class MapboxMap {
 
+  private static final String TAG = "Mbgl-MapboxMap";
+
   private final NativeMapView nativeMapView;
 
   private final UiSettings uiSettings;
@@ -73,6 +76,7 @@ public final class MapboxMap {
 
   private final OnGesturesManagerInteractionListener onGesturesManagerInteractionListener;
 
+  private LocationComponent locationComponent;
   private MapboxMap.OnFpsChangedListener onFpsChangedListener;
 
   MapboxMap(NativeMapView map, Transform transform, UiSettings ui, Projection projection,
@@ -95,6 +99,7 @@ public final class MapboxMap {
     setDebugActive(options.getDebugActive());
     setApiBaseUrl(options);
     setStyleUrl(options);
+    setStyleJson(options);
     setPrefetchesTiles(options);
   }
 
@@ -107,12 +112,14 @@ public final class MapboxMap {
       // if user hasn't loaded a Style yet
       nativeMapView.setStyleUrl(Style.MAPBOX_STREETS);
     }
+    locationComponent.onStart();
   }
 
   /**
    * Called when the hosting Activity/Fragment onStop() method is called.
    */
   void onStop() {
+    locationComponent.onStop();
   }
 
   /**
@@ -152,6 +159,13 @@ public final class MapboxMap {
   }
 
   /**
+   * Called when the hosting Activity/Fragment onDestroy()/onDestroyView() method is called.
+   */
+  void onDestroy() {
+    locationComponent.onDestroy();
+  }
+
+  /**
    * Called before the OnMapReadyCallback is invoked.
    */
   void onPreMapReady() {
@@ -169,6 +183,20 @@ public final class MapboxMap {
    */
   void onPostMapReady() {
     invalidateCameraPosition();
+  }
+
+  /**
+   * Called when the map will start loading style.
+   */
+  void onStartLoadingMap() {
+    locationComponent.onStartLoadingMap();
+  }
+
+  /**
+   * Called the map finished loading style.
+   */
+  void onFinishLoadingStyle() {
+    locationComponent.onFinishLoadingStyle();
   }
 
   /**
@@ -295,7 +323,9 @@ public final class MapboxMap {
       // noinspection unchecked
       return (T) nativeMapView.getLayer(layerId);
     } catch (ClassCastException exception) {
-      Timber.e(exception, "Layer: %s is a different type: ", layerId);
+      String message = String.format("Layer: %s is a different type: ", layerId);
+      Logger.e(TAG, message, exception);
+      MapStrictMode.strictModeViolation(message, exception);
       return null;
     }
   }
@@ -407,7 +437,9 @@ public final class MapboxMap {
       // noinspection unchecked
       return (T) nativeMapView.getSource(sourceId);
     } catch (ClassCastException exception) {
-      Timber.e(exception, "Source: %s is a different type: ", sourceId);
+      String message = String.format("Source: %s is a different type: ", sourceId);
+      Logger.e(TAG, message, exception);
+      MapStrictMode.strictModeViolation(message, exception);
       return null;
     }
   }
@@ -433,7 +465,7 @@ public final class MapboxMap {
   }
 
   /**
-   * Removes the source, preserving the reverence for re-use
+   * Removes the source, preserving the reference for re-use
    *
    * @param source the source to remove
    * @return the source
@@ -1058,7 +1090,7 @@ public final class MapboxMap {
    * @param options the object containing the style url
    */
   private void setStyleUrl(@NonNull MapboxMapOptions options) {
-    String style = options.getStyle();
+    String style = options.getStyleUrl();
     if (!TextUtils.isEmpty(style)) {
       setStyleUrl(style, null);
     }
@@ -1084,6 +1116,18 @@ public final class MapboxMap {
    */
   public void setStyleJson(@NonNull String styleJson) {
     nativeMapView.setStyleJson(styleJson);
+  }
+
+  /**
+   * Loads a new map style json from MapboxMapOptions if available.
+   *
+   * @param options the object containing the style json
+   */
+  private void setStyleJson(@NonNull MapboxMapOptions options) {
+    String styleJson = options.getStyleJson();
+    if (!TextUtils.isEmpty(styleJson)) {
+      setStyleJson(styleJson);
+    }
   }
 
   /**
@@ -1490,7 +1534,7 @@ public final class MapboxMap {
    */
   public void selectMarker(@NonNull Marker marker) {
     if (marker == null) {
-      Timber.w("marker was null, so just returning");
+      Logger.w(TAG, "marker was null, so just returning");
       return;
     }
     annotationManager.selectMarker(marker);
@@ -2280,6 +2324,29 @@ public final class MapboxMap {
                                              @Nullable Expression filter,
                                              @Nullable String... layerIds) {
     return nativeMapView.queryRenderedFeatures(coordinates, layerIds, filter);
+  }
+
+  //
+  // LocationComponent
+  //
+
+  void injectLocationComponent(LocationComponent locationComponent) {
+    this.locationComponent = locationComponent;
+  }
+
+  /**
+   * Returns the {@link LocationComponent} that can be used to display user's location on the map.
+   * <p>
+   * Use {@link LocationComponent#activateLocationComponent(Context)} or any overload to activate the component,
+   * then, enable it with {@link LocationComponent#setLocationComponentEnabled(boolean)}.
+   * <p>
+   * You can customize the location icon and more with {@link com.mapbox.mapboxsdk.location.LocationComponentOptions}.
+   *
+   * @return the Location Component
+   */
+  @NonNull
+  public LocationComponent getLocationComponent() {
+    return locationComponent;
   }
 
   //

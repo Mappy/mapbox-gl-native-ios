@@ -28,7 +28,7 @@ public class LineLayer extends Layer {
    * @param nativePtr pointer used by core
    */
   @Keep
-  public LineLayer(long nativePtr) {
+  LineLayer(long nativePtr) {
     super(nativePtr);
   }
 
@@ -65,6 +65,16 @@ public class LineLayer extends Layer {
   public LineLayer withSourceLayer(String sourceLayer) {
     setSourceLayer(sourceLayer);
     return this;
+  }
+
+  /**
+   * Get the source id.
+   *
+   * @return id of the source
+   */
+  public String getSourceId() {
+    checkThread();
+    return nativeGetSourceId();
   }
 
   /**
@@ -478,6 +488,34 @@ public class LineLayer extends Layer {
     nativeSetLinePatternTransition(options.getDuration(), options.getDelay());
   }
 
+  /**
+   * Get the LineGradient property
+   *
+   * @return property wrapper value around String
+   */
+  @SuppressWarnings("unchecked")
+  public PropertyValue<String> getLineGradient() {
+    checkThread();
+    return (PropertyValue<String>) new PropertyValue("line-gradient", nativeGetLineGradient());
+  }
+
+  /**
+   * Defines a gradient with which to color a line feature. Can only be used with GeoJSON sources that specify `"lineMetrics": true`.
+   *
+   * @return int representation of a rgba string color
+   * @throws RuntimeException thrown if property isn't a value
+   */
+  @ColorInt
+  public int getLineGradientAsInt() {
+    checkThread();
+    PropertyValue<String> value = getLineGradient();
+    if (value.isValue()) {
+      return rgbaToColor(value.getValue());
+    } else {
+      throw new RuntimeException("line-gradient was set as a Function");
+    }
+  }
+
   @Keep
   private native Object nativeGetLineCap();
 
@@ -573,6 +611,9 @@ public class LineLayer extends Layer {
 
   @Keep
   private native void nativeSetLinePatternTransition(long duration, long delay);
+
+  @Keep
+  private native Object nativeGetLineGradient();
 
   @Override
   @Keep

@@ -2,12 +2,10 @@ package com.mapbox.mapboxsdk.maps;
 
 import android.graphics.Color;
 import android.view.Gravity;
-
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
 import com.mapbox.mapboxsdk.constants.Style;
 import com.mapbox.mapboxsdk.geometry.LatLng;
-
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -155,9 +153,9 @@ public class MapboxMapOptionsTest {
 
   @Test
   public void testStyleUrl() {
-    assertEquals(Style.DARK, new MapboxMapOptions().styleUrl(Style.DARK).getStyle());
-    assertNotEquals(Style.LIGHT, new MapboxMapOptions().styleUrl(Style.DARK).getStyle());
-    assertNull(new MapboxMapOptions().getStyle());
+    assertEquals(Style.DARK, new MapboxMapOptions().styleUrl(Style.DARK).getStyleUrl());
+    assertNotEquals(Style.LIGHT, new MapboxMapOptions().styleUrl(Style.DARK).getStyleUrl());
+    assertNull(new MapboxMapOptions().getStyleUrl());
   }
 
   @Test
@@ -176,6 +174,16 @@ public class MapboxMapOptionsTest {
     // Check mutations
     assertTrue(new MapboxMapOptions().setPrefetchesTiles(true).getPrefetchesTiles());
     assertFalse(new MapboxMapOptions().setPrefetchesTiles(false).getPrefetchesTiles());
+  }
+
+  @Test
+  public void testCrossSourceCollisions() {
+    // Default value
+    assertTrue(new MapboxMapOptions().getCrossSourceCollisions());
+
+    // check mutations
+    assertTrue(new MapboxMapOptions().crossSourceCollisions(true).getCrossSourceCollisions());
+    assertFalse(new MapboxMapOptions().crossSourceCollisions(false).getCrossSourceCollisions());
   }
 }
 

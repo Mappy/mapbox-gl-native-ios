@@ -28,7 +28,7 @@ public class FillLayer extends Layer {
    * @param nativePtr pointer used by core
    */
   @Keep
-  public FillLayer(long nativePtr) {
+  FillLayer(long nativePtr) {
     super(nativePtr);
   }
 
@@ -65,6 +65,16 @@ public class FillLayer extends Layer {
   public FillLayer withSourceLayer(String sourceLayer) {
     setSourceLayer(sourceLayer);
     return this;
+  }
+
+  /**
+   * Get the source id.
+   *
+   * @return id of the source
+   */
+  public String getSourceId() {
+    checkThread();
+    return nativeGetSourceId();
   }
 
   /**

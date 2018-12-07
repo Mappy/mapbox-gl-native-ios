@@ -29,6 +29,7 @@
     <string name="description_dynamic_info_window_adapter">Learn how to create a dynamic custom InfoWindow</string>
     <string name="description_viewpager">Use SupportMapFragments in a ViewPager</string>
     <string name="description_runtime_style">Adopt the map style on the fly</string>
+    <string name="description_gradient_line">Show a gradient line layer from a geojson source</string>
     <string name="description_data_driven_style">Use functions to change the map appearance</string>
     <string name="description_symbol_layer">Manipulate symbols at runtime</string>
     <string name="description_custom_sprite">Use a custom sprite in a Symbol Layer</string>
@@ -69,5 +70,10 @@
     <string name="description_hillshade">Example raster-dem source and hillshade layer</string>
     <string name="description_heatmaplayer">Use HeatmapLayer to visualise earthquakes</string>
     <string name="description_gesture_detector">Manipulate gestures detector\'s settings</string>
+    <string name="description_offline_merge">Merge external offline database</string>
     <string name="description_draggable_marker">Click to add a marker, long-click to drag</string>
+    <string name="description_location_map_change">Change map\'s style while location is displayed</string>
+    <string name="description_location_modes">Showcases location render and tracking modes</string>
+    <string name="description_location_fragment">Uses LocationComponent in a Fragment</string>
+    <string name="description_location_manual">Force location updates and don\'t rely on the engine</string>
 </resources>

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <mbgl/style/expression/expression.hpp>
-#include <mbgl/style/conversion.hpp>
 #include <mbgl/style/expression/parsing_context.hpp>
+#include <mbgl/style/conversion.hpp>
 
 #include <memory>
 #include <vector>
@@ -24,6 +24,7 @@ public:
 
     std::vector<optional<Value>> possibleOutputs() const override;
     
+    mbgl::Value serialize() const override;
     std::string getOperator() const override;
 
 private:

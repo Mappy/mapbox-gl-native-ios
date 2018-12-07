@@ -229,7 +229,7 @@ public class Marker extends Annotation {
       if (map != null) {
         map.updateMarker(this);
       }
-      infoWindow.update();
+      infoWindow.onContentUpdate();
     }
   }
 

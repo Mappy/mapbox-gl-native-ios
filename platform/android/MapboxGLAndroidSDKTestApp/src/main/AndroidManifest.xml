@@ -3,6 +3,7 @@
     package="com.mapbox.mapboxsdk.testapp">
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <application
         android:name=".MapboxApplication"
@@ -266,6 +267,9 @@
             <meta-data
                 android:name="@string/category"
                 android:value="@string/category_basic" />
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".activity.FeatureOverviewActivity" />
         </activity>
         <activity
             android:name=".activity.offline.OfflineActivity"
@@ -431,6 +435,17 @@
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".activity.FeatureOverviewActivity" />
+        </activity>
+        <activity
+                android:name=".activity.style.GradientLineActivity"
+                android:description="@string/description_gradient_line"
+                android:label="@string/activity_gradient_line">
+            <meta-data
+                    android:name="@string/category"
+                    android:value="@string/category_style" />
+            <meta-data
+                    android:name="android.support.PARENT_ACTIVITY"
+                    android:value=".activity.FeatureOverviewActivity" />
         </activity>
         <activity
             android:name=".activity.style.DataDrivenStyleActivity"
@@ -695,6 +710,9 @@
             <meta-data
                 android:name="@string/category"
                 android:value="@string/category_maplayout" />
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".activity.FeatureOverviewActivity" />
         </activity>
 
         <!-- TextureView -->
@@ -705,6 +723,9 @@
             <meta-data
                 android:name="@string/category"
                 android:value="@string/category_textureview" />
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".activity.FeatureOverviewActivity" />
         </activity>
         <activity
             android:name=".activity.textureview.TextureViewResizeActivity"
@@ -713,6 +734,9 @@
             <meta-data
                 android:name="@string/category"
                 android:value="@string/category_textureview" />
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".activity.FeatureOverviewActivity" />
         </activity>
         <activity
             android:name=".activity.textureview.TextureViewTransparentBackgroundActivity"
@@ -732,6 +756,9 @@
             <meta-data
                 android:name="@string/category"
                 android:value="@string/category_textureview" />
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".activity.FeatureOverviewActivity" />
         </activity>
         <activity
             android:name=".activity.maplayout.LocalGlyphActivity"
@@ -788,6 +815,61 @@
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.mapbox.mapboxsdk.testapp.activity.FeatureOverviewActivity" />
+        </activity>
+        <activity
+            android:name=".activity.offline.MergeOfflineRegionsActivity"
+            android:description="@string/description_offline_merge"
+            android:label="@string/activity_offline_merge">
+            <meta-data
+                android:name="@string/category"
+                android:value="@string/category_offline" />
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.mapbox.mapboxsdk.testapp.activity.FeatureOverviewActivity" />
+        </activity>
+        <activity
+            android:name=".activity.location.LocationMapChangeActivity"
+            android:description="@string/description_location_map_change"
+            android:label="@string/activity_location_map_change">
+            <meta-data
+                android:name="@string/category"
+                android:value="@string/category_location" />
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".activity.FeatureOverviewActivity" />
+        </activity>
+        <activity
+            android:name=".activity.location.LocationModesActivity"
+            android:description="@string/description_location_modes"
+            android:label="@string/activity_location_modes">
+            <meta-data
+                android:name="@string/category"
+                android:value="@string/category_location" />
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".activity.FeatureOverviewActivity" />
+        </activity>
+        <activity
+            android:name=".activity.location.LocationFragmentActivity"
+            android:description="@string/description_location_fragment"
+            android:label="@string/activity_location_fragment">
+            <meta-data
+                android:name="@string/category"
+                android:value="@string/category_location" />
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".activity.FeatureOverviewActivity" />
+        </activity>
+        <activity
+            android:name=".activity.location.ManualLocationUpdatesActivity"
+            android:description="@string/description_location_manual"
+            android:label="@string/activity_location_manual">
+            <meta-data
+                android:name="@string/category"
+                android:value="@string/category_location" />
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".activity.FeatureOverviewActivity" />
         </activity>
 
         <!-- For Instrumentation tests -->
