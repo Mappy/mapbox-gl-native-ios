@@ -67,7 +67,6 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
 
   private final List<String> layerMap = new ArrayList<>();
   private Feature locationFeature;
-  private GeoJsonSource locationSource;
 
   private boolean isHidden = true;
 
@@ -222,8 +221,12 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
   }
 
   private void addLayerToMap(Layer layer, @NonNull String idBelowLayer) {
-    mapboxMap.addLayerBelow(layer, idBelowLayer);
-    layerMap.add(layer.getId());
+    String layerId = layer.getId();
+    Layer existingLayer = mapboxMap.getLayer(layerId);
+    if (existingLayer == null) {
+      mapboxMap.addLayerBelow(layer, idBelowLayer);
+    }
+    layerMap.add(layerId);
   }
 
   private void setBearingProperty(String propertyId, float bearing) {
@@ -243,14 +246,16 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
   //
 
   private void addLocationSource() {
-    locationSource = layerSourceProvider.generateSource(locationFeature);
-    mapboxMap.addSource(locationSource);
+    if (mapboxMap.getSource(LOCATION_SOURCE) == null) {
+      GeoJsonSource locationSource = layerSourceProvider.generateSource(locationFeature);
+      mapboxMap.addSource(locationSource);
+    }
   }
 
   private void refreshSource() {
     GeoJsonSource source = mapboxMap.getSourceAs(LOCATION_SOURCE);
     if (source != null) {
-      locationSource.setGeoJson(locationFeature);
+        source.setGeoJson(locationFeature);
     }
   }
 
