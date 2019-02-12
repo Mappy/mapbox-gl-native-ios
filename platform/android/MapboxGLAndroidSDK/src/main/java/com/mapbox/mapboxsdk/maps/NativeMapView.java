@@ -12,6 +12,8 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
+import android.util.Log;
+
 import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.Geometry;
 import com.mapbox.mapboxsdk.LibraryLoader;
@@ -134,7 +136,6 @@ final class NativeMapView {
   public void destroy() {
     destroyed = true;
     onMapChangedListeners.clear();
-    viewCallback = null;
     nativeDestroy();
   }
 
@@ -188,9 +189,6 @@ final class NativeMapView {
   }
 
   public String getStyleUrl() {
-    if (checkState("getStyleUrl")) {
-      return null;
-    }
     return nativeGetStyleUrl();
   }
 
@@ -202,9 +200,6 @@ final class NativeMapView {
   }
 
   public String getStyleJson() {
-    if (checkState("getStyleJson")) {
-      return null;
-    }
     return nativeGetStyleJson();
   }
 
@@ -258,17 +253,11 @@ final class NativeMapView {
   }
 
   public LatLng getLatLng() {
-    if (checkState("")) {
-      return new LatLng();
-    }
     // wrap longitude values coming from core
     return nativeGetLatLng().wrap();
   }
 
   public CameraPosition getCameraForLatLngBounds(LatLngBounds bounds, int[] padding, double bearing, double tilt) {
-    if (checkState("getCameraForLatLngBounds")) {
-      return null;
-    }
     return nativeGetCameraForLatLngBounds(
       bounds,
       padding[1] / pixelRatio,
@@ -281,9 +270,6 @@ final class NativeMapView {
   }
 
   public CameraPosition getCameraForGeometry(Geometry geometry, int[] padding, double bearing, double tilt) {
-    if (checkState("getCameraForGeometry")) {
-      return null;
-    }
     return nativeGetCameraForGeometry(
       geometry,
       padding[1] / pixelRatio,
@@ -303,9 +289,6 @@ final class NativeMapView {
   }
 
   public double getPitch() {
-    if (checkState("getPitch")) {
-      return 0;
-    }
     return nativeGetPitch();
   }
 
@@ -324,9 +307,6 @@ final class NativeMapView {
   }
 
   public double getZoom() {
-    if (checkState("getZoom")) {
-      return 0;
-    }
     return nativeGetZoom();
   }
 
@@ -345,9 +325,6 @@ final class NativeMapView {
   }
 
   public double getMinZoom() {
-    if (checkState("getMinZoom")) {
-      return 0;
-    }
     return nativeGetMinZoom();
   }
 
@@ -359,9 +336,6 @@ final class NativeMapView {
   }
 
   public double getMaxZoom() {
-    if (checkState("getMaxZoom")) {
-      return 0;
-    }
     return nativeGetMaxZoom();
   }
 
@@ -420,9 +394,6 @@ final class NativeMapView {
   }
 
   public double getBearing() {
-    if (checkState("getBearing")) {
-      return 0;
-    }
     return nativeGetBearing();
   }
 
@@ -580,9 +551,6 @@ final class NativeMapView {
   }
 
   public boolean isFullyLoaded() {
-    if (checkState("isFullyLoaded")) {
-      return false;
-    }
     return nativeIsFullyLoaded();
   }
 
@@ -608,33 +576,21 @@ final class NativeMapView {
   }
 
   public LatLng latLngForProjectedMeters(ProjectedMeters projectedMeters) {
-    if (checkState("latLngForProjectedMeters")) {
-      return new LatLng();
-    }
     return nativeLatLngForProjectedMeters(projectedMeters.getNorthing(),
       projectedMeters.getEasting()).wrap();
   }
 
   public PointF pixelForLatLng(LatLng latLng) {
-    if (checkState("pixelForLatLng")) {
-      return new PointF();
-    }
     PointF pointF = nativePixelForLatLng(latLng.getLatitude(), latLng.getLongitude());
     pointF.set(pointF.x * pixelRatio, pointF.y * pixelRatio);
     return pointF;
   }
 
   public LatLng latLngForPixel(PointF pixel) {
-    if (checkState("latLngForPixel")) {
-      return new LatLng();
-    }
     return nativeLatLngForPixel(pixel.x / pixelRatio, pixel.y / pixelRatio).wrap();
   }
 
   public double getTopOffsetPixelsForAnnotationSymbol(String symbolName) {
-    if (checkState("getTopOffsetPixelsForAnnotationSymbol")) {
-      return 0;
-    }
     return nativeGetTopOffsetPixelsForAnnotationSymbol(symbolName);
   }
 
@@ -662,9 +618,6 @@ final class NativeMapView {
   }
 
   public CameraPosition getCameraPosition() {
-    if (checkState("getCameraValues")) {
-      return new CameraPosition.Builder().build();
-    }
     return nativeGetCameraPosition();
   }
 
@@ -701,16 +654,10 @@ final class NativeMapView {
   }
 
   public List<Layer> getLayers() {
-    if (checkState("getLayers")) {
-      return null;
-    }
     return Arrays.asList(nativeGetLayers());
   }
 
   public Layer getLayer(String layerId) {
-    if (checkState("getLayer")) {
-      return null;
-    }
     return nativeGetLayer(layerId);
   }
 
@@ -768,16 +715,10 @@ final class NativeMapView {
   }
 
   public List<Source> getSources() {
-    if (checkState("getSources")) {
-      return null;
-    }
     return Arrays.asList(nativeGetSources());
   }
 
   public Source getSource(@NonNull String sourceId) {
-    if (checkState("getSource")) {
-      return null;
-    }
     return nativeGetSource(sourceId);
   }
 
@@ -842,9 +783,6 @@ final class NativeMapView {
   }
 
   public Bitmap getImage(String name) {
-    if (checkState("getImage")) {
-      return null;
-    }
     return nativeGetImage(name);
   }
 
@@ -854,9 +792,6 @@ final class NativeMapView {
   public List<Feature> queryRenderedFeatures(@NonNull PointF coordinates,
                                              @Nullable String[] layerIds,
                                              @Nullable Expression filter) {
-    if (checkState("queryRenderedFeatures")) {
-      return new ArrayList<>();
-    }
     Feature[] features = nativeQueryRenderedFeaturesForPoint(coordinates.x / pixelRatio,
       coordinates.y / pixelRatio, layerIds, filter != null ? filter.toArray() : null);
     return features != null ? Arrays.asList(features) : new ArrayList<Feature>();
@@ -866,9 +801,6 @@ final class NativeMapView {
   public List<Feature> queryRenderedFeatures(@NonNull RectF coordinates,
                                              @Nullable String[] layerIds,
                                              @Nullable Expression filter) {
-    if (checkState("queryRenderedFeatures")) {
-      return new ArrayList<>();
-    }
     Feature[] features = nativeQueryRenderedFeaturesForBox(
       coordinates.left / pixelRatio,
       coordinates.top / pixelRatio,
@@ -916,7 +848,8 @@ final class NativeMapView {
       try {
         onMapChangedListener.onMapChanged(rawChange);
       } catch (RuntimeException err) {
-        Logger.e(TAG, "Exception in MapView.OnMapChangedListener", err);
+
+        Logger.e(TAG, "Exception in MapView.OnMapChangedListener " + Log.getStackTraceString(err));
         MapStrictMode.strictModeViolation(err);
       }
     }
@@ -1298,16 +1231,10 @@ final class NativeMapView {
   private native boolean nativeGetPrefetchesTiles();
 
   int getWidth() {
-    if (checkState("")) {
-      return 0;
-    }
     return viewCallback.getWidth();
   }
 
   int getHeight() {
-    if (checkState("")) {
-      return 0;
-    }
     return viewCallback.getHeight();
   }
 

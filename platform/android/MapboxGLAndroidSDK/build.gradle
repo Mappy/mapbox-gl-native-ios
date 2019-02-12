@@ -1,10 +1,17 @@
 apply plugin: 'com.android.library'
-apply plugin: "com.jaredsburrows.license"
+
+//mappy modif
+apply from: '../configuration.gradle'
+apply from: '../gradle/dependencies.gradle'
+//end mappy modif
+
 apply plugin: 'kotlin-android'
 
 dependencies {
-    lintChecks project(":MapboxGLAndroidSDKLint")
+    //    mappy modif
+    // lintChecks project(":MapboxGLAndroidSDKLint")
     api(dependenciesList.mapboxAndroidTelemetry) {
+        transitive = true
         exclude group: 'com.android.support', module: 'appcompat-v7'
     }
     api dependenciesList.mapboxJavaGeoJSON
@@ -34,7 +41,7 @@ android {
         buildConfigField "String", "MAPBOX_EVENTS_USER_AGENT", String.format("\"mapbox-maps-android/%s\"", project.VERSION_NAME)
     }
 
-    defaultPublishConfig project.hasProperty("mapbox.buildtype") ? project.getProperty("mapbox.buildtype") : "debug"
+    defaultPublishConfig "release"
 
     // We sometimes want to invoke Gradle without building a native dependency, e.g. when we just want
     // to invoke the Java tests. When we explicitly specify an ABI of 'none', no native dependencies are
@@ -67,6 +74,8 @@ android {
     }
 
     defaultConfig {
+        print "build with abi = "+ abi+"\n"
+
         if (abi != 'none') {
             externalNativeBuild {
                 cmake {
@@ -107,7 +116,7 @@ android {
         }
 
         // proguard config for .aar
-        consumerProguardFiles 'proguard-rules.pro'
+//        consumerProguardFiles 'proguard-rules.pro'
     }
 
     // avoid naming conflicts, force usage of prefix
@@ -140,15 +149,13 @@ android {
         debug {
             jniDebuggable true
         }
+        release {
+            minifyEnabled false
+            jniDebuggable false
+        }
     }
 }
 
-licenseReport {
-    generateHtmlReport = false
-    generateJsonReport = true
-    copyHtmlReportToAssets = false
-    copyJsonReportToAssets = false
-}
 
 def static getGitRevision() {
     def cmd = "git rev-parse --short HEAD"
@@ -162,8 +169,9 @@ configurations {
     all*.exclude group: 'commons-collections', module: 'commons-collections'
 }
 
-apply from: "${rootDir}/gradle/gradle-javadoc.gradle"
-apply from: "${rootDir}/gradle/gradle-publish.gradle"
-apply from: "${rootDir}/gradle/gradle-checkstyle.gradle"
-apply from: "${rootDir}/gradle/gradle-tests-staticblockremover.gradle"
-apply from: "${rootDir}/gradle/gradle-dependencies-graph.gradle"
+//mappy modif : ${rootDir} is ..
+//apply from: "../gradle/gradle-javadoc.gradle"
+apply from: "../gradle/gradle-publish.gradle"
+//apply from: "../gradle/gradle-checkstyle.gradle"
+//apply from: "../gradle/gradle-tests-staticblockremover.gradle"
+apply from: "../gradle/gradle-dependencies-graph.gradle"

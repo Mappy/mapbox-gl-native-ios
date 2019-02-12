@@ -339,6 +339,18 @@ public final class LocationComponent {
     return locationLayerController.getRenderMode();
   }
 
+  // Mappy modifs : Sometimes we need to show / hide Location marker
+
+  public void hide() {
+    locationLayerController.hide();
+  }
+
+  public void show() {
+    locationLayerController.show();
+  }
+
+  // End of Mappy modifs
+
   /**
    * Returns the current location options being used.
    *
@@ -490,21 +502,22 @@ public final class LocationComponent {
     locationAnimatorCoordinator.cancelTiltAnimation();
   }
 
-  /**
-   * Use to either force a location update or to manually control when the user location gets
-   * updated.
-   *
-   * @param location where the location icon is placed on the map
-   */
-  public void forceLocationUpdate(@Nullable Location location) {
-    updateLocation(location, false);
-  }
+    /**
+     * Use to either force a location update or to manually control when the user location gets
+     * updated.
+     *
+     * @param location where the location icon is placed on the map
+     * @param forceShow (Mappy Modif) whether to force rendering of Location Marker
+     */
+    public void forceLocationUpdate(@Nullable Location location, /* Mappy Modif */ boolean forceShow) {
+        updateLocation(location, false, forceShow);
+    }
 
   /**
    * Set the location engine to update the current user location.
    * <p>
    * If {@code null} is passed in, all updates will have to occur through the
-   * {@link LocationComponent#forceLocationUpdate(Location)} method.
+   * {@link LocationComponent#forceLocationUpdate(Location, boolean)} method.
    *
    * @param locationEngine a {@link LocationEngine} this component should use to handle updates
    */
@@ -701,7 +714,7 @@ public final class LocationComponent {
    */
   public void onStart() {
     isComponentStarted = true;
-    onLocationLayerStart();
+    onLocationLayerStart(true);
   }
 
   /**
@@ -728,19 +741,28 @@ public final class LocationComponent {
     onLocationLayerStop();
   }
 
-  /**
-   * Internal use.
-   */
-  public void onFinishLoadingStyle() {
+  public void reInitLayers(boolean show) {
     if (isInitialized) {
       locationLayerController.initializeComponents(options);
       locationCameraController.initializeOptions(options);
     }
-    onLocationLayerStart();
+    onLocationLayerStart(show);
+  }
+
+  /**
+   * Internal use. {@link #reInitLayers(boolean show)}
+   */
+  public void onFinishLoadingStyle() {
+// MAPPY MODIF : see #reInitLayers(boolean show)
+//    if (isInitialized) {
+//      locationLayerController.initializeComponents(options);
+//      locationCameraController.initializeOptions(options);
+//    }
+//    onLocationLayerStart();
   }
 
   @SuppressLint("MissingPermission")
-  private void onLocationLayerStart() {
+  private void onLocationLayerStart(boolean forceShow) {
     if (!isInitialized || !isComponentStarted) {
       return;
     }
@@ -828,7 +850,7 @@ public final class LocationComponent {
     setRenderMode(RenderMode.NORMAL);
     setCameraMode(CameraMode.NONE);
 
-    onLocationLayerStart();
+    onLocationLayerStart(true);
   }
 
   private void initializeLocationEngine(@NonNull Context context) {
@@ -882,7 +904,7 @@ public final class LocationComponent {
 
   private void enableLocationComponent() {
     isEnabled = true;
-    onLocationLayerStart();
+    onLocationLayerStart(true);
   }
 
   private void disableLocationComponent() {
@@ -902,20 +924,23 @@ public final class LocationComponent {
     mapboxMap.setMinZoomPreference(options.minZoom());
   }
 
-  /**
-   * Updates the user location icon.
-   *
-   * @param location the latest user location
-   */
-  private void updateLocation(final Location location, boolean fromLastLocation) {
-    if (location == null) {
-      return;
-    } else if (!isLayerReady) {
-      lastLocation = location;
-      return;
-    }
+    /**
+     * Updates the user location icon.
+     *
+     * @param location the latest user location
+     * @param forceShow (Mappy Modif) whether to force rendering of Location Marker
+     */
+    private void updateLocation(final Location location, boolean fromLastLocation, /* Mappy Modif */ boolean forceShow) {
+        if (location == null) {
+            return;
+        } else if (!isLayerReady) {
+            lastLocation = location;
+            return;
+        }
 
-    showLocationLayerIfHidden();
+        if (forceShow) {
+            showLocationLayerIfHidden();
+        }
 
     if (!fromLastLocation) {
       staleStateManager.updateLatestLocationTime();
@@ -944,7 +969,7 @@ public final class LocationComponent {
    */
   @SuppressLint("MissingPermission")
   private void setLastLocation() {
-    updateLocation(getLastKnownLocation(), true);
+    updateLocation(getLastKnownLocation(), true, true);
   }
 
   private void setLastCompassHeading() {
@@ -978,21 +1003,21 @@ public final class LocationComponent {
     locationAnimatorCoordinator.feedNewAccuracyRadius(Utils.calculateZoomLevelRadius(mapboxMap, location), noAnimation);
   }
 
-  private OnCameraMoveListener onCameraMoveListener = new OnCameraMoveListener() {
+  private final OnCameraMoveListener onCameraMoveListener = new OnCameraMoveListener() {
     @Override
     public void onCameraMove() {
       updateLayerOffsets(false);
     }
   };
 
-  private OnCameraIdleListener onCameraIdleListener = new OnCameraIdleListener() {
+  private final OnCameraIdleListener onCameraIdleListener = new OnCameraIdleListener() {
     @Override
     public void onCameraIdle() {
       updateLayerOffsets(false);
     }
   };
 
-  private OnMapClickListener onMapClickListener = new OnMapClickListener() {
+  private final OnMapClickListener onMapClickListener = new OnMapClickListener() {
     @Override
     public void onMapClick(@NonNull LatLng point) {
       if (!onLocationClickListeners.isEmpty() && locationLayerController.onMapClick(point)) {
@@ -1003,7 +1028,7 @@ public final class LocationComponent {
     }
   };
 
-  private MapboxMap.OnMapLongClickListener onMapLongClickListener = new MapboxMap.OnMapLongClickListener() {
+  private final MapboxMap.OnMapLongClickListener onMapLongClickListener = new MapboxMap.OnMapLongClickListener() {
     @Override
     public void onMapLongClick(@NonNull LatLng point) {
       if (!onLocationLongClickListeners.isEmpty() && locationLayerController.onMapClick(point)) {
@@ -1014,7 +1039,7 @@ public final class LocationComponent {
     }
   };
 
-  private OnLocationStaleListener onLocationStaleListener = new OnLocationStaleListener() {
+  private final OnLocationStaleListener onLocationStaleListener = new OnLocationStaleListener() {
     @Override
     public void onStaleStateChange(boolean isStale) {
       locationLayerController.setLocationsStale(isStale);
@@ -1025,14 +1050,14 @@ public final class LocationComponent {
     }
   };
 
-  private OnCameraMoveInvalidateListener onCameraMoveInvalidateListener = new OnCameraMoveInvalidateListener() {
+  private final OnCameraMoveInvalidateListener onCameraMoveInvalidateListener = new OnCameraMoveInvalidateListener() {
     @Override
     public void onInvalidateCameraMove() {
       onCameraMoveListener.onCameraMove();
     }
   };
 
-  private CompassListener compassListener = new CompassListener() {
+  private final CompassListener compassListener = new CompassListener() {
     @Override
     public void onCompassChanged(float userHeading) {
       updateCompassHeading(userHeading);
@@ -1044,7 +1069,7 @@ public final class LocationComponent {
     }
   };
 
-  private LocationEngineListener locationEngineListener = new LocationEngineListener() {
+  private final LocationEngineListener locationEngineListener = new LocationEngineListener() {
     @Override
     @SuppressWarnings( {"MissingPermission"})
     public void onConnected() {
@@ -1055,11 +1080,11 @@ public final class LocationComponent {
 
     @Override
     public void onLocationChanged(Location location) {
-      updateLocation(location, false);
+      updateLocation(location, false, true);
     }
   };
 
-  private OnCameraTrackingChangedListener cameraTrackingChangedListener = new OnCameraTrackingChangedListener() {
+  private final OnCameraTrackingChangedListener cameraTrackingChangedListener = new OnCameraTrackingChangedListener() {
     @Override
     public void onCameraTrackingDismissed() {
       for (OnCameraTrackingChangedListener listener : onCameraTrackingChangedListeners) {

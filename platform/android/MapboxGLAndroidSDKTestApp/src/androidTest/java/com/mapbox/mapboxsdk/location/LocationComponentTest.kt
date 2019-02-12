@@ -1114,7 +1114,6 @@ class LocationComponentTest : BaseActivityTest() {
         mapboxMap.moveCamera(CameraUpdateFactory.zoomTo(15.0))
         mapboxMap.moveCamera(CameraUpdateFactory.bearingTo(90.0))
         assertTrue(Utils.immediateAnimation(mapboxMap.projection, mapboxMap.cameraPosition.target, LatLng(location)))
-
         component.cameraMode = CameraMode.TRACKING_GPS
         assertEquals(location.bearing.toDouble(), mapboxMap.cameraPosition.bearing, 0.1)
         assertEquals(location.latitude, mapboxMap.cameraPosition.target.latitude, 0.1)

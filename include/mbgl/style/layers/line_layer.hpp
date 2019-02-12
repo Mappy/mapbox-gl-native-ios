@@ -106,6 +106,10 @@ public:
     void setLinePatternTransition(const TransitionOptions&);
     TransitionOptions getLinePatternTransition() const;
 
+    // Mappy path
+    bool getLineIsMappyPath () const;
+    void setLineIsMappyPath(bool);
+
     static ColorRampPropertyValue getDefaultLineGradient();
     ColorRampPropertyValue getLineGradient() const;
     void setLineGradient(ColorRampPropertyValue);

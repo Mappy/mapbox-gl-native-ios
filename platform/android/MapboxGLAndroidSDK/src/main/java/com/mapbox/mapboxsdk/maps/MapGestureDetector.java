@@ -902,6 +902,10 @@ final class MapGestureDetector {
   }
 
   private void sendTelemetryEvent(String eventType, PointF focalPoint) {
+    if (!Mapbox.ENABLE_METRICS_ON_MAPPY) {
+        return;
+    }
+
     TelemetryDefinition telemetry = Mapbox.getTelemetry();
     if (telemetry != null) {
       CameraPosition cameraPosition = transform.getCameraPosition();

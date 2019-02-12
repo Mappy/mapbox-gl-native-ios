@@ -69,6 +69,10 @@ public class FileSource {
     return INSTANCE;
   }
 
+  public static boolean isAvailable() {
+    return INSTANCE != null;
+  }
+
   /**
    * Get files directory path for a context.
    *

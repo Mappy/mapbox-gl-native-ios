@@ -132,8 +132,12 @@ class MarkerContainer implements Markers {
     if (onMarkerViewAddedListener != null) {
       markerViewManager.addOnMarkerViewAddedListener(marker, onMarkerViewAddedListener);
     }
-    markerViewManager.setEnabled(true);
-    markerViewManager.setWaitingForRenderInvoke(true);
+
+    //MAPPY Modif
+    markerViewManager.setForUpdate();
+    //markerViewManager.setEnabled(true);
+    //markerViewManager.setWaitingForRenderInvoke(true);
+
     return marker;
   }
 

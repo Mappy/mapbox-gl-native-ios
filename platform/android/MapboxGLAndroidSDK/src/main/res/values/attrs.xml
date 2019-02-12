@@ -183,6 +183,5 @@
 
         <!-- Accuracy animation-->
         <attr name="mapbox_accuracyAnimationEnabled" format="boolean" />
-
     </declare-styleable>
 </resources>

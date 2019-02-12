@@ -96,7 +96,7 @@ public class Projection {
    */
   @NonNull
   public VisibleRegion getVisibleRegion() {
-    return getVisibleRegion(true);
+    return getVisibleRegion(true, 0, 0, 0, 0);
   }
 
   /**
@@ -109,21 +109,44 @@ public class Projection {
    */
   @NonNull
   public VisibleRegion getVisibleRegion(boolean ignorePadding) {
+    return getVisibleRegion(ignorePadding, 0, 0, 0, 0);
+  }
+
+
+  /**
+   * Mappy modif
+   * Gets a projection of the viewing frustum for converting between screen coordinates and
+   * geo-latitude/longitude coordinates.
+   *
+   * @return The projection of the viewing frustum in its current state.
+   */
+  public VisibleRegion getVisibleRegion(int additionalPaddingLeft, int additionalPaddingTop, int additionalPaddingRight, int additionalPaddingBottom) {
+    return getVisibleRegion(false, additionalPaddingLeft, additionalPaddingTop, additionalPaddingRight, additionalPaddingBottom);
+  }
+
+  /**
+   * Mappy modif
+   * Gets a projection of the viewing frustum for converting between screen coordinates and
+   * geo-latitude/longitude coordinates.
+   *
+   * @return The projection of the viewing frustum in its current state.
+   */
+  private VisibleRegion getVisibleRegion(boolean ignorePadding, int additionalPaddingLeft, int additionalPaddingTop, int additionalPaddingRight, int additionalPaddingBottom) {
     float left;
     float right;
     float top;
     float bottom;
 
     if (ignorePadding) {
-      left = 0;
-      right = nativeMapView.getWidth();
-      top = 0;
-      bottom = nativeMapView.getHeight();
+      left = additionalPaddingLeft;
+      right = nativeMapView.getWidth() - additionalPaddingRight;
+      top = additionalPaddingTop;
+      bottom = nativeMapView.getHeight() - additionalPaddingBottom;
     } else {
-      left = contentPadding[0];
-      right = nativeMapView.getWidth() - contentPadding[2];
-      top = contentPadding[1];
-      bottom = nativeMapView.getHeight() - contentPadding[3];
+      left = contentPadding[0] + additionalPaddingLeft;
+      right = nativeMapView.getWidth() - contentPadding[2] - additionalPaddingRight;
+      top = contentPadding[1] + additionalPaddingTop;
+      bottom = nativeMapView.getHeight() - contentPadding[3] - additionalPaddingBottom;
     }
 
     LatLng center = fromScreenLocation(new PointF(left + (right - left) / 2, top + (bottom - top) / 2));

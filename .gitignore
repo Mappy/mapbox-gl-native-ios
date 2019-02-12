@@ -36,3 +36,5 @@ test/fixtures/storage/assets.zip
 /scripts/generate-cmake-files.list
 /scripts/generate-shaders.list
 /scripts/generate-style-code.list
+
+MapboxGLAndroidSDK.zip
