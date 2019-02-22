@@ -1,7 +1,5 @@
 #import "MGLMapView_Private.h"
 
-#include <mbgl/util/logging.hpp>
-
 #import <GLKit/GLKit.h>
 #import <OpenGLES/EAGL.h>
 
@@ -75,6 +73,7 @@
 #import "MGLAttributionInfo_Private.h"
 #import "MGLMapAccessibilityElement.h"
 #import "MGLLocationManager_Private.h"
+#import "MGLLoggingConfiguration_Private.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -298,8 +297,7 @@ public:
     BOOL _delegateHasStrokeColorsForShapeAnnotations;
     BOOL _delegateHasFillColorsForShapeAnnotations;
     BOOL _delegateHasLineWidthsForShapeAnnotations;
-	BOOL _delegateHasWhiteStrokeForShapeAnnotations;
-    
+
     MGLCompassDirectionFormatter *_accessibilityCompassFormatter;
     NSArray<id <MGLFeature>> *_visiblePlaceFeatures;
     NSArray<id <MGLFeature>> *_visibleRoadFeatures;
@@ -379,7 +377,7 @@ public:
     {
         styleURL = [MGLStyle streetsStyleURLWithVersion:MGLStyleDefaultVersion];
     }
-
+    MGLLogDebug(@"Setting styleURL: %@", styleURL);
     styleURL = styleURL.mgl_URLByStandardizingScheme;
     self.style = nil;
     _mbglMap->getStyle().loadURL([[styleURL absoluteString] UTF8String]);
@@ -403,6 +401,7 @@ public:
 
 - (void)commonInit
 {
+    MGLLogInfo(@"Initializing.");
     _isTargetingInterfaceBuilder = NSProcessInfo.processInfo.mgl_isInterfaceBuilderDesignablesAgent;
     _opaque = NO;
 
@@ -601,6 +600,9 @@ public:
         [MGLMapboxEvents pushTurnstileEvent];
         [MGLMapboxEvents pushEvent:MMEEventTypeMapLoad withAttributes:@{}];
     }
+
+    MGLLogInfo(@"Initialization completed.");
+
 }
 
 - (mbgl::Size)size
@@ -740,7 +742,6 @@ public:
     _delegateHasStrokeColorsForShapeAnnotations = [_delegate respondsToSelector:@selector(mapView:strokeColorForShapeAnnotation:)];
     _delegateHasFillColorsForShapeAnnotations = [_delegate respondsToSelector:@selector(mapView:fillColorForPolygonAnnotation:)];
     _delegateHasLineWidthsForShapeAnnotations = [_delegate respondsToSelector:@selector(mapView:lineWidthForPolylineAnnotation:)];
-	_delegateHasWhiteStrokeForShapeAnnotations = [_delegate respondsToSelector:@selector(mapView:whiteStrokeForPolylineAnnotation:)];
 }
 
 - (void)didReceiveMemoryWarning
@@ -1972,7 +1973,7 @@ public:
     MGLMapCamera *camera;
     
     mbgl::ScreenCoordinate anchor = mbgl::ScreenCoordinate { anchorPoint.x, anchorPoint.y };
-    currentCameraOptions.angle = degrees * mbgl::util::DEG2RAD;
+    currentCameraOptions.angle = degrees;
     currentCameraOptions.anchor = anchor;
     camera = [self cameraForCameraOptions:currentCameraOptions];
     
@@ -1986,7 +1987,7 @@ public:
     
     MGLMapCamera *camera;
 
-    currentCameraOptions.pitch = pitch * mbgl::util::DEG2RAD;
+    currentCameraOptions.pitch = pitch;
     camera = [self cameraForCameraOptions:currentCameraOptions];
     
     return camera;
@@ -3026,7 +3027,7 @@ public:
     cameraOptions.zoom = zoomLevel;
     if (direction >= 0)
     {
-        cameraOptions.angle = MGLRadiansFromDegrees(-direction);
+        cameraOptions.angle = direction;
     }
 
     mbgl::AnimationOptions animationOptions;
@@ -3196,7 +3197,7 @@ public:
     mbgl::CameraOptions cameraOptions = _mbglMap->cameraForLatLngs(latLngs, padding);
     if (direction >= 0)
     {
-        cameraOptions.angle = MGLRadiansFromDegrees(-direction);
+        cameraOptions.angle = direction;
     }
 
     mbgl::AnimationOptions animationOptions;
@@ -3475,8 +3476,8 @@ public:
 {
     CLLocationCoordinate2D centerCoordinate = MGLLocationCoordinate2DFromLatLng(cameraOptions.center ? *cameraOptions.center : _mbglMap->getLatLng());
     double zoomLevel = cameraOptions.zoom ? *cameraOptions.zoom : self.zoomLevel;
-    CLLocationDirection direction = cameraOptions.angle ? mbgl::util::wrap(-MGLDegreesFromRadians(*cameraOptions.angle), 0., 360.) : self.direction;
-    CGFloat pitch = cameraOptions.pitch ? MGLDegreesFromRadians(*cameraOptions.pitch) : _mbglMap->getPitch();
+    CLLocationDirection direction = cameraOptions.angle ? mbgl::util::wrap(*cameraOptions.angle, 0., 360.) : self.direction;
+    CGFloat pitch = cameraOptions.pitch ? *cameraOptions.pitch : _mbglMap->getPitch();
     CLLocationDistance altitude = MGLAltitudeForZoomLevel(zoomLevel, pitch, centerCoordinate.latitude, self.frame.size);
     return [MGLMapCamera cameraLookingAtCenterCoordinate:centerCoordinate altitude:altitude pitch:pitch heading:direction];
 }
@@ -3496,11 +3497,11 @@ public:
                                            self.frame.size);
     if (camera.heading >= 0)
     {
-        options.angle = MGLRadiansFromDegrees(-camera.heading);
+        options.angle = camera.heading;
     }
     if (camera.pitch >= 0)
     {
-        options.pitch = MGLRadiansFromDegrees(camera.pitch);
+        options.pitch = camera.pitch;
     }
     return options;
 }
@@ -3982,15 +3983,6 @@ public:
         return [self.delegate mapView:self lineWidthForPolylineAnnotation:(MGLPolyline *)annotation];
     }
     return 3.0;
-}
-
-- (BOOL)whiteStrokeForPolylineAnnotation:(MGLPolyline *)annotation
-{
-	if (_delegateHasWhiteStrokeForShapeAnnotations)
-	{
-		return [self.delegate mapView:self whiteStrokeForPolylineAnnotation:annotation];
-	}
-	return NO;
 }
 
 - (void)installAnnotationImage:(MGLAnnotationImage *)annotationImage

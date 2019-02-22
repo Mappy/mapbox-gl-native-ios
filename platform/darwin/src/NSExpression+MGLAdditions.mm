@@ -542,6 +542,10 @@ const MGLExpressionInterpolationMode MGLExpressionInterpolationModeCubicBezier =
     return [NSExpression expressionForVariable:@"heatmapDensity"];
 }
 
++ (NSExpression *)lineProgressVariableExpression {
+    return [NSExpression expressionForVariable:@"lineProgress"];
+}
+
 + (NSExpression *)geometryTypeVariableExpression {
     return [NSExpression expressionForVariable:@"geometryType"];
 }
@@ -814,6 +818,8 @@ NSArray *MGLSubexpressionsWithJSONObjects(NSArray *objects) {
             return NSExpression.zoomLevelVariableExpression;
         } else if ([op isEqualToString:@"heatmap-density"]) {
             return NSExpression.heatmapDensityVariableExpression;
+        } else if ([op isEqualToString:@"line-progress"]) {
+            return NSExpression.lineProgressVariableExpression;
         } else if ([op isEqualToString:@"geometry-type"]) {
             return NSExpression.geometryTypeVariableExpression;
         } else if ([op isEqualToString:@"id"]) {
@@ -910,6 +916,9 @@ NSArray *MGLSubexpressionsWithJSONObjects(NSArray *objects) {
         case NSVariableExpressionType: {
             if ([self.variable isEqualToString:@"heatmapDensity"]) {
                 return @[@"heatmap-density"];
+            }
+            if ([self.variable isEqualToString:@"lineProgress"]) {
+                return @[@"line-progress"];
             }
             if ([self.variable isEqualToString:@"zoomLevel"]) {
                 return @[@"zoom"];
@@ -1065,9 +1074,11 @@ NSArray *MGLSubexpressionsWithJSONObjects(NSArray *objects) {
                 [expressionObject addObject:self.operand.mgl_jsonExpressionObject];
                 return expressionObject;
             } else if ([function isEqualToString:@"MGL_IF"] ||
+                       [function isEqualToString:@"MGL_IF:"] ||
                        [function isEqualToString:@"mgl_if:"]) {
                 return self.mgl_jsonIfExpressionObject;
             } else if ([function isEqualToString:@"MGL_MATCH"] ||
+                       [function isEqualToString:@"MGL_MATCH:"] ||
                        [function isEqualToString:@"mgl_match:"]) {
                 return self.mgl_jsonMatchExpressionObject;
             } else if ([function isEqualToString:@"mgl_coalesce:"] ||
@@ -1104,12 +1115,18 @@ NSArray *MGLSubexpressionsWithJSONObjects(NSArray *objects) {
                 }
                 [NSException raise:NSInvalidArgumentException
                             format:@"Casting expression to %@ not yet implemented.", type];
-            } else if ([function isEqualToString:@"MGL_FUNCTION"]) {
+            } else if ([function isEqualToString:@"MGL_FUNCTION"] ||
+                       [function isEqualToString:@"MGL_FUNCTION:"]) {
                 NSExpression *op = self.arguments.firstObject;
                 if (op.expressionType == NSConstantValueExpressionType
                     && [op.constantValue isEqualToString:@"collator"]) {
                     // Avoid wrapping collator options object in literal expression.
                     return @[@"collator", self.arguments[1].constantValue];
+                }
+                if (op.expressionType == NSConstantValueExpressionType
+                    && [op.constantValue isEqualToString:@"format"]) {
+                    // Avoid wrapping format options object in literal expression.
+                    return @[@"format", self.arguments[1].mgl_jsonExpressionObject, self.arguments[2].constantValue];
                 }
                 return self.arguments.mgl_jsonExpressionObject;
             } else if (op == [MGLColor class] && [function isEqualToString:@"colorWithRed:green:blue:alpha:"]) {
@@ -1252,7 +1269,7 @@ NSArray *MGLSubexpressionsWithJSONObjects(NSArray *objects) {
 }
 
 - (id)mgl_jsonMatchExpressionObject {
-    BOOL isAftermarketFunction = [self.function isEqualToString:@"MGL_MATCH"];
+    BOOL isAftermarketFunction = [self.function hasPrefix:@"MGL_MATCH"];
     NSUInteger minimumIndex = isAftermarketFunction ? 1 : 0;
 
     NSMutableArray *expressionObject = [NSMutableArray arrayWithObjects:@"match", (isAftermarketFunction ? self.arguments.firstObject : self.operand).mgl_jsonExpressionObject, nil];
@@ -1278,7 +1295,7 @@ NSArray *MGLSubexpressionsWithJSONObjects(NSArray *objects) {
 }
 
 - (id)mgl_jsonIfExpressionObject {
-    BOOL isAftermarketFunction = [self.function isEqualToString:@"MGL_IF"];
+    BOOL isAftermarketFunction = [self.function hasPrefix:@"MGL_IF"];
     NSUInteger minimumIndex = isAftermarketFunction ? 1 : 0;
     NSExpression *firstCondition;
     id condition;

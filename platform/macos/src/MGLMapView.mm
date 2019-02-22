@@ -59,6 +59,7 @@
 #import "NSColor+MGLAdditions.h"
 #import "NSImage+MGLAdditions.h"
 #import "NSPredicate+MGLPrivateAdditions.h"
+#import "MGLLoggingConfiguration_Private.h"
 
 #import <QuartzCore/QuartzCore.h>
 #import <OpenGL/gl.h>
@@ -257,6 +258,7 @@ public:
 }
 
 - (void)commonInit {
+    MGLLogInfo(@"Initializing.");
     _isTargetingInterfaceBuilder = NSProcessInfo.processInfo.mgl_isInterfaceBuilderDesignablesAgent;
 
     // Set up cross-platform controllers and resources.
@@ -317,6 +319,7 @@ public:
     _mbglMap->jumpTo(options);
     _pendingLatitude = NAN;
     _pendingLongitude = NAN;
+    MGLLogInfo(@"Initialization completed.");
 }
 
 - (mbgl::Size)size {
@@ -925,6 +928,16 @@ public:
     }
 }
 
+- (void)mapViewDidBecomeIdle {
+    if (!_mbglMap) {
+        return;
+    }
+    
+    if ([self.delegate respondsToSelector:@selector(mapViewDidBecomeIdle)]) {
+        [self.delegate mapViewDidBecomeIdle:self];
+    }
+}
+
 - (void)mapViewDidFinishLoadingStyle {
     if (!_mbglMap) {
         return;
@@ -1218,10 +1231,10 @@ public:
                                            camera.centerCoordinate.latitude,
                                            self.frame.size);
     if (camera.heading >= 0) {
-        options.angle = MGLRadiansFromDegrees(-camera.heading);
+        options.angle = camera.heading;
     }
     if (camera.pitch >= 0) {
-        options.pitch = MGLRadiansFromDegrees(camera.pitch);
+        options.pitch = camera.pitch;
     }
     return options;
 }
@@ -1314,8 +1327,8 @@ public:
 - (MGLMapCamera *)cameraForCameraOptions:(const mbgl::CameraOptions &)cameraOptions {
     CLLocationCoordinate2D centerCoordinate = MGLLocationCoordinate2DFromLatLng(cameraOptions.center ? *cameraOptions.center : _mbglMap->getLatLng());
     double zoomLevel = cameraOptions.zoom ? *cameraOptions.zoom : self.zoomLevel;
-    CLLocationDirection direction = cameraOptions.angle ? mbgl::util::wrap(-MGLDegreesFromRadians(*cameraOptions.angle), 0., 360.) : self.direction;
-    CGFloat pitch = cameraOptions.pitch ? MGLDegreesFromRadians(*cameraOptions.pitch) : _mbglMap->getPitch();
+    CLLocationDirection direction = cameraOptions.angle ? mbgl::util::wrap(*cameraOptions.angle, 0., 360.) : self.direction;
+    CGFloat pitch = cameraOptions.pitch ? *cameraOptions.pitch : _mbglMap->getPitch();
     CLLocationDistance altitude = MGLAltitudeForZoomLevel(zoomLevel, pitch,
                                                           centerCoordinate.latitude,
                                                           self.frame.size);
@@ -3008,6 +3021,10 @@ public:
     void onDidFinishRenderingMap(mbgl::MapObserver::RenderMode mode) override {
         bool fullyRendered = mode == mbgl::MapObserver::RenderMode::Full;
         [nativeView mapViewDidFinishRenderingMapFullyRendered:fullyRendered];
+    }
+    
+    void onDidBecomeIdle() override {
+        [nativeView mapViewDidBecomeIdle];
     }
 
     void onDidFinishLoadingStyle() override {

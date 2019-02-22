@@ -208,6 +208,8 @@ void Map::Impl::onDidFinishRenderingFrame(RenderMode renderMode, bool needsRepai
 
         if (needsRepaint || transform.inTransition()) {
             onUpdate();
+        } else if (rendererFullyLoaded) {
+            observer.onDidBecomeIdle();
         }
     } else if (stillImageRequest && rendererFullyLoaded) {
         auto request = std::move(stillImageRequest);
@@ -450,8 +452,8 @@ CameraOptions Map::cameraForLatLngs(const std::vector<LatLng>& latLngs, const Ed
     }
     
     CameraOptions options = mbgl::cameraForLatLngs(latLngs, transform, padding);
-    options.angle = transform.getAngle();
-    options.pitch = transform.getPitch();
+    options.angle = -transform.getAngle() * util::RAD2DEG;
+    options.pitch = transform.getPitch() * util::RAD2DEG;
     
     return options;
 }

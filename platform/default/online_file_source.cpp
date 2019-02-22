@@ -89,13 +89,8 @@ public:
         if (activeRequests.erase(request)) {
             activatePendingRequest();
         } else {
-            auto it = pendingRequestsMap.find(request);
-            if (it != pendingRequestsMap.end()) {
-                pendingRequestsList.erase(it->second);
-                pendingRequestsMap.erase(it);
-            }
+            pendingRequests.remove(request);
         }
-        assert(pendingRequestsMap.size() == pendingRequestsList.size());
     }
 
     void activateOrQueueRequest(OnlineFileRequest* request) {
@@ -103,7 +98,7 @@ public:
         assert(activeRequests.find(request) == activeRequests.end());
         assert(!request->request);
 
-        if (activeRequests.size() >= HTTPFileSource::maximumConcurrentRequests()) {
+        if (activeRequests.size() >= getMaximumConcurrentRequests()) {
             queueRequest(request);
         } else {
             activateRequest(request);
@@ -111,9 +106,7 @@ public:
     }
 
     void queueRequest(OnlineFileRequest* request) {
-        auto it = pendingRequestsList.insert(pendingRequestsList.end(), request);
-        pendingRequestsMap.emplace(request, std::move(it));
-        assert(pendingRequestsMap.size() == pendingRequestsList.size());
+        pendingRequests.insert(request);
     }
 
     void activateRequest(OnlineFileRequest* request) {
@@ -135,25 +128,19 @@ public:
             callback(response);
         }
 
-        assert(pendingRequestsMap.size() == pendingRequestsList.size());
     }
 
     void activatePendingRequest() {
-        if (pendingRequestsList.empty()) {
-            return;
+
+        auto request = pendingRequests.pop();
+
+        if (request) {
+            activateRequest(*request);
         }
-
-        OnlineFileRequest* request = pendingRequestsList.front();
-        pendingRequestsList.pop_front();
-
-        pendingRequestsMap.erase(request);
-
-        activateRequest(request);
-        assert(pendingRequestsMap.size() == pendingRequestsList.size());
     }
 
     bool isPending(OnlineFileRequest* request) {
-        return pendingRequestsMap.find(request) != pendingRequestsMap.end();
+        return pendingRequests.contains(request);
     }
 
     bool isActive(OnlineFileRequest* request) {
@@ -169,12 +156,89 @@ public:
         networkIsReachableAgain();
     }
 
+    void setMaximumConcurrentRequestsOverride(const uint32_t maximumConcurrentRequestsOverride_) {
+        maximumConcurrentRequestsOverride = maximumConcurrentRequestsOverride_;
+    }
+
 private:
+
+    uint32_t getMaximumConcurrentRequests() const {
+        if (maximumConcurrentRequestsOverride > 0) {
+            return maximumConcurrentRequestsOverride;
+        }
+        else {
+            return HTTPFileSource::maximumConcurrentRequests();
+        }
+    }
+
     void networkIsReachableAgain() {
         for (auto& request : allRequests) {
             request->networkIsReachableAgain();
         }
     }
+
+    // Using Pending Requests as an priority queue which processes
+    // file requests in a FIFO manner but prefers regular requests
+    // over offline requests with a low priority such that low priority
+    // requests do not throttle regular requests.
+    //
+    // The order of a queue is therefore:
+    //
+    // hi0 -- hi1 -- hi2 -- hi3 -- lo0 -- lo1 --lo2
+    //                              ^
+    //                              firstLowPriorityRequest
+
+    struct PendingRequests {
+        PendingRequests() : queue(), firstLowPriorityRequest(queue.begin()) {}
+
+        std::list<OnlineFileRequest*> queue;
+        std::list<OnlineFileRequest*>::iterator firstLowPriorityRequest;
+
+        void remove(const OnlineFileRequest* request) {
+            auto it = std::find(queue.begin(), queue.end(), request);
+            if (it != queue.end()) {
+                if (it == firstLowPriorityRequest) {
+                    firstLowPriorityRequest++;
+                }
+                queue.erase(it);
+            }
+        }
+
+        void insert(OnlineFileRequest* request) {
+            if (request->resource.priority == Resource::Priority::Regular) {
+                firstLowPriorityRequest = queue.insert(firstLowPriorityRequest, request);
+                firstLowPriorityRequest++;
+            }
+            else {
+                if (firstLowPriorityRequest == queue.end()) {
+                    firstLowPriorityRequest = queue.insert(queue.end(), request);
+                }
+                else {
+                    queue.insert(queue.end(), request);
+                }
+            }
+        }
+
+
+        optional<OnlineFileRequest*> pop() {
+            if (queue.empty()) {
+                return optional<OnlineFileRequest*>();
+            }
+
+            if (queue.begin() == firstLowPriorityRequest) {
+                firstLowPriorityRequest++;
+            }
+
+            OnlineFileRequest* next = queue.front();
+            queue.pop_front();
+            return optional<OnlineFileRequest*>(next);
+        }
+
+        bool contains(OnlineFileRequest* request) const {
+            return (std::find(queue.begin(), queue.end(), request) != queue.end());
+        }
+
+    };
 
     optional<ActorRef<ResourceTransform>> resourceTransform;
 
@@ -190,11 +254,13 @@ private:
      * `pendingRequests`. Requests in the active state are in `activeRequests`.
      */
     std::unordered_set<OnlineFileRequest*> allRequests;
-    std::list<OnlineFileRequest*> pendingRequestsList;
-    std::unordered_map<OnlineFileRequest*, std::list<OnlineFileRequest*>::iterator> pendingRequestsMap;
+
+    PendingRequests pendingRequests;
+
     std::unordered_set<OnlineFileRequest*> activeRequests;
 
     bool online = true;
+    uint32_t maximumConcurrentRequestsOverride = 0;
     HTTPFileSource httpFileSource;
     util::AsyncTask reachability { std::bind(&Impl::networkIsReachableAgain, this) };
 };
@@ -414,6 +480,10 @@ ActorRef<OnlineFileRequest> OnlineFileRequest::actor() {
 
 void OnlineFileSource::setOnlineStatus(const bool status) {
     impl->setOnlineStatus(status);
+}
+
+void OnlineFileSource::setMaximumConcurrentRequestsOverride(const uint32_t maximumConcurrentRequestsOverride) {
+    impl->setMaximumConcurrentRequestsOverride(maximumConcurrentRequestsOverride);
 }
 
 } // namespace mbgl

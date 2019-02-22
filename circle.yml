@@ -220,7 +220,7 @@ commands:
           steps: [ save-node_modules-cache ]
       - when:
           condition: << parameters.ccache >>
-          steps: [ save-ccache ]
+          steps: [ save-ccache, show-ccache-stats ]
       - when:
           condition: << parameters.mason >>
           steps: [ save-mason_packages-cache ]
@@ -311,7 +311,6 @@ commands:
     steps:
     - run:
         name: Log in to Google Cloud Platform
-        shell: /bin/bash -euo pipefail
         command: |
           if [[ -n "${GCLOUD_SERVICE_ACCOUNT_JSON}" && -z "${SKIP_FIREBASE:-}" ]]; then
             echo "${GCLOUD_SERVICE_ACCOUNT_JSON}" > secret.json
@@ -1066,7 +1065,7 @@ jobs:
             JOBS: 1 # https://github.com/mapbox/mapbox-gl-native/issues/9108
           command: |
             xvfb-run --server-args="-screen 0 1024x768x24" \
-              build/qt-linux-x86_64/Release/mbgl-test --gtest_filter=-*.Load --gtest_filter=-Memory.Vector
+              build/qt-linux-x86_64/Release/mbgl-test --gtest_filter=-*.Load --gtest_filter=-Memory.Vector --gtest_filter=-BiDi.*
 
 # ------------------------------------------------------------------------------
   qt5-macos-debug:

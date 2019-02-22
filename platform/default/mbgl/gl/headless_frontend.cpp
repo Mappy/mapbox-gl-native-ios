@@ -1,5 +1,6 @@
 #include <mbgl/gl/headless_frontend.hpp>
 #include <mbgl/renderer/renderer.hpp>
+#include <mbgl/renderer/renderer_state.hpp>
 #include <mbgl/renderer/update_parameters.hpp>
 #include <mbgl/map/map.hpp>
 #include <mbgl/map/transform_state.hpp>
@@ -53,6 +54,38 @@ Renderer* HeadlessFrontend::getRenderer() {
 
 RendererBackend* HeadlessFrontend::getBackend() {
     return &backend;
+}
+
+CameraOptions HeadlessFrontend::getCameraOptions() {
+    if (updateParameters)
+        return RendererState::getCameraOptions(*updateParameters);
+
+    static CameraOptions nullCamera;
+    return nullCamera;
+}
+
+bool HeadlessFrontend::hasImage(const std::string& id) {
+    if (updateParameters) {
+        return RendererState::hasImage(*updateParameters, id);
+    }
+
+    return false;
+}
+
+bool HeadlessFrontend::hasLayer(const std::string& id) {
+    if (updateParameters) {
+        return RendererState::hasLayer(*updateParameters, id);
+    }
+
+    return false;
+}
+
+bool HeadlessFrontend::hasSource(const std::string& id) {
+    if (updateParameters) {
+        return RendererState::hasSource(*updateParameters, id);
+    }
+
+    return false;
 }
 
 void HeadlessFrontend::setSize(Size size_) {

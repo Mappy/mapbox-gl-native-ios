@@ -10,9 +10,11 @@ import android.support.annotation.NonNull;
 
 import com.mapbox.mapboxsdk.LibraryLoader;
 import com.mapbox.mapboxsdk.MapStrictMode;
+import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.geometry.LatLngBounds;
 import com.mapbox.mapboxsdk.log.Logger;
+import com.mapbox.mapboxsdk.maps.TelemetryDefinition;
 import com.mapbox.mapboxsdk.net.ConnectivityReceiver;
 import com.mapbox.mapboxsdk.storage.FileSource;
 import com.mapbox.mapboxsdk.utils.FileUtils;
@@ -421,6 +423,12 @@ public class OfflineManager {
         });
       }
     });
+
+    TelemetryDefinition telemetry = Mapbox.getTelemetry();
+    if (telemetry != null) {
+      LatLngBounds bounds = definition.getBounds();
+      telemetry.onCreateOfflineRegion(definition);
+    }
   }
 
     public void cleanAmbientCache() {
@@ -465,4 +473,27 @@ public class OfflineManager {
 
   @Keep
   private native void mergeOfflineRegions(FileSource fileSource, String path, MergeOfflineRegionsCallback callback);
+
+  /**
+   * Insert the provided resource into the ambient cache
+   * This method mimics the caching that would take place if the equivalent
+   * resource were requested in the process of map rendering.
+   * Use this method to pre-warm the cache with resources you know
+   * will be requested.
+   *
+   * This call is asynchronous: the data may not be immediately available
+   * for in-progress requests, although subsequent requests should have
+   * access to the cached data.
+   *
+   * @param url The URL of the resource to insert
+   * @param data Response data to store for this resource. Data is expected to be uncompressed;
+   *             internally, the cache will compress data as necessary.
+   * @param modified Optional "modified" response header, in seconds since 1970, or 0 if not set
+   * @param expires Optional "expires" response header, in seconds since 1970, or 0 if not set
+   * @param etag Optional "entity tag" response header
+   * @param mustRevalidate Indicates whether response can be used after it's stale
+   */
+  @Keep
+  public native void putResourceWithUrl(String url, byte[] data, long modified, long expires,
+                                        String etag, boolean mustRevalidate);
 }

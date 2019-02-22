@@ -64,6 +64,7 @@ public:
 
     void listOfflineRegions(jni::JNIEnv&, const jni::Object<FileSource>&, const jni::Object<ListOfflineRegionsCallback>& callback);
 
+    // Mappy
     void cleanAmbientCache(jni::JNIEnv&, jni::Object<FileSource>&);
 
     void createOfflineRegion(jni::JNIEnv&,
@@ -76,6 +77,15 @@ public:
                              const jni::Object<FileSource>&,
                              const jni::String&,
                              const jni::Object<MergeOfflineRegionsCallback>&);
+
+    void putResourceWithUrl(jni::JNIEnv&,
+                            const jni::String& url,
+                            const jni::Array<jni::jbyte>& data,
+                            jlong modified,
+                            jlong expires,
+                            const jni::String& eTag,
+                            jboolean mustRevalidate);
+
 
 private:
     mbgl::DefaultFileSource& fileSource;

@@ -13,6 +13,8 @@ import static com.mapbox.mapboxsdk.utils.ColorUtils.rgbaToColor;
 import com.google.gson.JsonArray;
 import com.mapbox.mapboxsdk.style.expressions.Expression;
 import com.mapbox.mapboxsdk.style.layers.TransitionOptions;
+import com.mapbox.mapboxsdk.style.types.Formatted;
+import com.mapbox.mapboxsdk.style.types.FormattedSection;
 
 /**
  * An icon or a text label.
@@ -365,7 +367,36 @@ public class SymbolLayer extends Layer {
   @SuppressWarnings("unchecked")
   public PropertyValue<String> getTextField() {
     checkThread();
-    return (PropertyValue<String>) new PropertyValue("text-field", nativeGetTextField());
+
+    PropertyValue propertyValue = new PropertyValue<>("text-field", nativeGetTextField());
+    if (propertyValue.isExpression()) {
+      return (PropertyValue<String>) propertyValue;
+    } else {
+      String text = null;
+
+      Formatted formatted = (Formatted) nativeGetTextField();
+      if (formatted != null) {
+        StringBuilder builder = new StringBuilder();
+        for (FormattedSection section : formatted.getFormattedSections()) {
+          builder.append(section.getText());
+        }
+        text = builder.toString();
+      }
+
+      return (PropertyValue<String>) new PropertyValue("text-field", text);
+    }
+  }
+
+  /**
+   * Get the TextField property as {@link Formatted} object
+   *
+   * @return property wrapper value around String
+   * @see Expression#format(Expression.FormatEntry...)
+   */
+  @SuppressWarnings("unchecked")
+  public PropertyValue<Formatted> getFormattedTextField() {
+    checkThread();
+    return (PropertyValue<Formatted>) new PropertyValue("text-field", nativeGetTextField());
   }
 
   /**

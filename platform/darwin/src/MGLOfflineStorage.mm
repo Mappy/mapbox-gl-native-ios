@@ -7,12 +7,21 @@
 #import "MGLOfflinePack_Private.h"
 #import "MGLOfflineRegion_Private.h"
 #import "MGLTilePyramidOfflineRegion.h"
+#import "MGLShapeOfflineRegion.h"
 #import "NSBundle+MGLAdditions.h"
 #import "NSValue+MGLAdditions.h"
+#import "NSDate+MGLAdditions.h"
+#import "NSData+MGLAdditions.h"
+
+#if TARGET_OS_IPHONE || TARGET_OS_SIMULATOR
+#import "MMEConstants.h"
+#import "MGLMapboxEvents.h"
+#endif
 
 #include <mbgl/actor/actor.hpp>
 #include <mbgl/actor/scheduler.hpp>
 #include <mbgl/storage/resource_transform.hpp>
+#include <mbgl/util/chrono.hpp>
 #include <mbgl/util/run_loop.hpp>
 #include <mbgl/util/string.hpp>
 
@@ -358,6 +367,17 @@ const MGLExceptionName MGLUnsupportedRegionTypeException = @"MGLUnsupportedRegio
         if (completion) {
             completion(pack, error);
         }
+            
+        #if TARGET_OS_IPHONE || TARGET_OS_SIMULATOR
+            NSMutableDictionary *offlineDownloadStartEventAttributes = [NSMutableDictionary dictionaryWithObject:MMEventTypeOfflineDownloadStart forKey:MMEEventKeyEvent];
+        
+            if ([region conformsToProtocol:@protocol(MGLOfflineRegion_Private)]) {
+                NSDictionary *regionAttributes = ((id<MGLOfflineRegion_Private>)region).offlineStartEventAttributes;
+                [offlineDownloadStartEventAttributes addEntriesFromDictionary:regionAttributes];
+            }
+        
+            [MGLMapboxEvents pushEvent:MMEventTypeOfflineDownloadStart withAttributes:offlineDownloadStartEventAttributes];
+        #endif
     }];
 }
 
@@ -469,5 +489,27 @@ const MGLExceptionName MGLUnsupportedRegionTypeException = @"MGLUnsupportedRegio
     NSDictionary *attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:cachePath error:NULL];
     return attributes.fileSize;
 }
+
+-(void)putResourceWithUrl:(NSURL *)url data:(NSData *)data modified:(NSDate * _Nullable)modified expires:(NSDate * _Nullable)expires etag:(NSString * _Nullable)etag mustRevalidate:(BOOL)mustRevalidate {
+    mbgl::Resource resource(mbgl::Resource::Kind::Unknown, [[url absoluteString] UTF8String]);
+    mbgl::Response response;
+    response.data = std::make_shared<std::string>(static_cast<const char*>(data.bytes), data.length);
+    response.mustRevalidate = mustRevalidate;
+    
+    if (etag) {
+        response.etag = std::string([etag UTF8String]);
+    }
+    
+    if (modified) {
+        response.modified = mbgl::Timestamp() + std::chrono::duration_cast<mbgl::Seconds>(MGLDurationFromTimeInterval(modified.timeIntervalSince1970));
+    }
+    
+    if (expires) {
+        response.expires = mbgl::Timestamp() + std::chrono::duration_cast<mbgl::Seconds>(MGLDurationFromTimeInterval(expires.timeIntervalSince1970));
+    }
+    
+    _mbglFileSource->put(resource, response);
+}
+
 
 @end
