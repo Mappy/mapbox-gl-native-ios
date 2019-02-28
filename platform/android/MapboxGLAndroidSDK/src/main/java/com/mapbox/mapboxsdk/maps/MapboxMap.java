@@ -138,10 +138,12 @@ public final class MapboxMap {
    * Called when the hosting Activity/Fragment is recreated and map state needs to be restored.
    *
    * @param savedInstanceState the bundle containing the saved state
+   * @param mapboxMapOptions
    */
-  void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+  void onRestoreInstanceState(@NonNull Bundle savedInstanceState, MapboxMapOptions mapboxMapOptions) {
     final CameraPosition cameraPosition = savedInstanceState.getParcelable(MapboxConstants.STATE_CAMERA_POSITION);
 
+    transform.initialise(this, mapboxMapOptions); // Mappy modif : Zoom was not reinitialized
     uiSettings.onRestoreInstanceState(savedInstanceState);
 
     if (cameraPosition != null) {

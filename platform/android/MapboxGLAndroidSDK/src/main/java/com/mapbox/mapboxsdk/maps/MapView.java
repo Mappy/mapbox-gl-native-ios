@@ -220,7 +220,7 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
     if (savedInstanceState == null) {
       mapboxMap.initialise(context, mapboxMapOptions);
     } else {
-      mapboxMap.onRestoreInstanceState(savedInstanceState);
+      mapboxMap.onRestoreInstanceState(savedInstanceState, mapboxMapOptions);
     }
 
     mapCallback.initialised();
