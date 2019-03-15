@@ -214,6 +214,11 @@ class AnnotationManager {
     return polylines.addBy(polylineOptionsList, mapboxMap);
   }
 
+  //Mappy modif, but annotation polyline with the border white is deactivated
+  List<Polyline> addPolylines(@NonNull List<PolylineOptions> polylineOptionsList, @NonNull MapboxMap mapboxMap, boolean withWhiteStroke) {
+    return polylines.addBy(polylineOptionsList, mapboxMap);
+  }
+
   void updatePolyline(@NonNull Polyline polyline) {
     if (!isAddedToMap(polyline)) {
       logNonAdded(polyline);

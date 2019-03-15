@@ -113,6 +113,30 @@ public class Projection {
    */
   @NonNull
   public VisibleRegion getVisibleRegion(boolean ignorePadding) {
+    return getVisibleRegion(ignorePadding, 0, 0, 0, 0);
+  }
+
+
+  /**
+   * Mappy modif
+   * Gets a projection of the viewing frustum for converting between screen coordinates and
+   * geo-latitude/longitude coordinates.
+   *
+   * @return The projection of the viewing frustum in its current state.
+   */
+  public VisibleRegion getVisibleRegion(int additionalPaddingLeft, int additionalPaddingTop, int additionalPaddingRight, int additionalPaddingBottom) {
+    return getVisibleRegion(false, additionalPaddingLeft, additionalPaddingTop, additionalPaddingRight, additionalPaddingBottom);
+  }
+
+  /**
+   * Mappy modif
+   * Gets a projection of the viewing frustum for converting between screen coordinates and
+   * geo-latitude/longitude coordinates.
+   *
+   * @return The projection of the viewing frustum in its current state.
+   */
+  private VisibleRegion getVisibleRegion(boolean ignorePadding, int additionalPaddingLeft, int additionalPaddingTop, int additionalPaddingRight, int additionalPaddingBottom) {
+
     float left;
     float right;
     float top;
