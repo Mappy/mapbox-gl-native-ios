@@ -264,9 +264,12 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
   @UiThread
   public void onCreate(@Nullable Bundle savedInstanceState) {
     if (savedInstanceState == null) {
-      TelemetryDefinition telemetry = Mapbox.getTelemetry();
-      if (telemetry != null) {
-        telemetry.onAppUserTurnstileEvent();
+      //Mappy modif
+      if(Mapbox.ENABLE_METRICS_ON_MAPPY) {
+        TelemetryDefinition telemetry = Mapbox.getTelemetry();
+        if (telemetry != null) {
+          telemetry.onAppUserTurnstileEvent();
+        }
       }
     } else if (savedInstanceState.getBoolean(MapboxConstants.STATE_HAS_SAVED_STATE)) {
       this.savedInstanceState = savedInstanceState;

@@ -277,9 +277,12 @@ public class MapSnapshotter {
   public MapSnapshotter(@NonNull Context context, @NonNull Options options) {
     checkThread();
     this.context = context.getApplicationContext();
-    TelemetryDefinition telemetry = Mapbox.getTelemetry();
-    if (telemetry != null) {
-      telemetry.onAppUserTurnstileEvent();
+    //Mappy modif
+    if(Mapbox.ENABLE_METRICS_ON_MAPPY) {
+      TelemetryDefinition telemetry = Mapbox.getTelemetry();
+      if (telemetry != null) {
+        telemetry.onAppUserTurnstileEvent();
+      }
     }
     FileSource fileSource = FileSource.getInstance(context);
     String apiBaseUrl = options.getApiBaseUrl();

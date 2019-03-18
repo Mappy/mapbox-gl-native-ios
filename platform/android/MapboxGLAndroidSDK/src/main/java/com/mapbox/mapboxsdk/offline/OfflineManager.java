@@ -420,10 +420,13 @@ public class OfflineManager {
       }
     });
 
-    TelemetryDefinition telemetry = Mapbox.getTelemetry();
-    if (telemetry != null) {
-      LatLngBounds bounds = definition.getBounds();
-      telemetry.onCreateOfflineRegion(definition);
+    //Mappy modif
+    if(Mapbox.ENABLE_METRICS_ON_MAPPY) {
+      TelemetryDefinition telemetry = Mapbox.getTelemetry();
+      if (telemetry != null) {
+        LatLngBounds bounds = definition.getBounds();
+        telemetry.onCreateOfflineRegion(definition);
+      }
     }
   }
 

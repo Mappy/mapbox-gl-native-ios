@@ -25,6 +25,8 @@ import com.mapbox.mapboxsdk.utils.ThreadUtils;
 @UiThread
 @SuppressLint("StaticFieldLeak")
 public final class Mapbox {
+  // Mappy modifs
+  public static final boolean ENABLE_METRICS_ON_MAPPY = false;
 
   private static final String TAG = "Mbgl-Mapbox";
   private static ModuleProvider moduleProvider;
@@ -54,7 +56,7 @@ public final class Mapbox {
       Context appContext = context.getApplicationContext();
       FileSource.initializeFileDirsPaths(appContext);
       INSTANCE = new Mapbox(appContext, accessToken);
-      if (isAccessTokenValid(accessToken)) {
+      if (ENABLE_METRICS_ON_MAPPY && isAccessTokenValid(accessToken)) {
         initializeTelemetry();
       }
       ConnectivityReceiver.instance(appContext);
