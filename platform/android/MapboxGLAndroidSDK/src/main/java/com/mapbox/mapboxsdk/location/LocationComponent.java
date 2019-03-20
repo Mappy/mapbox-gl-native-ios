@@ -1017,12 +1017,12 @@ public final class LocationComponent {
    */
   public void onFinishLoadingStyle() {
     // MAPPY MODIF : see #reInitLayers(boolean show)
-//    if (isComponentInitialized) {
-//      style = mapboxMap.getStyle();
-//      locationLayerController.initializeComponents(style, options);
-//      locationCameraController.initializeOptions(options);
-//      onLocationLayerStart();
-//    }
+    if (isComponentInitialized) {
+      style = mapboxMap.getStyle();
+      locationLayerController.initializeComponents(style, options);
+      locationCameraController.initializeOptions(options);
+      onLocationLayerStart();
+    }
   }
 
   public void reInitLayers(boolean show) {
@@ -1189,10 +1189,6 @@ public final class LocationComponent {
         padding[0], padding[1], padding[2], padding[3]
       );
     }
-
-    // Mappy Modifs : Not necessary ?
-    //mapboxMap.setMaxZoomPreference(options.maxZoom());
-    //mapboxMap.setMinZoomPreference(options.minZoom());
   }
 
   /**
