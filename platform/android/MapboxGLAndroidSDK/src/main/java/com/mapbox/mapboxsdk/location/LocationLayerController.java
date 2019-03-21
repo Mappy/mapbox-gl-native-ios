@@ -153,7 +153,8 @@ final class LocationLayerController {
         case RenderMode.COMPASS:
           styleForeground(options);
           setLayerVisibility(SHADOW_LAYER, true);
-          setLayerVisibility(FOREGROUND_LAYER, true);
+          // Mappy modif : "Foreground" layer not displayed in compass mode
+          setLayerVisibility(FOREGROUND_LAYER, false);
           setLayerVisibility(BACKGROUND_LAYER, true);
           setLayerVisibility(ACCURACY_LAYER, !isStale);
           setLayerVisibility(BEARING_LAYER, true);
