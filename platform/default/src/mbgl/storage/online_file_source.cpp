@@ -344,6 +344,10 @@ Timestamp interpolateExpiration(const Timestamp& current,
         return current;
     }
 
+    if (current == now) {
+        return now + util::CLOCK_MAPPY_TRAFFIC_RETRY_TIMEOUT;
+    }
+
     if (!bool(prior)) {
         expired = true;
         return current;

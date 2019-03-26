@@ -46,6 +46,8 @@ public class Marker extends Annotation {
   private int topOffsetPixels;
   private int rightOffsetPixels;
 
+  private int zOrder;
+
   /**
    * Constructor
    */
@@ -264,6 +266,17 @@ public class Marker extends Annotation {
    */
   public void setRightOffsetPixels(int rightOffsetPixels) {
     this.rightOffsetPixels = rightOffsetPixels;
+  }
+
+  // Mappy modifs
+  public void setZOrder(int zOrder) {
+    if (this.zOrder != zOrder) {
+      this.zOrder = zOrder;
+    }
+  }
+
+  public int getZOrder() {
+    return zOrder;
   }
 
   /**
