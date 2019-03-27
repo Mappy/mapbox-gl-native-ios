@@ -71,6 +71,11 @@ public class FileSource {
     return INSTANCE;
   }
 
+  // Mappy modif
+  public static boolean isAvailable() {
+    return INSTANCE != null;
+  }
+
   /**
    * Get files directory path for a context.
    *

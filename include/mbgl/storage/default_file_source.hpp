@@ -145,6 +145,12 @@ public:
      */
     void setOfflineMapboxTileCountLimit(uint64_t) const;
 
+    // Mappy modif
+    /*
+     * Clean ambient cache
+     */
+    void cleanAmbientCache(void);
+
     /*
      * Pause file request activity.
      *

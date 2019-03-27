@@ -169,6 +169,12 @@ public class OfflineManager {
     return instance;
   }
 
+  // Mappy modif
+  public static synchronized boolean isAvailable() {
+    //Log.d("OffLineManager"," isAvailable="+(instance != null || FileSource.isAvailable()));
+    return instance != null || FileSource.isAvailable();
+  }
+
   private Handler getHandler() {
     if (handler == null) {
       handler = new Handler(Looper.getMainLooper());
@@ -430,6 +436,11 @@ public class OfflineManager {
     }
   }
 
+  // Mappy modif
+  public void cleanAmbientCache() {
+    cleanAmbientCache(fileSource);
+  }
+
   /**
    * Validates if the offline region definition bounds is valid for an offline region download.
    *
@@ -462,6 +473,10 @@ public class OfflineManager {
   @Keep
   private native void createOfflineRegion(FileSource fileSource, OfflineRegionDefinition definition,
                                           byte[] metadata, CreateOfflineRegionCallback callback);
+
+  // Mappy modif
+  @Keep
+  private native void cleanAmbientCache(FileSource fileSource);
 
   @Keep
   private native void mergeOfflineRegions(FileSource fileSource, String path, MergeOfflineRegionsCallback callback);
