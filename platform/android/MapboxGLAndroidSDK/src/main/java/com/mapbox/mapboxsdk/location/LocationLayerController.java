@@ -222,9 +222,6 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
   private void addAccuracyLayer() {
     Layer accuracyLayer = layerSourceProvider.generateAccuracyLayer();
     addLayerToMap(accuracyLayer, BACKGROUND_LAYER);
-    if(isHidden) {
-      setLayerVisibility(accuracyLayer.getId(), false);
-    }
   }
 
   private void addLayerToMap(Layer layer, @NonNull String idBelowLayer) {
@@ -234,6 +231,9 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
       mapboxMap.addLayerBelow(layer, idBelowLayer);
     }
     layerMap.add(layerId);
+    if(isHidden) {
+      setLayerVisibility(layerId, false);
+    }
   }
 
   private void setBearingProperty(String propertyId, float bearing) {
