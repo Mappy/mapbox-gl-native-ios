@@ -222,6 +222,9 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
   private void addAccuracyLayer() {
     Layer accuracyLayer = layerSourceProvider.generateAccuracyLayer();
     addLayerToMap(accuracyLayer, BACKGROUND_LAYER);
+    if(isHidden) {
+      setLayerVisibility(accuracyLayer.getId(), false);
+    }
   }
 
   private void addLayerToMap(Layer layer, @NonNull String idBelowLayer) {
@@ -239,7 +242,7 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
   }
 
   private void updateAccuracyRadius(float accuracy) {
-    if (renderMode == RenderMode.COMPASS || renderMode == RenderMode.NORMAL) {
+    if (!isHidden && (renderMode == RenderMode.COMPASS || renderMode == RenderMode.NORMAL)) {
       locationFeature.addNumberProperty(PROPERTY_ACCURACY_RADIUS, accuracy);
       refreshSource();
     }
@@ -362,7 +365,7 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
   void setLocationsStale(boolean isStale) {
     locationFeature.addBooleanProperty(PROPERTY_LOCATION_STALE, isStale);
     refreshSource();
-    if (renderMode != RenderMode.GPS) {
+    if (!isHidden && renderMode != RenderMode.GPS) {
       setLayerVisibility(ACCURACY_LAYER, !isStale);
     }
   }
