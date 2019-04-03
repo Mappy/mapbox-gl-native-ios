@@ -656,9 +656,6 @@ final class NativeMapView implements NativeMap {
   @Override
   @NonNull
   public PointF pixelForLatLng(@NonNull LatLng latLng) {
-    if (checkState("pixelForLatLng")) {
-      return new PointF();
-    }
     PointF pointF = nativePixelForLatLng(latLng.getLatitude(), latLng.getLongitude());
     pointF.set(pointF.x * pixelRatio, pointF.y * pixelRatio);
     return pointF;
@@ -899,9 +896,6 @@ final class NativeMapView implements NativeMap {
   public List<Feature> queryRenderedFeatures(@NonNull PointF coordinates,
                                              @Nullable String[] layerIds,
                                              @Nullable Expression filter) {
-    if (checkState("queryRenderedFeatures")) {
-      return new ArrayList<>();
-    }
     Feature[] features = nativeQueryRenderedFeaturesForPoint(coordinates.x / pixelRatio,
       coordinates.y / pixelRatio, layerIds, filter != null ? filter.toArray() : null);
     return features != null ? Arrays.asList(features) : new ArrayList<Feature>();
@@ -912,9 +906,6 @@ final class NativeMapView implements NativeMap {
   public List<Feature> queryRenderedFeatures(@NonNull RectF coordinates,
                                              @Nullable String[] layerIds,
                                              @Nullable Expression filter) {
-    if (checkState("queryRenderedFeatures")) {
-      return new ArrayList<>();
-    }
     Feature[] features = nativeQueryRenderedFeaturesForBox(
       coordinates.left / pixelRatio,
       coordinates.top / pixelRatio,
