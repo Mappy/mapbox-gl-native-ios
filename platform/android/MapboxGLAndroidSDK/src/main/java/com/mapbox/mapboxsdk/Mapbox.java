@@ -51,7 +51,6 @@ public final class Mapbox {
   @UiThread
   @NonNull
   public static synchronized Mapbox getInstance(@NonNull Context context, @Nullable String accessToken) {
-    ThreadUtils.checkThread("Mapbox");
     if (INSTANCE == null) {
       Context appContext = context.getApplicationContext();
       FileSource.initializeFileDirsPaths(appContext);
