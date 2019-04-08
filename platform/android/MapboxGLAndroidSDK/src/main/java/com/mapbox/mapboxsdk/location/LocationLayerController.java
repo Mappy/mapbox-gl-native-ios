@@ -231,6 +231,9 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
       mapboxMap.addLayerBelow(layer, idBelowLayer);
     }
     layerMap.add(layerId);
+    if(isHidden) {
+      setLayerVisibility(layerId, false);
+    }
   }
 
   private void setBearingProperty(String propertyId, float bearing) {
@@ -239,7 +242,7 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
   }
 
   private void updateAccuracyRadius(float accuracy) {
-    if (renderMode == RenderMode.COMPASS || renderMode == RenderMode.NORMAL) {
+    if (!isHidden && (renderMode == RenderMode.COMPASS || renderMode == RenderMode.NORMAL)) {
       locationFeature.addNumberProperty(PROPERTY_ACCURACY_RADIUS, accuracy);
       refreshSource();
     }
@@ -362,7 +365,7 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
   void setLocationsStale(boolean isStale) {
     locationFeature.addBooleanProperty(PROPERTY_LOCATION_STALE, isStale);
     refreshSource();
-    if (renderMode != RenderMode.GPS) {
+    if (!isHidden && renderMode != RenderMode.GPS) {
       setLayerVisibility(ACCURACY_LAYER, !isStale);
     }
   }
