@@ -1,5 +1,10 @@
 apply plugin: 'com.android.library'
-apply plugin: "com.jaredsburrows.license"
+
+//mappy modif
+apply from: '../configuration.gradle'
+apply from: '../gradle/dependencies.gradle'
+//end mappy modif
+
 apply plugin: 'kotlin-android'
 
 //mappy modif
@@ -9,8 +14,8 @@ apply from: '../gradle/dependencies.gradle'
 
 
 dependencies {
-
-    //lintChecks project(":MapboxGLAndroidSDKLint")
+    //    mappy modif
+    // lintChecks project(":MapboxGLAndroidSDKLint")
     api(dependenciesList.mapboxAndroidTelemetry) {
         transitive = true
         exclude group: 'com.android.support', module: 'appcompat-v7'
@@ -81,6 +86,8 @@ android {
     }
 
     defaultConfig {
+        print "build with abi = "+ abi+"\n"
+
         if (abi != 'none') {
             externalNativeBuild {
                 cmake {
@@ -152,15 +159,13 @@ android {
         debug {
             jniDebuggable true
         }
+        release {
+            minifyEnabled false
+            jniDebuggable false
+        }
     }
 }
 
-licenseReport {
-    generateHtmlReport = false
-    generateJsonReport = true
-    copyHtmlReportToAssets = false
-    copyJsonReportToAssets = false
-}
 
 def static getGitRevision() {
     def cmd = "git rev-parse --short HEAD"

@@ -100,7 +100,7 @@ public class Projection {
    */
   @NonNull
   public VisibleRegion getVisibleRegion() {
-    return getVisibleRegion(true);
+    return getVisibleRegion(true, 0, 0, 0, 0);
   }
 
   /**
@@ -136,22 +136,21 @@ public class Projection {
    * @return The projection of the viewing frustum in its current state.
    */
   private VisibleRegion getVisibleRegion(boolean ignorePadding, int additionalPaddingLeft, int additionalPaddingTop, int additionalPaddingRight, int additionalPaddingBottom) {
-
     float left;
     float right;
     float top;
     float bottom;
 
     if (ignorePadding) {
-      left = 0;
-      right = nativeMapView.getWidth();
-      top = 0;
-      bottom = nativeMapView.getHeight();
+      left = additionalPaddingLeft;
+      right = nativeMapView.getWidth() - additionalPaddingRight;
+      top = additionalPaddingTop;
+      bottom = nativeMapView.getHeight() - additionalPaddingBottom;
     } else {
-      left = (float) contentPadding[0];
-      right = (float) (nativeMapView.getWidth() - contentPadding[2]);
-      top = (float) contentPadding[1];
-      bottom = (float) (nativeMapView.getHeight() - contentPadding[3]);
+      left = contentPadding[0] + additionalPaddingLeft;
+      right = nativeMapView.getWidth() - contentPadding[2] - additionalPaddingRight;
+      top = contentPadding[1] + additionalPaddingTop;
+      bottom = nativeMapView.getHeight() - contentPadding[3] - additionalPaddingBottom;
     }
 
     LatLng center = fromScreenLocation(new PointF(left + (right - left) / 2, top + (bottom - top) / 2));

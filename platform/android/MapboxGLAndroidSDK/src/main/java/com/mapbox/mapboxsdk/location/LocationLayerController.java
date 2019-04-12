@@ -72,7 +72,6 @@ final class LocationLayerController {
 
   private final List<String> layerMap = new ArrayList<>();
   private Feature locationFeature;
-  private GeoJsonSource locationSource;
 
   private boolean isHidden = true;
 
@@ -257,8 +256,15 @@ final class LocationLayerController {
   }
 
   private void addLayerToMap(Layer layer, @NonNull String idBelowLayer) {
-    style.addLayerBelow(layer, idBelowLayer);
+    String layerId = layer.getId();
+    Layer existingLayer = style.getLayer(layerId);
+    if (existingLayer == null) {
+      style.addLayerBelow(layer, idBelowLayer);
+    }
     layerMap.add(layer.getId());
+    if(isHidden) {
+      setLayerVisibility(layerId, false);
+    }
   }
 
   private void removeLayers() {
@@ -274,8 +280,10 @@ final class LocationLayerController {
   }
 
   private void updateAccuracyRadius(float accuracy) {
-    locationFeature.addNumberProperty(PROPERTY_ACCURACY_RADIUS, accuracy);
-    refreshSource();
+    if (!isHidden && (renderMode == RenderMode.COMPASS || renderMode == RenderMode.NORMAL)) {
+      locationFeature.addNumberProperty(PROPERTY_ACCURACY_RADIUS, accuracy);
+      refreshSource();
+    }
   }
 
   //
@@ -283,14 +291,17 @@ final class LocationLayerController {
   //
 
   private void addLocationSource() {
-    locationSource = layerSourceProvider.generateSource(locationFeature);
-    style.addSource(locationSource);
+    if (style.getSource(LOCATION_SOURCE) == null) {
+      GeoJsonSource locationSource = layerSourceProvider.generateSource(locationFeature);
+      locationSource = layerSourceProvider.generateSource(locationFeature);
+      style.addSource(locationSource);
+    }
   }
 
   private void refreshSource() {
     GeoJsonSource source = style.getSourceAs(LOCATION_SOURCE);
     if (source != null) {
-      locationSource.setGeoJson(locationFeature);
+        source.setGeoJson(locationFeature);
     }
   }
 
@@ -394,7 +405,7 @@ final class LocationLayerController {
   void setLocationsStale(boolean isStale) {
     locationFeature.addBooleanProperty(PROPERTY_LOCATION_STALE, isStale);
     refreshSource();
-    if (renderMode != RenderMode.GPS) {
+    if (!isHidden && renderMode != RenderMode.GPS) {
       setLayerVisibility(ACCURACY_LAYER, !isStale);
     }
   }

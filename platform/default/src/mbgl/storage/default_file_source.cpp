@@ -174,7 +174,7 @@ public:
 
     // Mappy modif
     void cleanAmbientCache(void) {
-    //    offlineDatabase->deleteAllTilesAndStyles();
+        offlineDatabase->deleteAllTilesAndStyles();
     }
 
 private:

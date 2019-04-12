@@ -193,11 +193,16 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
     // notify Map object about current connectivity state
     nativeMapView.setReachability(Mapbox.isConnected());
 
+    //Mappy modifs
+    if(mapBoxMapCreatedListener != null){
+      mapBoxMapCreatedListener.onMapBoxMapCreatedListener(mapboxMap);
+    }
+
     // initialise MapboxMap
     if (savedInstanceState == null) {
       mapboxMap.initialise(context, mapboxMapOptions);
     } else {
-      mapboxMap.onRestoreInstanceState(savedInstanceState);
+      mapboxMap.onRestoreInstanceState(savedInstanceState, mapboxMapOptions);
     }
 
     mapCallback.initialised();
@@ -467,6 +472,10 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
       return super.onTouchEvent(event);
     }
 
+    if (event.getAction() == MotionEvent.ACTION_DOWN) {
+        // Mappy modif : on touch down, stop map inertia
+        nativeMapView.cancelTransitions();
+    }
     return mapGestureDetector.onTouchEvent(event) || super.onTouchEvent(event);
   }
 
@@ -743,8 +752,6 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
   }
 
   /**
-
-   /**
    * Set a callback that's invoked when the style has finished loading.
    *
    * @param listener The callback that's invoked when the style has finished loading
@@ -991,6 +998,9 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
     mapboxMap.setMaxZoomPreference(zoom);
   }
 
+  private boolean isMapInitialized() {
+    return nativeMapView != null;
+  }
 
   private boolean isGestureDetectorInitialized() {
     return mapGestureDetector != null;
@@ -1266,6 +1276,16 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
         return defaultDialogManager;
       }
     }
+  }
+
+  //Mappy modifs
+  public interface OnMapBoxMapCreatedListener{
+      void onMapBoxMapCreatedListener(MapboxMap mapboxMap);
+  }
+  private OnMapBoxMapCreatedListener mapBoxMapCreatedListener;
+
+  public void setMapBoxMapCreatedListener(OnMapBoxMapCreatedListener mapBoxMapCreatedListener){
+      this.mapBoxMapCreatedListener = mapBoxMapCreatedListener;
   }
 
   /**

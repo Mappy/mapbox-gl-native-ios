@@ -1,4 +1,4 @@
-apply plugin: 'maven'
+apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'signing'
 
 allprojects {
@@ -53,91 +53,94 @@ afterEvaluate { project ->
     uploadArchives {
         repositories {
             mavenDeployer {
-                beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-
+                //for mappy
+//                beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+                //end for mappy
+                
                 pom.groupId = GROUP
                 pom.artifactId = POM_ARTIFACT_ID
                 pom.version = VERSION_NAME
 
-                if (isLocalBuild()) {
-                    repository(url: obtainMavenLocalUrl())
-                } else {
-                    repository(url: getReleaseRepositoryUrl()) {
-                        authentication(userName: getRepositoryUsername(), password: getRepositoryPassword())
-                    }
-                    snapshotRepository(url: getSnapshotRepositoryUrl()) {
-                        authentication(userName: getRepositoryUsername(), password: getRepositoryPassword())
-                    }
-                }
-
-                pom.project {
-                    name POM_NAME
-                    packaging POM_PACKAGING
-                    description POM_DESCRIPTION
-                    url POM_URL
-
-                    scm {
-                        url POM_SCM_URL
-                        connection POM_SCM_CONNECTION
-                        developerConnection POM_SCM_DEV_CONNECTION
-                    }
-
-                    licenses {
-                        license {
-                            name POM_LICENCE_NAME
-                            url POM_LICENCE_URL
-                            distribution POM_LICENCE_DIST
-                        }
-                    }
-
-                    developers {
-                        developer {
-                            id POM_DEVELOPER_ID
-                            name POM_DEVELOPER_NAME
-                        }
-                    }
-                }
+                //for mappy
+                repository(url: "file://${System.env.MAVEN}")
+//
+//                if (isLocalBuild()) {
+//                    repository(url: obtainMavenLocalUrl())
+//                } else {
+//                    repository(url: getReleaseRepositoryUrl()) {
+//                        authentication(userName: getRepositoryUsername(), password: getRepositoryPassword())
+//                    }
+//                    snapshotRepository(url: getSnapshotRepositoryUrl()) {
+//                        authentication(userName: getRepositoryUsername(), password: getRepositoryPassword())
+//                    }
+//                }
+//
+//                pom.project {
+//                    name POM_NAME
+//                    packaging POM_PACKAGING
+//                    description POM_DESCRIPTION
+//                    url POM_URL
+//
+//                    scm {
+//                        url POM_SCM_URL
+//                        connection POM_SCM_CONNECTION
+//                        developerConnection POM_SCM_DEV_CONNECTION
+//                    }
+//
+//                    licenses {
+//                        license {
+//                            name POM_LICENCE_NAME
+//                            url POM_LICENCE_URL
+//                            distribution POM_LICENCE_DIST
+//                        }
+//                    }
+//
+//                    developers {
+//                        developer {
+//                            id POM_DEVELOPER_ID
+//                            name POM_DEVELOPER_NAME
+//                        }
+//                    }
+//                }
+                //end for mappy
             }
         }
     }
 
-    signing {
-        required { isReleaseBuild() && gradle.taskGraph.hasTask("uploadArchives") }
-        sign configurations.archives
-    }
-
-    task androidJavadocs(type: Javadoc) {
-        source = android.sourceSets.main.java.sourceFiles
-        classpath = files(android.bootClasspath)
-    }
-
-    task androidJavadocsJar(type: Jar, dependsOn: androidJavadocs) {
-        classifier = 'javadoc'
-        from androidJavadocs.destinationDir
-    }
-
-    task androidSourcesJar(type: Jar) {
-        classifier = 'sources'
-        from android.sourceSets.main.java.sourceFiles
-    }
-
-    tasks.withType(Javadoc) {
-        options.addStringOption('encoding', 'UTF-8')
-        options.addStringOption('docencoding', 'UTF-8')
-        options.addStringOption('charset', 'UTF-8')
-    }
-
-    artifacts {
-        archives androidSourcesJar
-        archives androidJavadocsJar
-    }
+    //for mappy
+//    signing {
+//        required { isReleaseBuild() && gradle.taskGraph.hasTask("uploadArchives") }
+//        sign configurations.archives
+//    }
+//
+//    task androidJavadocs(type: Javadoc) {
+//        source = android.sourceSets.main.java.sourceFiles
+//        classpath = files(android.bootClasspath)
+//    }
+//
+//    task androidJavadocsJar(type: Jar, dependsOn: androidJavadocs) {
+//        classifier = 'javadoc'
+//        from androidJavadocs.destinationDir
+//    }
+//
+//    task androidSourcesJar(type: Jar) {
+//        classifier = 'sources'
+//        from android.sourceSets.main.java.sourceFiles
+//    }
+//
+//    artifacts {
+//        archives androidSourcesJar
+//        archives androidJavadocsJar
+//    }
+    //end for mappy
 }
-
-// See: https://github.com/chrisbanes/gradle-mvn-push/issues/43#issuecomment-84140513
-afterEvaluate { project ->
-    android.libraryVariants.all { variant ->
-        tasks.androidJavadocs.doFirst {
-            classpath += files(variant.javaCompile.classpath.files)
-        }
-    }
-}
+    //for mappy
+//// See: https://github.com/chrisbanes/gradle-mvn-push/issues/43#issuecomment-84140513
+//afterEvaluate { project ->
+//    android.libraryVariants.all { variant ->
+//        tasks.androidJavadocs.doFirst {
+//            classpath += files(variant.javaCompile.classpath.files)
+//        }
+//    }
+//}
+    //end for mappy
