@@ -1,4 +1,4 @@
-apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
 allprojects {
@@ -50,19 +50,26 @@ def getRepositoryPassword() {
 }
 
 afterEvaluate { project ->
-    uploadArchives {
-        repositories {
-            mavenDeployer {
+    publishing {
+        publications {
+            maven(MavenPublication) {
                 //for mappy
 //                beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
                 //end for mappy
                 
-                pom.groupId = GROUP
-                pom.artifactId = POM_ARTIFACT_ID
-                pom.version = VERSION_NAME
+                groupId = GROUP
+                artifactId = POM_ARTIFACT_ID
+                version = VERSION_NAME
+            }
+        }
+        repositories {
+            maven {
+                url "file://sdk_export"
+            }
+        }
+    }
 
-                //for mappy
-                repository(url: "file://${System.env.MAVEN}")
+
 //
 //                if (isLocalBuild()) {
 //                    repository(url: obtainMavenLocalUrl())
@@ -103,8 +110,8 @@ afterEvaluate { project ->
 //                    }
 //                }
                 //end for mappy
-            }
-        }
+   //         }
+   //     }
     }
 
     //for mappy
@@ -133,7 +140,7 @@ afterEvaluate { project ->
 //        archives androidJavadocsJar
 //    }
     //end for mappy
-}
+//}
     //for mappy
 //// See: https://github.com/chrisbanes/gradle-mvn-push/issues/43#issuecomment-84140513
 //afterEvaluate { project ->
