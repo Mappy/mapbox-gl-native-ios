@@ -108,22 +108,6 @@ class LocationComponentCompassEngine implements CompassEngine, SensorEventListen
     return lastHeading;
   }
 
-  // TODO Mappy Check if this is necessary
-//  @Override
-//  public void onStart() {
-//    if (!compassListeners.isEmpty()) {
-//      registerSensorListeners();
-//    }
-//  }
-
-  // TODO Mappy Check if this is necessary
-//  @Override
-//  public void onStop() {
-//    if (!compassListeners.isEmpty()) {
-//      unregisterSensorListeners();
-//    }
-//  }
-
   @Override
   public void onSensorChanged(@NonNull SensorEvent event) {
     // check when the last time the compass was updated, return if too soon.
