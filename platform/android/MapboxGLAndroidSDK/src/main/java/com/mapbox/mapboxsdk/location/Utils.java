@@ -77,11 +77,7 @@ public final class Utils {
       return drawable;
     }
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-      drawable.setTint(tintColor);
-    } else {
-      drawable.mutate().setColorFilter(tintColor, PorterDuff.Mode.SRC_IN);
-    }
+    drawable.setTint(tintColor);
     return drawable;
   }
 
