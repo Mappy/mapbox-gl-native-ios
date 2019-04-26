@@ -11,6 +11,7 @@ import android.support.annotation.Nullable;
 import android.support.annotation.RequiresPermission;
 import android.support.annotation.StyleRes;
 import android.support.annotation.VisibleForTesting;
+import android.util.Log;
 import android.view.WindowManager;
 
 import com.mapbox.android.core.location.LocationEngine;
@@ -1197,7 +1198,8 @@ public final class LocationComponent {
    * @param location the latest user location
    */
   private void updateLocation(@Nullable final Location location, boolean fromLastLocation, /* Mappy Modif */ boolean forceShow) {
-    if (location == null) {
+    if (location == null /* Mappy Modif not to use default location */
+            || (location.getLatitude() == 0.0 && location.getLongitude() == 0.0) /* Mappy Modif */) {
       return;
     } else if (!isLayerReady) {
       lastLocation = location;
