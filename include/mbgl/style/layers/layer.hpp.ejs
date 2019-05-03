@@ -14,7 +14,6 @@
 #include <mbgl/style/filter.hpp>
 #include <mbgl/style/property_value.hpp>
 #include <mbgl/style/expression/formatted.hpp>
-
 #include <mbgl/util/color.hpp>
 
 <% if (type === 'line' || type === 'symbol') { -%>
@@ -71,11 +70,6 @@ public:
 protected:
     Mutable<Layer::Impl> mutableBaseImpl() const final;
 };
-
-template <>
-inline bool Layer::is<<%- camelize(type) %>Layer>() const {
-    return getType() == LayerType::<%- camelize(type) %>;
-}
 
 } // namespace style
 } // namespace mbgl

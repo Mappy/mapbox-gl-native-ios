@@ -6,7 +6,6 @@
 #include <mbgl/style/filter.hpp>
 #include <mbgl/style/property_value.hpp>
 #include <mbgl/style/expression/formatted.hpp>
-
 #include <mbgl/util/color.hpp>
 
 namespace mbgl {
@@ -67,6 +66,12 @@ public:
     void setFillExtrusionBaseTransition(const TransitionOptions&);
     TransitionOptions getFillExtrusionBaseTransition() const;
 
+    static PropertyValue<bool> getDefaultFillExtrusionVerticalGradient();
+    PropertyValue<bool> getFillExtrusionVerticalGradient() const;
+    void setFillExtrusionVerticalGradient(PropertyValue<bool>);
+    void setFillExtrusionVerticalGradientTransition(const TransitionOptions&);
+    TransitionOptions getFillExtrusionVerticalGradientTransition() const;
+
     // Private implementation
 
     class Impl;
@@ -79,11 +84,6 @@ public:
 protected:
     Mutable<Layer::Impl> mutableBaseImpl() const final;
 };
-
-template <>
-inline bool Layer::is<FillExtrusionLayer>() const {
-    return getType() == LayerType::FillExtrusion;
-}
 
 } // namespace style
 } // namespace mbgl

@@ -1,7 +1,7 @@
 package com.mapbox.mapboxsdk.style.types;
 
 import android.support.annotation.Keep;
-import android.support.annotation.VisibleForTesting;
+import android.support.annotation.Nullable;
 
 import java.util.Arrays;
 
@@ -19,8 +19,7 @@ public class Formatted {
    *
    * @param formattedSections sections with formatting options
    */
-  @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
-  public Formatted(FormattedSection[] formattedSections) {
+  public Formatted(FormattedSection... formattedSections) {
     this.formattedSections = formattedSections;
   }
 
@@ -33,8 +32,16 @@ public class Formatted {
     return formattedSections;
   }
 
+  public Object[] toArray() {
+    Object[] sections = new Object[formattedSections.length];
+    for (int i = 0; i < formattedSections.length; i++) {
+      sections[i] = formattedSections[i].toArray();
+    }
+    return sections;
+  }
+
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(@Nullable Object o) {
     if (this == o) {
       return true;
     }

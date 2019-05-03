@@ -2,8 +2,19 @@
 #include <mbgl/style/layers/custom_layer_impl.hpp>
 #include <mbgl/style/layer_observer.hpp>
 
+#include <mbgl/renderer/layers/render_custom_layer.hpp>
+
 namespace mbgl {
 namespace style {
+
+namespace {
+    const LayerTypeInfo typeInfoCustom
+    { "",
+      LayerTypeInfo::Source::NotRequired,
+      LayerTypeInfo::Pass3D::NotRequired,
+      LayerTypeInfo::Layout::NotRequired,
+      LayerTypeInfo::Clipping::NotRequired };
+}  // namespace
 
 CustomLayer::CustomLayer(const std::string& layerID,
                          std::unique_ptr<CustomLayerHost> host)
@@ -39,9 +50,9 @@ Mutable<Layer::Impl> CustomLayer::mutableBaseImpl() const {
     return staticMutableCast<Layer::Impl>(mutableImpl());
 }
 
-template <>
-bool Layer::is<CustomLayer>() const {
-    return getType() == LayerType::Custom;
+// static
+const LayerTypeInfo* CustomLayer::Impl::staticTypeInfo() noexcept {
+    return &typeInfoCustom;
 }
 
 } // namespace style

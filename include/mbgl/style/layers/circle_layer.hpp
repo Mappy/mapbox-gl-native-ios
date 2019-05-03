@@ -6,7 +6,6 @@
 #include <mbgl/style/filter.hpp>
 #include <mbgl/style/property_value.hpp>
 #include <mbgl/style/expression/formatted.hpp>
-
 #include <mbgl/util/color.hpp>
 
 namespace mbgl {
@@ -103,11 +102,6 @@ public:
 protected:
     Mutable<Layer::Impl> mutableBaseImpl() const final;
 };
-
-template <>
-inline bool Layer::is<CircleLayer>() const {
-    return getType() == LayerType::Circle;
-}
 
 } // namespace style
 } // namespace mbgl

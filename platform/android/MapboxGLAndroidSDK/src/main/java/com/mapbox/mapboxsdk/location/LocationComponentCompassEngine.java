@@ -15,8 +15,6 @@ import com.mapbox.mapboxsdk.log.Logger;
 import java.util.ArrayList;
 import java.util.List;
 
-import timber.log.Timber;
-
 /**
  * This manager class handles compass events such as starting the tracking of device bearing, or
  * when a new compass update occurs.
@@ -36,6 +34,7 @@ class LocationComponentCompassEngine implements CompassEngine, SensorEventListen
 
   @NonNull
   private final WindowManager windowManager;
+  @NonNull
   private final SensorManager sensorManager;
   private final List<CompassListener> compassListeners = new ArrayList<>();
 
@@ -47,14 +46,18 @@ class LocationComponentCompassEngine implements CompassEngine, SensorEventListen
   @Nullable
   private Sensor magneticFieldSensor;
 
+  @NonNull
   private float[] truncatedRotationVectorValue = new float[4];
+  @NonNull
   private float[] rotationMatrix = new float[9];
   private float[] rotationVectorValue;
   private float lastHeading;
   private int lastAccuracySensorStatus;
 
   private long compassUpdateNextTimestamp;
+  @Nullable
   private float[] gravityValues = new float[3];
+  @Nullable
   private float[] magneticValues = new float[3];
 
   /**
@@ -67,10 +70,12 @@ class LocationComponentCompassEngine implements CompassEngine, SensorEventListen
     compassSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
     if (compassSensor == null) {
       if (isGyroscopeAvailable()) {
-        Timber.d("Rotation vector sensor not supported on device, falling back to orientation.");
+        Logger.d(TAG, "Rotation vector sensor not supported on device, "
+                + "falling back to orientation.");
         compassSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION);
       } else {
-        Timber.d("Rotation vector sensor not supported on device, falling back to accelerometer and magnetic field.");
+        Logger.d(TAG, "Rotation vector sensor not supported on device, "
+                        + "falling back to accelerometer and magnetic field.");
         gravitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         magneticFieldSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
       }
@@ -104,21 +109,7 @@ class LocationComponentCompassEngine implements CompassEngine, SensorEventListen
   }
 
   @Override
-  public void onStart() {
-    if (!compassListeners.isEmpty()) {
-      registerSensorListeners();
-    }
-  }
-
-  @Override
-  public void onStop() {
-    if (!compassListeners.isEmpty()) {
-      unregisterSensorListeners();
-    }
-  }
-
-  @Override
-  public void onSensorChanged(SensorEvent event) {
+  public void onSensorChanged(@NonNull SensorEvent event) {
     // check when the last time the compass was updated, return if too soon.
     long currentTime = SystemClock.elapsedRealtime();
     if (currentTime < compassUpdateNextTimestamp) {

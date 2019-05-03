@@ -2,7 +2,10 @@
 #include <mbgl/style/layer_impl.hpp>
 #include <mbgl/style/layer_observer.hpp>
 #include <mbgl/style/conversion/constant.hpp>
+#include <mbgl/style/conversion/filter.hpp>
 #include <mbgl/style/conversion_impl.hpp>
+
+#include <mbgl/renderer/render_layer.hpp>
 
 namespace mbgl {
 namespace style {
@@ -15,10 +18,6 @@ Layer::Layer(Immutable<Impl> impl)
 }
 
 Layer::~Layer() = default;
-
-LayerType Layer::getType() const {
-    return baseImpl->type;
-}
 
 std::string Layer::getID() const {
     return baseImpl->id;
@@ -104,6 +103,10 @@ optional<conversion::Error> Layer::setVisibility(const conversion::Convertible& 
 
     setVisibility(*visibility);
     return nullopt;
+}
+
+const LayerTypeInfo* Layer::getTypeInfo() const noexcept {
+    return baseImpl->getTypeInfo();
 }
 
 } // namespace style

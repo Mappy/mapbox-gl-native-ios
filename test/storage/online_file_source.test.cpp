@@ -433,7 +433,7 @@ TEST(OnlineFileSource, TEST_REQUIRES_SERVER(LowHighPriorityRequests)) {
     std::size_t response_counter = 0;
     const std::size_t NUM_REQUESTS = 3;
 
-    fs.setMaximumConcurrentRequestsOverride(1);
+    fs.setMaximumConcurrentRequests(1);
 
     NetworkStatus::Set(NetworkStatus::Status::Offline);
 
@@ -473,7 +473,7 @@ TEST(OnlineFileSource, TEST_REQUIRES_SERVER(LowHighPriorityRequestsMany)) {
     int correct_regular = 0;
 
 
-    fs.setMaximumConcurrentRequestsOverride(1);
+    fs.setMaximumConcurrentRequests(1);
 
     NetworkStatus::Set(NetworkStatus::Status::Offline);
 
@@ -513,6 +513,33 @@ TEST(OnlineFileSource, TEST_REQUIRES_SERVER(LowHighPriorityRequestsMany)) {
     }
 
     NetworkStatus::Set(NetworkStatus::Status::Online);
+
+    loop.run();
+}
+
+TEST(OnlineFileSource, TEST_REQUIRES_SERVER(MaximumConcurrentRequests)) {
+    util::RunLoop loop;
+    OnlineFileSource fs;
+
+    ASSERT_EQ(fs.getMaximumConcurrentRequests(), 20u);
+
+    fs.setMaximumConcurrentRequests(10);
+    ASSERT_EQ(fs.getMaximumConcurrentRequests(), 10u);
+}
+TEST(OnlineFileSource, TEST_REQUIRES_SERVER(RequestSameUrlMultipleTimes)) {
+    util::RunLoop loop;
+    OnlineFileSource fs;
+
+    int count = 0;
+    std::vector<std::unique_ptr<AsyncRequest>> requests;
+
+    for (int i = 0; i < 100; ++i) {
+        requests.emplace_back(fs.request({ Resource::Unknown, "http://127.0.0.1:3000/load" }, [&](Response) {
+            if (++count == 100) {
+                loop.stop();
+            }
+        }));
+    }
 
     loop.run();
 }

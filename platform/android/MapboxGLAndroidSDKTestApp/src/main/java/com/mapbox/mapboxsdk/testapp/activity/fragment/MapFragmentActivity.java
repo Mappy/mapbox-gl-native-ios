@@ -1,11 +1,12 @@
 package com.mapbox.mapboxsdk.testapp.activity.fragment;
 
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
-import com.mapbox.mapboxsdk.constants.Style;
+import com.mapbox.mapboxsdk.maps.Style;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.maps.MapFragment;
 import com.mapbox.mapboxsdk.maps.MapView;
@@ -43,7 +44,6 @@ public class MapFragmentActivity extends AppCompatActivity implements MapFragmen
 
   private MapboxMapOptions createFragmentOptions() {
     MapboxMapOptions options = new MapboxMapOptions();
-    options.styleUrl(Style.OUTDOORS);
 
     options.scrollGesturesEnabled(false);
     options.zoomGesturesEnabled(false);
@@ -69,8 +69,9 @@ public class MapFragmentActivity extends AppCompatActivity implements MapFragmen
   }
 
   @Override
-  public void onMapReady(MapboxMap map) {
+  public void onMapReady(@NonNull MapboxMap map) {
     mapboxMap = map;
+    mapboxMap.setStyle(Style.OUTDOORS);
   }
 
   @Override

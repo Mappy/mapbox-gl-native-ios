@@ -1,13 +1,11 @@
 package com.mapbox.mapboxsdk.testapp.style;
 
 import android.graphics.Color;
-import android.support.test.espresso.UiController;
 import android.support.test.runner.AndroidJUnit4;
 
 import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.Point;
 import com.mapbox.mapboxsdk.geometry.LatLng;
-import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.style.expressions.Expression;
 import com.mapbox.mapboxsdk.style.layers.CircleLayer;
 import com.mapbox.mapboxsdk.style.layers.FillLayer;
@@ -18,8 +16,8 @@ import com.mapbox.mapboxsdk.style.sources.Source;
 import com.mapbox.mapboxsdk.style.types.Formatted;
 import com.mapbox.mapboxsdk.style.types.FormattedSection;
 import com.mapbox.mapboxsdk.testapp.R;
-import com.mapbox.mapboxsdk.testapp.activity.BaseActivityTest;
-import com.mapbox.mapboxsdk.testapp.activity.espresso.EspressoTestActivity;
+import com.mapbox.mapboxsdk.testapp.activity.EspressoTest;
+import com.mapbox.mapboxsdk.testapp.utils.TestingAsyncUtils;
 import com.mapbox.mapboxsdk.testapp.utils.ResourceUtils;
 import com.mapbox.mapboxsdk.utils.ColorUtils;
 
@@ -61,7 +59,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 
 @RunWith(AndroidJUnit4.class)
-public class ExpressionTest extends BaseActivityTest {
+public class ExpressionTest extends EspressoTest {
 
   private FillLayer layer;
 
@@ -242,7 +240,8 @@ public class ExpressionTest extends BaseActivityTest {
       Expression expression3 = eq(literal("Łukasz"), literal("lukasz"), collator(literal(false), eq(literal(2),
         literal(1))));
 
-      mapboxMap.addSource(new GeoJsonSource("source", Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude())));
+      mapboxMap.getStyle()
+        .addSource(new GeoJsonSource("source", Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude())));
       Layer layer = new CircleLayer("layer", "source")
         .withProperties(circleColor(
           switchCase(
@@ -250,7 +249,7 @@ public class ExpressionTest extends BaseActivityTest {
             literal(ColorUtils.colorToRgbaString(Color.RED))
           )
         ));
-      mapboxMap.addLayer(layer);
+      mapboxMap.getStyle().addLayer(layer);
       uiController.loopMainThreadForAtLeast(1000);
       assertFalse(mapboxMap.queryRenderedFeatures(mapboxMap.getProjection().toScreenLocation(latLng), "layer")
         .isEmpty());
@@ -278,30 +277,25 @@ public class ExpressionTest extends BaseActivityTest {
   }
 
   @Test
-  public void testConstFormatExpressionNoParams() {
+  public void testConstFormatExpression() {
     validateTestSetup();
     invoke(mapboxMap, (uiController, mapboxMap) -> {
       LatLng latLng = new LatLng(51, 17);
-      mapboxMap.addSource(new GeoJsonSource("source", Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude())));
+      mapboxMap.getStyle()
+        .addSource(new GeoJsonSource("source", Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude())));
       SymbolLayer layer = new SymbolLayer("layer", "source");
-      mapboxMap.addLayer(layer);
+      mapboxMap.getStyle().addLayer(layer);
 
       Expression expression = format(
         formatEntry("test")
       );
       layer.setProperties(textField(expression));
-      waitForLayer(uiController, mapboxMap, latLng);
+      TestingAsyncUtils.INSTANCE.waitForLayer(uiController, idlingResource.getMapView());
+
       assertFalse(mapboxMap.queryRenderedFeatures(mapboxMap.getProjection().toScreenLocation(latLng), "layer")
         .isEmpty());
-
       assertNull(layer.getTextField().getExpression());
-      assertEquals("test", layer.getTextField().getValue());
-
-      Formatted expected = new Formatted(new FormattedSection[] {
-        new FormattedSection("test", 1.0f)
-      });
-      assertNull(layer.getFormattedTextField().getExpression());
-      assertEquals(expected, layer.getFormattedTextField().getValue());
+      assertEquals(new Formatted(new FormattedSection("test")), layer.getTextField().getValue());
     });
   }
 
@@ -310,26 +304,21 @@ public class ExpressionTest extends BaseActivityTest {
     validateTestSetup();
     invoke(mapboxMap, (uiController, mapboxMap) -> {
       LatLng latLng = new LatLng(51, 17);
-      mapboxMap.addSource(new GeoJsonSource("source", Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude())));
+      mapboxMap.getStyle()
+        .addSource(new GeoJsonSource("source", Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude())));
       SymbolLayer layer = new SymbolLayer("layer", "source");
-      mapboxMap.addLayer(layer);
+      mapboxMap.getStyle().addLayer(layer);
 
       Expression expression = format(
         formatEntry("test", formatFontScale(1.75))
       );
       layer.setProperties(textField(expression));
-      waitForLayer(uiController, mapboxMap, latLng);
+      TestingAsyncUtils.INSTANCE.waitForLayer(uiController, idlingResource.getMapView());
+
       assertFalse(mapboxMap.queryRenderedFeatures(mapboxMap.getProjection().toScreenLocation(latLng), "layer")
         .isEmpty());
-
       assertNull(layer.getTextField().getExpression());
-      assertEquals("test", layer.getTextField().getValue());
-
-      Formatted expected = new Formatted(new FormattedSection[] {
-        new FormattedSection("test", 1.75f)
-      });
-      assertNull(layer.getFormattedTextField().getExpression());
-      assertEquals(expected, layer.getFormattedTextField().getValue());
+      assertEquals(new Formatted(new FormattedSection("test", 1.75)), layer.getTextField().getValue());
     });
   }
 
@@ -338,32 +327,28 @@ public class ExpressionTest extends BaseActivityTest {
     validateTestSetup();
     invoke(mapboxMap, (uiController, mapboxMap) -> {
       LatLng latLng = new LatLng(51, 17);
-      mapboxMap.addSource(new GeoJsonSource("source", Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude())));
+      mapboxMap.getStyle()
+        .addSource(new GeoJsonSource("source", Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude())));
       SymbolLayer layer = new SymbolLayer("layer", "source");
-      mapboxMap.addLayer(layer);
+      mapboxMap.getStyle().addLayer(layer);
 
       Expression expression = format(
         formatEntry(
           literal("test"),
-          formatFontScale(1.0),
           formatTextFont(new String[] {"DIN Offc Pro Regular", "Arial Unicode MS Regular"})
         )
       );
       layer.setProperties(textField(expression));
-      waitForLayer(uiController, mapboxMap, latLng);
+      TestingAsyncUtils.INSTANCE.waitForLayer(uiController, idlingResource.getMapView());
+
       assertFalse(
         mapboxMap.queryRenderedFeatures(mapboxMap.getProjection().toScreenLocation(latLng), "layer").isEmpty()
       );
-
       assertNull(layer.getTextField().getExpression());
-      assertEquals("test", layer.getTextField().getValue());
-
-      Formatted expected = new Formatted(new FormattedSection[] {
-        new FormattedSection("test", 1.0f,
+      assertEquals(new Formatted(
+        new FormattedSection("test",
           new String[] {"DIN Offc Pro Regular", "Arial Unicode MS Regular"})
-      });
-      assertNull(layer.getFormattedTextField().getExpression());
-      assertEquals(expected, layer.getFormattedTextField().getValue());
+      ), layer.getTextField().getValue());
     });
   }
 
@@ -372,9 +357,10 @@ public class ExpressionTest extends BaseActivityTest {
     validateTestSetup();
     invoke(mapboxMap, (uiController, mapboxMap) -> {
       LatLng latLng = new LatLng(51, 17);
-      mapboxMap.addSource(new GeoJsonSource("source", Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude())));
+      mapboxMap.getStyle()
+        .addSource(new GeoJsonSource("source", Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude())));
       SymbolLayer layer = new SymbolLayer("layer", "source");
-      mapboxMap.addLayer(layer);
+      mapboxMap.getStyle().addLayer(layer);
 
       Expression expression = format(
         formatEntry(
@@ -384,18 +370,17 @@ public class ExpressionTest extends BaseActivityTest {
         )
       );
       layer.setProperties(textField(expression));
-      waitForLayer(uiController, mapboxMap, latLng);
+      TestingAsyncUtils.INSTANCE.waitForLayer(uiController, idlingResource.getMapView());
+
       assertFalse(
         mapboxMap.queryRenderedFeatures(mapboxMap.getProjection().toScreenLocation(latLng), "layer").isEmpty()
       );
-
       assertNull(layer.getTextField().getExpression());
-      assertEquals("test", layer.getTextField().getValue());
-
-      Formatted expected = new Formatted(new FormattedSection[] {
-        new FormattedSection("test", 0.5f, new String[] {"DIN Offc Pro Regular", "Arial Unicode MS Regular"})});
-      assertNull(layer.getFormattedTextField().getExpression());
-      assertEquals(expected, layer.getFormattedTextField().getValue());
+      assertEquals(new Formatted(
+        new FormattedSection("test",
+          0.5,
+          new String[] {"DIN Offc Pro Regular", "Arial Unicode MS Regular"})
+      ), layer.getTextField().getValue());
     });
   }
 
@@ -404,9 +389,10 @@ public class ExpressionTest extends BaseActivityTest {
     validateTestSetup();
     invoke(mapboxMap, (uiController, mapboxMap) -> {
       LatLng latLng = new LatLng(51, 17);
-      mapboxMap.addSource(new GeoJsonSource("source", Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude())));
+      mapboxMap.getStyle()
+        .addSource(new GeoJsonSource("source", Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude())));
       SymbolLayer layer = new SymbolLayer("layer", "source");
-      mapboxMap.addLayer(layer);
+      mapboxMap.getStyle().addLayer(layer);
 
       Expression expression = format(
         formatEntry(
@@ -417,20 +403,17 @@ public class ExpressionTest extends BaseActivityTest {
         formatEntry("\ntest2", formatFontScale(2))
       );
       layer.setProperties(textField(expression));
-      waitForLayer(uiController, mapboxMap, latLng);
+      TestingAsyncUtils.INSTANCE.waitForLayer(uiController, idlingResource.getMapView());
+
       assertFalse(
         mapboxMap.queryRenderedFeatures(mapboxMap.getProjection().toScreenLocation(latLng), "layer").isEmpty()
       );
-
       assertNull(layer.getTextField().getExpression());
-      assertEquals("test\ntest2", layer.getTextField().getValue());
-
-      Formatted expected = new Formatted(new FormattedSection[] {
-        new FormattedSection("test", 1.5f, new String[] {"DIN Offc Pro Regular", "Arial Unicode MS Regular"}),
-        new FormattedSection("\ntest2", 2f),
-      });
-      assertNull(layer.getFormattedTextField().getExpression());
-      assertEquals(expected, layer.getFormattedTextField().getValue());
+      assertEquals(new Formatted(
+        new FormattedSection("test", 1.5,
+          new String[] {"DIN Offc Pro Regular", "Arial Unicode MS Regular"}),
+        new FormattedSection("\ntest2", 2.0)
+      ), layer.getTextField().getValue());
     });
   }
 
@@ -442,9 +425,9 @@ public class ExpressionTest extends BaseActivityTest {
       Feature feature = Feature.fromGeometry(Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude()));
       feature.addStringProperty("test_property", "test");
       feature.addNumberProperty("test_property_number", 1.5);
-      mapboxMap.addSource(new GeoJsonSource("source", feature));
+      mapboxMap.getStyle().addSource(new GeoJsonSource("source", feature));
       SymbolLayer layer = new SymbolLayer("layer", "source");
-      mapboxMap.addLayer(layer);
+      mapboxMap.getStyle().addLayer(layer);
 
       Expression expression = format(
         formatEntry(
@@ -454,15 +437,12 @@ public class ExpressionTest extends BaseActivityTest {
         )
       );
       layer.setProperties(textField(expression));
-      waitForLayer(uiController, mapboxMap, latLng);
+      TestingAsyncUtils.INSTANCE.waitForLayer(uiController, idlingResource.getMapView());
+
       assertFalse(mapboxMap.queryRenderedFeatures(mapboxMap.getProjection().toScreenLocation(latLng), "layer")
         .isEmpty());
-
       assertEquals(expression, layer.getTextField().getExpression());
       assertNull(layer.getTextField().getValue());
-
-      assertEquals(expression, layer.getFormattedTextField().getExpression());
-      assertNull(layer.getFormattedTextField().getValue());
     });
   }
 
@@ -474,9 +454,9 @@ public class ExpressionTest extends BaseActivityTest {
       Feature feature = Feature.fromGeometry(Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude()));
       feature.addStringProperty("test_property", "test");
       feature.addNumberProperty("test_property_number", 1.5);
-      mapboxMap.addSource(new GeoJsonSource("source", feature));
+      mapboxMap.getStyle().addSource(new GeoJsonSource("source", feature));
       SymbolLayer layer = new SymbolLayer("layer", "source");
-      mapboxMap.addLayer(layer);
+      mapboxMap.getStyle().addLayer(layer);
 
       Expression expression = format(
         formatEntry(
@@ -487,15 +467,12 @@ public class ExpressionTest extends BaseActivityTest {
         formatEntry("\ntest2", formatFontScale(2))
       );
       layer.setProperties(textField(expression));
-      waitForLayer(uiController, mapboxMap, latLng);
+      TestingAsyncUtils.INSTANCE.waitForLayer(uiController, idlingResource.getMapView());
+
       assertFalse(mapboxMap.queryRenderedFeatures(mapboxMap.getProjection().toScreenLocation(latLng), "layer")
         .isEmpty());
-
       assertEquals(expression, layer.getTextField().getExpression());
       assertNull(layer.getTextField().getValue());
-
-      assertEquals(expression, layer.getFormattedTextField().getExpression());
-      assertNull(layer.getFormattedTextField().getValue());
     });
   }
 
@@ -504,34 +481,44 @@ public class ExpressionTest extends BaseActivityTest {
     validateTestSetup();
     invoke(mapboxMap, (uiController, mapboxMap) -> {
       LatLng latLng = new LatLng(51, 17);
-      mapboxMap.addSource(new GeoJsonSource("source", Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude())));
+      mapboxMap.getStyle()
+        .addSource(new GeoJsonSource("source", Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude())));
       SymbolLayer layer = new SymbolLayer("layer", "source");
-      mapboxMap.addLayer(layer);
+      mapboxMap.getStyle().addLayer(layer);
 
       layer.setProperties(textField("test"));
-      waitForLayer(uiController, mapboxMap, latLng);
+      TestingAsyncUtils.INSTANCE.waitForLayer(uiController, idlingResource.getMapView());
+
       assertFalse(mapboxMap.queryRenderedFeatures(mapboxMap.getProjection().toScreenLocation(latLng), "layer")
         .isEmpty());
-
       assertNull(layer.getTextField().getExpression());
-      assertEquals("test", layer.getTextField().getValue());
-
-      assertNull(layer.getFormattedTextField().getExpression());
-      Formatted expected = new Formatted(new FormattedSection[] {new FormattedSection("test", 1.0f)});
-      assertEquals(expected, layer.getFormattedTextField().getValue());
+      assertEquals(new Formatted(
+        new FormattedSection("test")), layer.getTextField().getValue());
     });
   }
 
-  private static final long WAIT_TIMEOUT = 5000;
-  private static final long WAIT_DELAY = 150;
+  @Test
+  public void testTextFieldFormattedArgument() {
+    validateTestSetup();
+    invoke(mapboxMap, (uiController, mapboxMap) -> {
+      LatLng latLng = new LatLng(51, 17);
+      mapboxMap.getStyle()
+        .addSource(new GeoJsonSource("source", Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude())));
+      SymbolLayer layer = new SymbolLayer("layer", "source");
+      mapboxMap.getStyle().addLayer(layer);
 
-  private static void waitForLayer(UiController uiController, MapboxMap mapboxMap, LatLng latLng) {
-    int i = 0;
-    while (mapboxMap.queryRenderedFeatures(mapboxMap.getProjection().toScreenLocation(latLng), "layer").isEmpty()) {
-      i++;
-      assertFalse("Waiting for layer timed out", i * WAIT_DELAY > WAIT_TIMEOUT);
-      uiController.loopMainThreadForAtLeast(WAIT_DELAY);
-    }
+      Formatted formatted = new Formatted(
+        new FormattedSection("test", 1.5),
+        new FormattedSection("\ntest", 0.5, new String[] {"Arial Unicode MS Regular", "DIN Offc Pro Regular"})
+      );
+      layer.setProperties(textField(formatted));
+      TestingAsyncUtils.INSTANCE.waitForLayer(uiController, idlingResource.getMapView());
+
+      assertFalse(mapboxMap.queryRenderedFeatures(mapboxMap.getProjection().toScreenLocation(latLng), "layer")
+        .isEmpty());
+      assertNull(layer.getTextField().getExpression());
+      assertEquals(formatted, layer.getTextField().getValue());
+    });
   }
 
   private void setupStyle() {
@@ -541,13 +528,13 @@ public class ExpressionTest extends BaseActivityTest {
       try {
         source = new GeoJsonSource("amsterdam-parks-source",
           ResourceUtils.readRawResource(rule.getActivity(), R.raw.amsterdam));
-        mapboxMap.addSource(source);
+        mapboxMap.getStyle().addSource(source);
       } catch (IOException ioException) {
         return;
       }
 
       // Add a fill layer
-      mapboxMap.addLayer(layer = new FillLayer("amsterdam-parks-layer", source.getId())
+      mapboxMap.getStyle().addLayer(layer = new FillLayer("amsterdam-parks-layer", source.getId())
         .withProperties(
           fillColor(rgba(0.0f, 0.0f, 0.0f, 0.5f)),
           fillOutlineColor(rgb(0, 0, 255)),
@@ -555,10 +542,5 @@ public class ExpressionTest extends BaseActivityTest {
         )
       );
     });
-  }
-
-  @Override
-  protected Class getActivityClass() {
-    return EspressoTestActivity.class;
   }
 }

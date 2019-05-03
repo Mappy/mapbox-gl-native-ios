@@ -45,11 +45,7 @@
 #include <mbgl/util/traits.hpp>
 #include <mbgl/actor/scheduler.hpp>
 
-#if QT_VERSION >= 0x050000
 #include <QGuiApplication>
-#else
-#include <QCoreApplication>
-#endif
 
 #include <QDebug>
 #include <QImage>
@@ -140,13 +136,8 @@ std::unique_ptr<mbgl::style::Image> toStyleImage(const QString &id, const QImage
         .rgbSwapped()
         .convertToFormat(QImage::Format_ARGB32_Premultiplied);
 
-#if QT_VERSION >= 0x051000
-    auto img = std::make_unique<uint8_t[]>(swapped.sizeInBytes());
-    memcpy(img.get(), swapped.constBits(), swapped.sizeInBytes());
-#else
     auto img = std::make_unique<uint8_t[]>(swapped.byteCount());
     memcpy(img.get(), swapped.constBits(), swapped.byteCount());
-#endif
 
     return std::make_unique<mbgl::style::Image>(
         id.toStdString(),
@@ -452,6 +443,27 @@ QString QMapboxGLSettings::apiBaseUrl() const
 void QMapboxGLSettings::setApiBaseUrl(const QString& url)
 {
     m_apiBaseUrl = url;
+}
+
+/*!
+    Returns the local font family. Returns an empty string if no local font family is set.
+*/
+QString QMapboxGLSettings::localFontFamily() const
+{
+    return m_localFontFamily;
+}
+
+/*!
+    Sets the local font family.
+
+   Rendering Chinese/Japanese/Korean (CJK) ideographs and precomposed Hangul Syllables requires
+   downloading large amounts of font data, which can significantly slow map load times. Use the
+   localIdeographFontFamily setting to speed up map load times by using locally available fonts
+   instead of font data fetched from the server.
+*/
+void QMapboxGLSettings::setLocalFontFamily(const QString &family)
+{
+    m_localFontFamily = family;
 }
 
 /*!
@@ -1157,7 +1169,7 @@ void QMapboxGL::addAnnotationIcon(const QString &name, const QImage &icon)
 */
 double QMapboxGL::metersPerPixelAtLatitude(double latitude_, double zoom_) const
 {
-    return mbgl::Projection::getMetersPerPixelAtLatitude(latitude_, zoom_);
+    return QMapbox::metersPerPixelAtLatitude(latitude_, zoom_);
 }
 
 /*!
@@ -1165,8 +1177,7 @@ double QMapboxGL::metersPerPixelAtLatitude(double latitude_, double zoom_) const
 */
 QMapbox::ProjectedMeters QMapboxGL::projectedMetersForCoordinate(const QMapbox::Coordinate &coordinate_) const
 {
-    auto projectedMeters = mbgl::Projection::projectedMetersForLatLng(mbgl::LatLng { coordinate_.first, coordinate_.second });
-    return QMapbox::ProjectedMeters(projectedMeters.northing(), projectedMeters.easting());
+    return QMapbox::projectedMetersForCoordinate(coordinate_);
 }
 
 /*!
@@ -1174,8 +1185,7 @@ QMapbox::ProjectedMeters QMapboxGL::projectedMetersForCoordinate(const QMapbox::
 */
 QMapbox::Coordinate QMapboxGL::coordinateForProjectedMeters(const QMapbox::ProjectedMeters &projectedMeters) const
 {
-    auto latLng = mbgl::Projection::latLngForProjectedMeters(mbgl::ProjectedMeters { projectedMeters.first, projectedMeters.second });
-    return QMapbox::Coordinate(latLng.latitude(), latLng.longitude());
+    return QMapbox::coordinateForProjectedMeters(projectedMeters);
 }
 
 /*!
@@ -1463,11 +1473,11 @@ void QMapboxGL::removeLayer(const QString& id)
 /*!
     List of all existing layer ids from the current style.
 */
-QList<QString> QMapboxGL::layerIds() const
+QVector<QString> QMapboxGL::layerIds() const
 {
     const auto &layers = d_ptr->mapObj->getStyle().getLayers();
 
-    QList<QString> layerIds;
+    QVector<QString> layerIds;
     layerIds.reserve(layers.size());
 
     for (const mbgl::style::Layer *layer : layers) {
@@ -1732,6 +1742,7 @@ QMapboxGLPrivate::QMapboxGLPrivate(QMapboxGL *q, const QMapboxGLSettings &settin
     , m_threadPool(mbgl::sharedThreadPool())
     , m_mode(settings.contextMode())
     , m_pixelRatio(pixelRatio_)
+    , m_localFontFamily(settings.localFontFamily())
 {
     // Setup the FileSource
     m_fileSourceObj->setAccessToken(settings.accessToken().toStdString());
@@ -1811,7 +1822,8 @@ void QMapboxGLPrivate::createRenderer()
         m_pixelRatio,
         *m_fileSourceObj,
         *m_threadPool,
-        m_mode
+        m_mode,
+        m_localFontFamily
     );
 
     connect(m_mapRenderer.get(), SIGNAL(needsRendering()), this, SLOT(requestRendering()));
@@ -1838,14 +1850,6 @@ void QMapboxGLPrivate::render()
     if (!m_mapRenderer) {
         createRenderer();
     }
-
-#if defined(__APPLE__) && QT_VERSION < 0x050000
-    // FIXME Qt 4.x provides an incomplete FBO at start.
-    // See https://bugreports.qt.io/browse/QTBUG-36802 for details.
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        return;
-    }
-#endif
 
     m_renderQueued.clear();
     m_mapRenderer->render();

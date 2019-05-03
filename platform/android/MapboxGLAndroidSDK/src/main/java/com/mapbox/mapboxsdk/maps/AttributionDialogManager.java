@@ -8,10 +8,10 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
-
 import com.mapbox.mapboxsdk.MapStrictMode;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.R;
@@ -37,12 +37,15 @@ import java.util.Set;
  */
 public class AttributionDialogManager implements View.OnClickListener, DialogInterface.OnClickListener {
 
-  private static final String MAP_FEEDBACK_URL = "https://www.mapbox.com/map-feedback";
+  private static final String MAP_FEEDBACK_URL = "https://apps.mapbox.com/feedback";
   private static final String MAP_FEEDBACK_LOCATION_FORMAT = MAP_FEEDBACK_URL + "/#/%f/%f/%d";
 
+  @NonNull
   private final Context context;
+  @NonNull
   private final MapboxMap mapboxMap;
   private Set<Attribution> attributionSet;
+  private AlertDialog dialog;
 
   public AttributionDialogManager(@NonNull Context context, @NonNull MapboxMap mapboxMap) {
     this.context = context;
@@ -51,7 +54,7 @@ public class AttributionDialogManager implements View.OnClickListener, DialogInt
 
   // Called when someone presses the attribution icon on the map
   @Override
-  public void onClick(View view) {
+  public void onClick(@NonNull View view) {
     attributionSet = new AttributionBuilder(mapboxMap, view.getContext()).build();
 
     boolean isActivityFinishing = false;
@@ -66,11 +69,11 @@ public class AttributionDialogManager implements View.OnClickListener, DialogInt
     }
   }
 
-  protected void showAttributionDialog(String[] attributionTitles) {
+  protected void showAttributionDialog(@NonNull String[] attributionTitles) {
     AlertDialog.Builder builder = new AlertDialog.Builder(context);
     builder.setTitle(R.string.mapbox_attributionsDialogTitle);
     builder.setAdapter(new ArrayAdapter<>(context, R.layout.mapbox_attribution_list_item, attributionTitles), this);
-    builder.show();
+    dialog = builder.show();
   }
 
   private String[] getAttributionTitles() {
@@ -91,6 +94,12 @@ public class AttributionDialogManager implements View.OnClickListener, DialogInt
     }
   }
 
+  public void onStop() {
+    if (dialog != null && dialog.isShowing()) {
+      dialog.dismiss();
+    }
+  }
+
   private boolean isLatestEntry(int attributionKeyIndex) {
     return attributionKeyIndex == getAttributionTitles().length - 1;
   }
@@ -101,8 +110,8 @@ public class AttributionDialogManager implements View.OnClickListener, DialogInt
     builder.setMessage(R.string.mapbox_attributionTelemetryMessage);
     builder.setPositiveButton(R.string.mapbox_attributionTelemetryPositive, new DialogInterface.OnClickListener() {
       @Override
-      public void onClick(DialogInterface dialog, int which) {
-        //Mappy modif
+      public void onClick(@NonNull DialogInterface dialog, int which) {
+        // Mappy modifs
         if(Mapbox.ENABLE_METRICS_ON_MAPPY) {
           TelemetryDefinition telemetry = Mapbox.getTelemetry();
           if (telemetry != null) {
@@ -114,14 +123,14 @@ public class AttributionDialogManager implements View.OnClickListener, DialogInt
     });
     builder.setNeutralButton(R.string.mapbox_attributionTelemetryNeutral, new DialogInterface.OnClickListener() {
       @Override
-      public void onClick(DialogInterface dialog, int which) {
+      public void onClick(@NonNull DialogInterface dialog, int which) {
         showWebPage(context.getResources().getString(R.string.mapbox_telemetryLink));
         dialog.cancel();
       }
     });
     builder.setNegativeButton(R.string.mapbox_attributionTelemetryNegative, new DialogInterface.OnClickListener() {
       @Override
-      public void onClick(DialogInterface dialog, int which) {
+      public void onClick(@NonNull DialogInterface dialog, int which) {
         //Mappy modif
         if(Mapbox.ENABLE_METRICS_ON_MAPPY) {
           TelemetryDefinition telemetry = Mapbox.getTelemetry();
@@ -144,7 +153,8 @@ public class AttributionDialogManager implements View.OnClickListener, DialogInt
     showWebPage(url);
   }
 
-  private String buildMapFeedbackMapUrl(CameraPosition cameraPosition) {
+  @NonNull
+  private String buildMapFeedbackMapUrl(@Nullable CameraPosition cameraPosition) {
     // appends current location to the map feedback url if available
     return cameraPosition != null ? String.format(Locale.getDefault(),
       MAP_FEEDBACK_LOCATION_FORMAT, cameraPosition.target.getLongitude(), cameraPosition.target.getLatitude(),
@@ -166,6 +176,7 @@ public class AttributionDialogManager implements View.OnClickListener, DialogInt
   private static class AttributionBuilder {
 
     private final MapboxMap mapboxMap;
+    @NonNull
     private final WeakReference<Context> context;
 
     AttributionBuilder(MapboxMap mapboxMap, Context context) {
@@ -181,17 +192,20 @@ public class AttributionDialogManager implements View.OnClickListener, DialogInt
 
       List<String> attributions = new ArrayList<>();
       String attribution;
-      for (Source source : mapboxMap.getSources()) {
-        attribution = source.getAttribution();
-        if (!attribution.isEmpty()) {
-          attributions.add(source.getAttribution());
+
+      Style style = mapboxMap.getStyle();
+      if (style != null) {
+        for (Source source : mapboxMap.getStyle().getSources()) {
+          attribution = source.getAttribution();
+          if (!attribution.isEmpty()) {
+            attributions.add(source.getAttribution());
+          }
         }
       }
 
-      return new AttributionParser.Options()
+      return new AttributionParser.Options(context)
         .withCopyrightSign(true)
         .withImproveMap(true)
-        .withContext(context)
         .withTelemetryAttribution(true)
         .withAttributionData(attributions.toArray(new String[attributions.size()]))
         .build().getAttributions();

@@ -22,7 +22,6 @@ public:
     bool hasTransition() const override;
     bool hasCrossfade() const override;
     void render(PaintParameters&, RenderSource*) override;
-    style::FillPaintProperties::PossiblyEvaluated paintProperties() const;
 
     bool queryIntersectsFeature(
             const GeometryCoordinates&,
@@ -46,9 +45,8 @@ private:
 
 };
 
-template <>
-inline bool RenderLayer::is<RenderFillLayer>() const {
-    return type == style::LayerType::Fill;
+inline const RenderFillLayer* toRenderFillLayer(const RenderLayer* layer) {
+    return static_cast<const RenderFillLayer*>(layer);
 }
 
 } // namespace mbgl

@@ -9,12 +9,7 @@
 #include <QMouseEvent>
 #include <QString>
 
-#if QT_VERSION >= 0x050000
-#include <QWindow>
-#endif
-
 int kAnimationDuration = 10000;
-
 
 MapWindow::MapWindow(const QMapboxGLSettings &settings)
     : m_settings(settings)
@@ -45,13 +40,7 @@ void MapWindow::selfTest()
 }
 
 qreal MapWindow::pixelRatio() {
-#if QT_VERSION >= 0x050600
     return devicePixelRatioF();
-#elif QT_VERSION >= 0x050000
-    return devicePixelRatio();
-#else
-    return 1;
-#endif
 }
 
 
@@ -357,6 +346,60 @@ void MapWindow::keyPressEvent(QKeyEvent *ev)
             }
         }
         break;
+    case Qt::Key_6: {
+            if (m_map->layerExists("innerCirclesLayer") || m_map->layerExists("outerCirclesLayer")) {
+                m_map->removeLayer("innerCirclesLayer");
+                m_map->removeLayer("outerCirclesLayer");
+                m_map->removeSource("innerCirclesSource");
+                m_map->removeSource("outerCirclesSource");
+            } else {
+                auto makePoint = [&] (double dx, double dy, const QString &color) {
+                    auto coordinate = m_map->coordinate();
+                    coordinate.first += dx;
+                    coordinate.second += dy;
+                    return QMapbox::Feature{QMapbox::Feature::PointType,
+                        {{{coordinate}}}, {{"color", color}}, {}};
+                };
+
+                // multiple features by QVector<QMapbox::Feature>
+                QVector<QMapbox::Feature> inner{
+                    makePoint(0.001,  0, "red"),
+                    makePoint(0,  0.001, "green"),
+                    makePoint(0, -0.001, "blue")
+                };
+
+                m_map->addSource("innerCirclesSource",
+                    {{"type", "geojson"}, {"data", QVariant::fromValue(inner)}});
+                m_map->addLayer({
+                    {"id", "innerCirclesLayer"},
+                    {"type", "circle"},
+                    {"source", "innerCirclesSource"}
+                });
+
+                // multiple features by QList<QMapbox::Feature>
+                QList<QMapbox::Feature> outer{
+                    makePoint( 0.002,  0.002, "cyan"),
+                    makePoint(-0.002,  0.002, "magenta"),
+                    makePoint( 0.002, -0.002, "yellow"),
+                    makePoint(-0.002, -0.002, "black")
+                };
+
+                m_map->addSource("outerCirclesSource",
+                    {{"type", "geojson"}, {"data", QVariant::fromValue(outer)}});
+                m_map->addLayer({
+                    {"id", "outerCirclesLayer"},
+                    {"type", "circle"},
+                    {"source", "outerCirclesSource"}
+                });
+
+                QVariantList getColor{"get", "color"};
+                m_map->setPaintProperty("innerCirclesLayer", "circle-radius", 10.0);
+                m_map->setPaintProperty("innerCirclesLayer", "circle-color", getColor);
+                m_map->setPaintProperty("outerCirclesLayer", "circle-radius", 15.0);
+                m_map->setPaintProperty("outerCirclesLayer", "circle-color", getColor);
+            }
+        }
+        break;
     case Qt::Key_Tab:
         m_map->cycleDebugOptions();
         break;
@@ -369,11 +412,7 @@ void MapWindow::keyPressEvent(QKeyEvent *ev)
 
 void MapWindow::mousePressEvent(QMouseEvent *ev)
 {
-#if QT_VERSION < 0x050000
-    m_lastPos = ev->posF();
-#else
     m_lastPos = ev->localPos();
-#endif
 
     if (ev->type() == QEvent::MouseButtonPress) {
         if (ev->buttons() == (Qt::LeftButton | Qt::RightButton)) {
@@ -394,11 +433,7 @@ void MapWindow::mousePressEvent(QMouseEvent *ev)
 
 void MapWindow::mouseMoveEvent(QMouseEvent *ev)
 {
-#if QT_VERSION < 0x050000
-    QPointF delta = ev->posF() - m_lastPos;
-#else
     QPointF delta = ev->localPos() - m_lastPos;
-#endif
 
     if (!delta.isNull()) {
         if (ev->buttons() == Qt::LeftButton && ev->modifiers() & Qt::ShiftModifier) {
@@ -406,19 +441,11 @@ void MapWindow::mouseMoveEvent(QMouseEvent *ev)
         } else if (ev->buttons() == Qt::LeftButton) {
             m_map->moveBy(delta);
         } else if (ev->buttons() == Qt::RightButton) {
-#if QT_VERSION < 0x050000
-            m_map->rotateBy(m_lastPos, ev->posF());
-#else
             m_map->rotateBy(m_lastPos, ev->localPos());
-#endif
         }
     }
 
-#if QT_VERSION < 0x050000
-    m_lastPos = ev->posF();
-#else
     m_lastPos = ev->localPos();
-#endif
     ev->accept();
 }
 
@@ -464,8 +491,6 @@ void MapWindow::paintGL()
 {
     m_frameDraws++;
     m_map->resize(size());
-#if QT_VERSION >= 0x050400
     m_map->setFramebufferObject(defaultFramebufferObject(), size() * pixelRatio());
-#endif
     m_map->render();
 }

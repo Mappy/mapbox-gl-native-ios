@@ -6,7 +6,6 @@
 #include <mbgl/style/filter.hpp>
 #include <mbgl/style/property_value.hpp>
 #include <mbgl/style/expression/formatted.hpp>
-
 #include <mbgl/util/color.hpp>
 
 namespace mbgl {
@@ -73,11 +72,6 @@ public:
 protected:
     Mutable<Layer::Impl> mutableBaseImpl() const final;
 };
-
-template <>
-inline bool Layer::is<HillshadeLayer>() const {
-    return getType() == LayerType::Hillshade;
-}
 
 } // namespace style
 } // namespace mbgl

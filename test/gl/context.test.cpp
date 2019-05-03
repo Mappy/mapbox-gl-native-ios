@@ -1,10 +1,11 @@
 #include <mbgl/test/util.hpp>
 
-#include <mbgl/gl/gl.hpp>
+#include <mbgl/platform/gl_functions.hpp>
 #include <mbgl/gl/context.hpp>
 #include <mbgl/map/map.hpp>
 #include <mbgl/util/default_thread_pool.hpp>
 #include <mbgl/storage/default_file_source.hpp>
+#include <mbgl/gl/defines.hpp>
 #include <mbgl/gl/headless_frontend.hpp>
 #include <mbgl/style/style.hpp>
 #include <mbgl/style/layers/custom_layer.hpp>
@@ -16,6 +17,7 @@
 
 using namespace mbgl;
 using namespace mbgl::style;
+using namespace mbgl::platform;
 
 static const GLchar* vertexShaderSource = R"MBGL_SHADER(
 #ifdef GL_ES
@@ -94,7 +96,9 @@ TEST(GLContextMode, Shared) {
     map.setLatLngZoom({ 37.8, -122.5 }, 10);
 
     // Set transparent background layer.
-    map.getStyle().getLayer("background")->as<BackgroundLayer>()->setBackgroundColor( { { 1.0f, 0.0f, 0.0f, 0.5f } } );
+    auto layer = map.getStyle().getLayer("background");
+    ASSERT_STREQ("background", layer->getTypeInfo()->type);
+    static_cast<BackgroundLayer*>(layer)->setBackgroundColor( { { 1.0f, 0.0f, 0.0f, 0.5f } } );
 
     {
         // Custom rendering outside of GL Native render loop.

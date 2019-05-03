@@ -5,6 +5,7 @@ import android.graphics.PointF;
 import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 
+import android.support.annotation.Nullable;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.geometry.LatLngBounds;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
@@ -84,18 +85,6 @@ public final class CameraUpdateFactory {
    */
   public static CameraUpdate newLatLngZoom(@NonNull LatLng latLng, double zoom) {
     return new CameraPositionUpdate(-1, latLng, -1, zoom);
-  }
-
-  /**
-   * Returns a CameraUpdate that scrolls the camera over the map,
-   * shifting the center of view by the specified number of pixels in the x and y directions.
-   *
-   * @param xPixel Amount of pixels to scroll to in x direction
-   * @param yPixel Amount of pixels to scroll to in y direction
-   * @return CameraUpdate Final Camera Position
-   */
-  public static CameraUpdate scrollBy(float xPixel, float yPixel) {
-    return new CameraMoveUpdate(xPixel, yPixel);
   }
 
   /**
@@ -215,7 +204,7 @@ public final class CameraUpdateFactory {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(@Nullable Object o) {
       if (this == o) {
         return true;
       }
@@ -290,7 +279,7 @@ public final class CameraUpdateFactory {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(@Nullable Object o) {
       if (this == o) {
         return true;
       }
@@ -336,26 +325,31 @@ public final class CameraUpdateFactory {
     public CameraPosition getCameraPosition(@NonNull MapboxMap mapboxMap) {
       UiSettings uiSettings = mapboxMap.getUiSettings();
       Projection projection = mapboxMap.getProjection();
-
       // Calculate the new center point
       float viewPortWidth = uiSettings.getWidth();
       float viewPortHeight = uiSettings.getHeight();
-      PointF targetPoint = new PointF(viewPortWidth / 2 + x, viewPortHeight / 2 + y);
+      int[] padding = mapboxMap.getPadding();
 
-      // Convert point to LatLng
+      // we inverse the map padding, is reapplied when using moveTo/easeTo or animateTo
+      PointF targetPoint = new PointF(
+        (viewPortWidth - padding[0] + padding[1]) / 2 + x,
+        (viewPortHeight + padding[1] - padding[3]) / 2 + y
+      );
+
       LatLng latLng = projection.fromScreenLocation(targetPoint);
-
       CameraPosition previousPosition = mapboxMap.getCameraPosition();
-      return new CameraPosition.Builder()
-        .target(latLng != null ? latLng : previousPosition.target)
-        .zoom(previousPosition.zoom)
-        .tilt(previousPosition.tilt)
-        .bearing(previousPosition.bearing)
-        .build();
+      CameraPosition position =
+        new CameraPosition.Builder()
+          .target(latLng)
+          .zoom(previousPosition.zoom)
+          .tilt(previousPosition.tilt)
+          .bearing(previousPosition.bearing)
+          .build();
+      return position;
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(@Nullable Object o) {
       if (this == o) {
         return true;
       }
@@ -480,7 +474,7 @@ public final class CameraUpdateFactory {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(@Nullable Object o) {
       if (this == o) {
         return true;
       }

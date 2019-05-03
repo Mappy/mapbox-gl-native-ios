@@ -1,6 +1,5 @@
 package com.mapbox.mapboxsdk.maps;
 
-import com.mapbox.mapboxsdk.MapStrictMode;
 import com.mapbox.mapboxsdk.log.Logger;
 
 import java.util.List;
@@ -41,9 +40,9 @@ class MapChangeReceiver implements NativeMapView.StateCallback {
           onCameraWillChangeListener.onCameraWillChange(animated);
         }
       }
-    } catch (RuntimeException err) {
+    } catch (Throwable err) {
       Logger.e(TAG, "Exception in onCameraWillChange", err);
-      MapStrictMode.strictModeViolation(err);
+      throw err;
     }
   }
 
@@ -55,9 +54,9 @@ class MapChangeReceiver implements NativeMapView.StateCallback {
           onCameraIsChangingListener.onCameraIsChanging();
         }
       }
-    } catch (RuntimeException err) {
+    } catch (Throwable err) {
       Logger.e(TAG, "Exception in onCameraIsChanging", err);
-      MapStrictMode.strictModeViolation(err);
+      throw err;
     }
   }
 
@@ -69,9 +68,9 @@ class MapChangeReceiver implements NativeMapView.StateCallback {
           onCameraDidChangeListener.onCameraDidChange(animated);
         }
       }
-    } catch (RuntimeException err) {
+    } catch (Throwable err) {
       Logger.e(TAG, "Exception in onCameraDidChange", err);
-      MapStrictMode.strictModeViolation(err);
+      throw err;
     }
   }
 
@@ -83,9 +82,9 @@ class MapChangeReceiver implements NativeMapView.StateCallback {
           onWillStartLoadingMapListener.onWillStartLoadingMap();
         }
       }
-    } catch (RuntimeException err) {
+    } catch (Throwable err) {
       Logger.e(TAG, "Exception in onWillStartLoadingMap", err);
-      MapStrictMode.strictModeViolation(err);
+      throw err;
     }
   }
 
@@ -97,9 +96,9 @@ class MapChangeReceiver implements NativeMapView.StateCallback {
           onDidFinishLoadingMapListener.onDidFinishLoadingMap();
         }
       }
-    } catch (RuntimeException err) {
+    } catch (Throwable err) {
       Logger.e(TAG, "Exception in onDidFinishLoadingMap", err);
-      MapStrictMode.strictModeViolation(err);
+      throw err;
     }
   }
 
@@ -111,9 +110,9 @@ class MapChangeReceiver implements NativeMapView.StateCallback {
           onDidFailLoadingMapListener.onDidFailLoadingMap(error);
         }
       }
-    } catch (RuntimeException err) {
+    } catch (Throwable err) {
       Logger.e(TAG, "Exception in onDidFailLoadingMap", err);
-      MapStrictMode.strictModeViolation(err);
+      throw err;
     }
   }
 
@@ -125,9 +124,9 @@ class MapChangeReceiver implements NativeMapView.StateCallback {
           listener.onWillStartRenderingFrame();
         }
       }
-    } catch (RuntimeException err) {
+    } catch (Throwable err) {
       Logger.e(TAG, "Exception in onWillStartRenderingFrame", err);
-      MapStrictMode.strictModeViolation(err);
+      throw err;
     }
   }
 
@@ -139,9 +138,9 @@ class MapChangeReceiver implements NativeMapView.StateCallback {
           listener.onDidFinishRenderingFrame(fully);
         }
       }
-    } catch (RuntimeException err) {
+    } catch (Throwable err) {
       Logger.e(TAG, "Exception in onDidFinishRenderingFrame", err);
-      MapStrictMode.strictModeViolation(err);
+      throw err;
     }
   }
 
@@ -153,9 +152,9 @@ class MapChangeReceiver implements NativeMapView.StateCallback {
           listener.onWillStartRenderingMap();
         }
       }
-    } catch (RuntimeException err) {
+    } catch (Throwable err) {
       Logger.e(TAG, "Exception in onWillStartRenderingMap", err);
-      MapStrictMode.strictModeViolation(err);
+      throw err;
     }
   }
 
@@ -167,9 +166,9 @@ class MapChangeReceiver implements NativeMapView.StateCallback {
           listener.onDidFinishRenderingMap(fully);
         }
       }
-    } catch (RuntimeException err) {
+    } catch (Throwable err) {
       Logger.e(TAG, "Exception in onDidFinishRenderingMap", err);
-      MapStrictMode.strictModeViolation(err);
+      throw err;
     }
   }
 
@@ -195,9 +194,9 @@ class MapChangeReceiver implements NativeMapView.StateCallback {
           listener.onDidFinishLoadingStyle();
         }
       }
-    } catch (RuntimeException err) {
+    } catch (Throwable err) {
       Logger.e(TAG, "Exception in onDidFinishLoadingStyle", err);
-      MapStrictMode.strictModeViolation(err);
+      throw err;
     }
   }
 
@@ -209,9 +208,9 @@ class MapChangeReceiver implements NativeMapView.StateCallback {
           onSourceChangedListener.onSourceChangedListener(sourceId);
         }
       }
-    } catch (RuntimeException err) {
+    } catch (Throwable err) {
       Logger.e(TAG, "Exception in onSourceChanged", err);
-      MapStrictMode.strictModeViolation(err);
+      throw err;
     }
   }
 

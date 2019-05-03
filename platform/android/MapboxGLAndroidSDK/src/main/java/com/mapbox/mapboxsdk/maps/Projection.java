@@ -3,7 +3,6 @@ package com.mapbox.mapboxsdk.maps;
 import android.graphics.PointF;
 import android.support.annotation.FloatRange;
 import android.support.annotation.NonNull;
-
 import com.mapbox.geojson.Point;
 import com.mapbox.mapboxsdk.constants.GeometryConstants;
 import com.mapbox.mapboxsdk.geometry.LatLng;
@@ -21,6 +20,7 @@ import java.util.List;
  */
 public class Projection {
 
+  @NonNull
   private final NativeMapView nativeMapView;
   private int[] contentPadding;
 
@@ -31,7 +31,11 @@ public class Projection {
 
   void setContentPadding(int[] contentPadding) {
     this.contentPadding = contentPadding;
-    nativeMapView.setContentPadding(contentPadding);
+    float[] output = new float[contentPadding.length];
+    for (int i = 0; i < contentPadding.length; i++) {
+      output[i] = contentPadding[i];
+    }
+    nativeMapView.setContentPadding(output);
   }
 
   int[] getContentPadding() {
@@ -195,6 +199,10 @@ public class Projection {
       }
     }
 
+    if (east < west) {
+      return new VisibleRegion(topLeft, topRight, bottomLeft, bottomRight,
+        LatLngBounds.from(north, east + GeometryConstants.LONGITUDE_SPAN, south, west));
+    }
     return new VisibleRegion(topLeft, topRight, bottomLeft, bottomRight,
       LatLngBounds.from(north, east, south, west));
   }

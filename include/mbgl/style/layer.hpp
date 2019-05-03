@@ -3,7 +3,6 @@
 #include <mbgl/util/peer.hpp>
 #include <mbgl/util/immutable.hpp>
 #include <mbgl/util/optional.hpp>
-#include <mbgl/style/layer_type.hpp>
 #include <mbgl/style/types.hpp>
 #include <mbgl/style/conversion.hpp>
 
@@ -15,18 +14,42 @@
 namespace mbgl {
 namespace style {
 
-class FillLayer;
-class LineLayer;
-class CircleLayer;
-class SymbolLayer;
-class RasterLayer;
-class HillshadeLayer;
-class BackgroundLayer;
-class CustomLayer;
-class FillExtrusionLayer;
-class HeatmapLayer;
 class LayerObserver;
 class Filter;
+
+/**
+ * @brief Holds static data for a certain layer type.
+ */
+struct LayerTypeInfo {
+    /**
+     * @brief contains the layer type as defined in the style specification;
+     */
+    const char* type;
+
+    /**
+     * @brief contains \c Source::Required if the corresponding layer type
+     * requires source. Contains \c Source::NotRequired otherwise.
+     */
+    const enum class Source { Required, NotRequired } source;
+
+    /**
+     * @brief contains \c Pass3D::Required if the corresponding layer type
+     * requires 3D rendering pass. Contains \c Pass3D::NotRequired otherwise.
+     */
+    const enum class Pass3D { Required, NotRequired } pass3d;
+
+    /**
+     * @brief contains \c Layout::Required if the corresponding layer type
+     * requires layouting. * contains \c Layout::NotRequired otherwise.
+     */
+    const enum class Layout { Required, NotRequired } layout;
+
+    /**
+     * @brief contains \c Clipping::Required if the corresponding layer type
+     * requires clipping. Contains \c Clipping::NotRequired otherwise.
+     */
+    const enum class Clipping { Required, NotRequired } clipping;
+};
 
 /**
  * The runtime representation of a [layer](https://www.mapbox.com/mapbox-gl-style-spec/#layers) from the Mapbox Style
@@ -40,9 +63,9 @@ class Filter;
  * * Cloning and copying
  *
  * All other functionality lives in the derived classes. To instantiate a layer, create an instance of the desired
- * type, passing the ID:
+ * type, calling `LayerManager`:
  *
- *     auto circleLayer = std::make_unique<CircleLayer>("my-circle-layer");
+ *     auto circleLayer = LayerManager::get()->createLayer("circle", ...);
  */
 class Layer {
 public:
@@ -51,22 +74,6 @@ public:
 
     virtual ~Layer();
 
-    // Check whether this layer is of the given subtype.
-    template <class T>
-    bool is() const;
-
-    // Dynamically cast this layer to the given subtype.
-    template <class T>
-    T* as() {
-        return is<T>() ? reinterpret_cast<T*>(this) : nullptr;
-    }
-
-    template <class T>
-    const T* as() const {
-        return is<T>() ? reinterpret_cast<const T*>(this) : nullptr;
-    }
-
-    LayerType getType() const;
     std::string getID() const;
     // Source
     std::string getSourceID() const;
@@ -107,11 +114,14 @@ public:
     // object here, so that separately-obtained references to this object share
     // identical platform-native peers.
     util::peer peer;
+    Layer(Immutable<Impl>);
+
+    const LayerTypeInfo* getTypeInfo() const noexcept;
+
 protected:
-    Layer(Immutable<Impl>);   
     virtual Mutable<Impl> mutableBaseImpl() const = 0;
 
-    LayerObserver* observer = nullptr;
+    LayerObserver* observer;
 };
 
 } // namespace style

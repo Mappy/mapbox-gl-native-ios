@@ -69,18 +69,15 @@ public final class Utils {
     return bitmap;
   }
 
+  @Nullable
   static Drawable getDrawable(@NonNull Context context, @DrawableRes int drawableRes,
-                              @ColorInt Integer tintColor) {
+                              @Nullable @ColorInt Integer tintColor) {
     Drawable drawable = ContextCompat.getDrawable(context, drawableRes);
     if (tintColor == null) {
       return drawable;
     }
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-      drawable.setTint(tintColor);
-    } else {
-      drawable.mutate().setColorFilter(tintColor, PorterDuff.Mode.SRC_IN);
-    }
+    drawable.setTint(tintColor);
     return drawable;
   }
 

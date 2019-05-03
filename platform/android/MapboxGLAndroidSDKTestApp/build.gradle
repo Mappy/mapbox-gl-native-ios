@@ -6,7 +6,6 @@ apply from: '../gradle/dependencies.gradle'
 //end mappy modif
 android {
     compileSdkVersion androidVersions.compileSdkVersion
-    buildToolsVersion androidVersions.buildToolsVersion
 
     defaultConfig {
         applicationId "com.mapbox.mapboxsdk.testapp"
@@ -61,19 +60,18 @@ android {
 dependencies {
     implementation dependenciesList.kotlinLib
 
+    implementation project(':MapboxGLAndroidSDK')
+    implementation dependenciesList.mapboxJavaTurf
     api(project(':MapboxGLAndroidSDKTestApp'))
     implementation dependenciesList.mapboxJavaServices
-
-    implementation(project(':MapboxGLAndroidSDK'))
-    implementation(dependenciesList.mapboxJavaTurf)
 
     implementation dependenciesList.supportAppcompatV7
     implementation dependenciesList.supportRecyclerView
     implementation dependenciesList.supportDesign
     implementation dependenciesList.supportConstraintLayout
 
-    // implementation dependenciesList.lost
     implementation dependenciesList.gmsLocation
+    implementation dependenciesList.reLinker
     implementation dependenciesList.timber
     debugImplementation dependenciesList.leakCanaryDebug
     releaseImplementation dependenciesList.leakCanaryRelease
@@ -84,14 +82,13 @@ dependencies {
     androidTestImplementation dependenciesList.testEspressoCore
     androidTestImplementation dependenciesList.testEspressoIntents
     androidTestImplementation dependenciesList.testEspressoContrib
+    androidTestImplementation dependenciesList.testUiAutomator
 }
 
 apply from: "../gradle/gradle-make.gradle"
 apply from: "../gradle/gradle-config.gradle"
 apply from: "../gradle/gradle-checkstyle.gradle"
 apply from: "../gradle/gradle-lint.gradle"
-
-
 
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'

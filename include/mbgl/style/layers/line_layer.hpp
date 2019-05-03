@@ -7,7 +7,6 @@
 #include <mbgl/style/filter.hpp>
 #include <mbgl/style/property_value.hpp>
 #include <mbgl/style/expression/formatted.hpp>
-
 #include <mbgl/util/color.hpp>
 
 #include <vector>
@@ -128,11 +127,6 @@ public:
 protected:
     Mutable<Layer::Impl> mutableBaseImpl() const final;
 };
-
-template <>
-inline bool Layer::is<LineLayer>() const {
-    return getType() == LayerType::Line;
-}
 
 } // namespace style
 } // namespace mbgl

@@ -5,6 +5,7 @@ import android.animation.AnimatorSet;
 import android.animation.TypeEvaluator;
 import android.animation.ValueAnimator;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.util.LongSparseArray;
 import android.support.v4.view.animation.FastOutLinearInInterpolator;
 import android.support.v4.view.animation.FastOutSlowInInterpolator;
@@ -23,6 +24,7 @@ import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
+import com.mapbox.mapboxsdk.maps.Style;
 import com.mapbox.mapboxsdk.testapp.R;
 
 /**
@@ -33,35 +35,30 @@ public class CameraAnimatorActivity extends AppCompatActivity implements OnMapRe
   private static final double ANIMATION_DELAY_FACTOR = 1.5;
   private static final LatLng START_LAT_LNG = new LatLng(37.787947, -122.407432);
 
-  private final LongSparseArray<AnimatorBuilder> animators = new LongSparseArray<AnimatorBuilder>() {
-    {
-      put(R.id.menu_action_accelerate_decelerate_interpolator, () -> {
-        AnimatorSet animatorSet = new AnimatorSet();
-        animatorSet.playTogether(
-          createLatLngAnimator(START_LAT_LNG, new LatLng(37.826715, -122.422795)),
-          obtainExampleInterpolator(new FastOutSlowInInterpolator(), 2500)
-        );
-        return animatorSet;
-      });
+  private final LongSparseArray<Animator> animators = new LongSparseArray<>();
 
-      put(R.id.menu_action_bounce_interpolator, () -> {
-        AnimatorSet animatorSet = new AnimatorSet();
-        animatorSet.playTogether(
-          createLatLngAnimator(START_LAT_LNG, new LatLng(37.787947, -122.407432)),
-          obtainExampleInterpolator(new BounceInterpolator(), 3750)
-        );
-        return animatorSet;
-      });
+  {
+    AnimatorSet accelerateDecelerateAnimatorSet = new AnimatorSet();
+    accelerateDecelerateAnimatorSet.playTogether(
+      createLatLngAnimator(START_LAT_LNG, new LatLng(37.826715, -122.422795)),
+      obtainExampleInterpolator(new FastOutSlowInInterpolator(), 2500)
+    );
+    animators.put(R.id.menu_action_accelerate_decelerate_interpolator, accelerateDecelerateAnimatorSet);
 
-      put(R.id.menu_action_anticipate_overshoot_interpolator, () ->
-        obtainExampleInterpolator(new AnticipateOvershootInterpolator(), 2500)
-      );
+    AnimatorSet bounceAnimatorSet = new AnimatorSet();
+    bounceAnimatorSet.playTogether(
+      createLatLngAnimator(START_LAT_LNG, new LatLng(37.787947, -122.407432)),
+      obtainExampleInterpolator(new BounceInterpolator(), 3750)
+    );
+    animators.put(R.id.menu_action_bounce_interpolator, bounceAnimatorSet);
 
-      put(R.id.menu_action_path_interpolator, () -> obtainExampleInterpolator(
-        PathInterpolatorCompat.create(.22f, .68f, 0, 1.71f), 2500));
-    }
-  };
+    animators.put(R.id.menu_action_anticipate_overshoot_interpolator,
+      obtainExampleInterpolator(new AnticipateOvershootInterpolator(), 2500)
+    );
 
+    animators.put(R.id.menu_action_path_interpolator, obtainExampleInterpolator(
+      PathInterpolatorCompat.create(.22f, .68f, 0, 1.71f), 2500));
+  }
 
   private MapView mapView;
   private MapboxMap mapboxMap;
@@ -78,8 +75,9 @@ public class CameraAnimatorActivity extends AppCompatActivity implements OnMapRe
   }
 
   @Override
-  public void onMapReady(final MapboxMap map) {
+  public void onMapReady(@NonNull final MapboxMap map) {
     mapboxMap = map;
+    map.setStyle(Style.MAPBOX_STREETS);
     initFab();
   }
 
@@ -158,7 +156,7 @@ public class CameraAnimatorActivity extends AppCompatActivity implements OnMapRe
   //
 
   private Animator obtainExampleInterpolator(int menuItemId) {
-    return animators.get(menuItemId).build();
+    return animators.get(menuItemId);
   }
 
   @Override
@@ -195,6 +193,7 @@ public class CameraAnimatorActivity extends AppCompatActivity implements OnMapRe
   private void playAnimation(int itemId) {
     Animator animator = obtainExampleInterpolator(itemId);
     if (animator != null) {
+      animator.cancel();
       animator.start();
     }
   }
@@ -235,6 +234,9 @@ public class CameraAnimatorActivity extends AppCompatActivity implements OnMapRe
   protected void onStop() {
     super.onStop();
     mapView.onStop();
+    for (int i = 0; i < animators.size(); i++) {
+      animators.get(animators.keyAt(i)).cancel();
+    }
   }
 
   @Override
@@ -270,9 +272,5 @@ public class CameraAnimatorActivity extends AppCompatActivity implements OnMapRe
         + ((endValue.getLongitude() - startValue.getLongitude()) * fraction));
       return latLng;
     }
-  }
-
-  interface AnimatorBuilder {
-    Animator build();
   }
 }

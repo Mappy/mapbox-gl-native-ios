@@ -7,7 +7,6 @@
 #include <mbgl/style/filter.hpp>
 #include <mbgl/style/property_value.hpp>
 #include <mbgl/style/expression/formatted.hpp>
-
 #include <mbgl/util/color.hpp>
 
 namespace mbgl {
@@ -68,11 +67,6 @@ public:
 protected:
     Mutable<Layer::Impl> mutableBaseImpl() const final;
 };
-
-template <>
-inline bool Layer::is<HeatmapLayer>() const {
-    return getType() == LayerType::Heatmap;
-}
 
 } // namespace style
 } // namespace mbgl

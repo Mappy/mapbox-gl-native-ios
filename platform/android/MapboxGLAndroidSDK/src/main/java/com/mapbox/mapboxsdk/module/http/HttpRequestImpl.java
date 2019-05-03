@@ -2,26 +2,16 @@ package com.mapbox.mapboxsdk.module.http;
 
 import android.os.Build;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
-
 import com.mapbox.mapboxsdk.BuildConfig;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
+import com.mapbox.mapboxsdk.http.HttpRequest;
 import com.mapbox.mapboxsdk.http.HttpIdentifier;
 import com.mapbox.mapboxsdk.http.HttpLogger;
-import com.mapbox.mapboxsdk.http.HttpRequest;
-import com.mapbox.mapboxsdk.http.HttpRequestUrl;
 import com.mapbox.mapboxsdk.http.HttpResponder;
-
-import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.net.NoRouteToHostException;
-import java.net.ProtocolException;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-
-import javax.net.ssl.SSLException;
-
+import com.mapbox.mapboxsdk.http.HttpRequestUrl;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Dispatcher;
@@ -30,6 +20,14 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+
+import javax.net.ssl.SSLException;
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.net.NoRouteToHostException;
+import java.net.ProtocolException;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 
 import static com.mapbox.mapboxsdk.module.http.HttpRequestUtil.toHumanReadableAscii;
 
@@ -52,8 +50,8 @@ public class HttpRequestImpl implements HttpRequest {
   private Call call;
 
   @Override
-  public void executeRequest(HttpResponder httpRequest, long nativePtr, String resourceUrl,
-                             String etag, String modified) {
+  public void executeRequest(HttpResponder httpRequest, long nativePtr, @NonNull String resourceUrl,
+                             @NonNull String etag, @NonNull String modified) {
     OkHttpCallback callback = new OkHttpCallback(httpRequest);
     try {
       HttpUrl httpUrl = HttpUrl.parse(resourceUrl);
@@ -68,8 +66,8 @@ public class HttpRequestImpl implements HttpRequest {
       final Request.Builder builder = new Request.Builder()
         .url(resourceUrl)
         .tag(resourceUrl.toLowerCase(MapboxConstants.MAPBOX_LOCALE));
-        // Mappy Modif : User-Agent is set later
-        //.addHeader("User-Agent", userAgentString);
+      // Mappy Modif : User-Agent is set later
+      //.addHeader("User-Agent", userAgentString);
       if (etag.length() > 0) {
         builder.addHeader("If-None-Match", etag);
       } else if (modified.length() > 0) {
@@ -161,7 +159,7 @@ public class HttpRequestImpl implements HttpRequest {
         body);
     }
 
-    private void handleFailure(Call call, Exception e) {
+    private void handleFailure(@Nullable Call call, Exception e) {
       String errorMessage = e.getMessage() != null ? e.getMessage() : "Error processing the request";
       int type = getFailureType(e);
 
@@ -183,6 +181,7 @@ public class HttpRequestImpl implements HttpRequest {
     }
   }
 
+  @NonNull
   private static Dispatcher getDispatcher() {
     Dispatcher dispatcher = new Dispatcher();
     // Matches core limit set on

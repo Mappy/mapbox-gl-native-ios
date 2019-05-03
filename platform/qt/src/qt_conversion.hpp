@@ -35,11 +35,9 @@ public:
     static bool isObject(const QVariant& value) {
         return value.canConvert(QVariant::Map)
             || value.type() == QVariant::ByteArray
-    #if QT_VERSION >= 0x050000
-            || QString(value.typeName()) == QStringLiteral("QMapbox::Feature");
-    #else
-            || QString(value.typeName()) == QString("QMapbox::Feature");
-    #endif
+            || QString(value.typeName()) == QStringLiteral("QMapbox::Feature")
+            || value.userType() == qMetaTypeId<QVector<QMapbox::Feature>>()
+            || value.userType() == qMetaTypeId<QList<QMapbox::Feature>>();
     }
 
     static optional<QVariant> objectMember(const QVariant& value, const char* key) {
@@ -121,12 +119,12 @@ public:
     }
 
     static optional<GeoJSON> toGeoJSON(const QVariant& value, Error& error) {
-    #if QT_VERSION >= 0x050000
         if (value.typeName() == QStringLiteral("QMapbox::Feature")) {
-    #else
-        if (value.typeName() == QString("QMapbox::Feature")) {
-    #endif
             return GeoJSON { asMapboxGLFeature(value.value<QMapbox::Feature>()) };
+        } else if (value.userType() == qMetaTypeId<QVector<QMapbox::Feature>>()) {
+            return featureCollectionToGeoJSON(value.value<QVector<QMapbox::Feature>>());
+        } else if (value.userType() == qMetaTypeId<QList<QMapbox::Feature>>()) {
+            return featureCollectionToGeoJSON(value.value<QList<QMapbox::Feature>>());
         } else if (value.type() != QVariant::ByteArray) {
             error = { "JSON data must be in QByteArray" };
             return {};
@@ -134,6 +132,17 @@ public:
 
         QByteArray data = value.toByteArray();
         return parseGeoJSON(std::string(data.constData(), data.size()), error);
+    }
+
+private:
+    template<typename T>
+    static GeoJSON featureCollectionToGeoJSON(const T &features) {
+        mapbox::feature::feature_collection<double> collection;
+        collection.reserve(static_cast<std::size_t>(features.size()));
+        for (const auto &feature : features) {
+            collection.push_back(asMapboxGLFeature(feature));
+        }
+        return GeoJSON { std::move(collection) };
     }
 };
 

@@ -144,7 +144,8 @@ public:
      * by the Mapbox Terms of Service.
      */
     void setOfflineMapboxTileCountLimit(uint64_t) const;
-    
+
+    // Mappy modif
     /*
      * Clean ambient cache
      */

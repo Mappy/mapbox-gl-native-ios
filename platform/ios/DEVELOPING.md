@@ -20,13 +20,13 @@ Before building, use the scheme picker button in the toolbar to change the schem
 
 **iosapp** is only one of several shared schemes. Others include:
 
-* **CI** builds exactly what gets built for continuous integration on Bitrise.
-* **bench** is a simple benchmarking application. For more consistent results between runs, run `platform/ios/benchmark/assets/{glyphs,tiles}/download.sh` to download any necessary resources.
 * **dynamic** builds the SDK as a dynamic framework.
 * **static** builds the SDK as a static library and separate resource bundle.
 * **dynamic+static** is a combination of the **dynamic** and **static** schemes.
+* **CI** builds exactly what gets built by our continuous integration service.
+* **bench** is a simple benchmarking application. For more consistent results between runs, run `platform/ios/benchmark/assets/{glyphs,tiles}/download.sh` to download any necessary resources.
 
-If you don’t have an Apple Developer account, change the destination to a simulator such as “iPhone 6s” before you build and run the app.
+If you don’t have an Apple Developer account, change the destination to a simulator before you build and run the app.
 
 ### Packaging builds
 
@@ -41,7 +41,7 @@ Build and package the SDK by using the `make iframework` command. You can custom
 * `BUILDTYPE=Release` will optimize for distribution. Defaults to `Debug`.
 * `BUILD_DEVICE=false` builds only for the iOS Simulator.
 * `FORMAT=dynamic` builds only a dynamic framework. `FORMAT=static` builds only a static framework, for legacy compatibility.
-* `SYMBOLS=NO` strips the build output of any debug symbols, yielding smaller binaries. Defaults to `YES`.
+* `SYMBOLS=NO` strips the build output of debug symbols. Defaults to `YES`.
 
 An example command that creates a dynamic framework suitable for eventual App Store distribution:
 
@@ -59,7 +59,7 @@ To add any Objective-C type, constant, or member to the iOS SDK’s public inter
 
 1. Ensure that the symbol is pure Objective-C and does not rely on any language features specific to Objective-C++ or the C11 dialect of C – so no namespaced types or classes named with emoji! 🙃 Most projects that depend on this SDK are either written in pure Objective-C (GNU99 dialect) or Swift, which cannot yet bridge C++ types.
 1. Name the symbol according to [Cocoa naming conventions](https://developer.apple.com/library/prerelease/content/documentation/Cocoa/Conceptual/CodingGuidelines/CodingGuidelines.html#//apple_ref/doc/uid/10000146i). Use the `MGL` class prefix to avoid conflicts with client code. If the symbol has an analogue in MapKit, name the symbol according to MapKit.
-1. Provide full documentation comments. We use [jazzy](https://github.com/realm/jazzy/) to produce the documentation found in the SDK distribution and [on the website for this SDK](https://www.mapbox.com/ios-sdk/api/). We also recognize that many developers rely on Xcode’s Quick Help feature. jazzy supports Markdown formatting; however, Quick Help supports only [HeaderDoc](https://developer.apple.com/legacy/library/documentation/DeveloperTools/Conceptual/HeaderDoc/intro/intro.html) syntax and a subset of Doxygen syntax. For hyperlinks, use HTML syntax, which is recognized by both tools.
+1. Provide full documentation comments. We use [jazzy](https://github.com/realm/jazzy/) to produce the documentation found in the SDK distribution and [on the website for this SDK](https://docs.mapbox.com/ios/api/maps/). We also recognize that many developers rely on Xcode’s Quick Help feature. jazzy supports Markdown formatting; however, Quick Help supports only [HeaderDoc](https://developer.apple.com/legacy/library/documentation/DeveloperTools/Conceptual/HeaderDoc/intro/intro.html) syntax and a subset of Doxygen syntax. For hyperlinks, use HTML syntax, which is recognized by both tools.
 
 ### Making a type or constant public
 
@@ -77,7 +77,7 @@ To add an Objective-C header or implementation file to the iOS maps SDK:
 1. Audit new headers for nullability. Typically, you will wrap a header with `NS_ASSUME_NONNULL_BEGIN` and `NS_ASSUME_NONNULL_END`.
 1. _(Optional.)_ If it’s a public header, change its visibility from Project to Public and import it in [the iOS SDK’s umbrella header](./src/Mapbox.h).
 1. _(Optional.)_ If the file would also be used by the macOS maps SDK, make sure it’s in [platform/darwin/src/](../darwin/src/), then consult [the companion macOS document](../macos/DEVELOPING.md#adding-a-source-code-file) for further instructions.
-1. Run `scripts/generate-cmake-files.js` to update the generated source file list for third party build systems.
+1. Run `scripts/generate-file-lists.js` to update the generated source file list for third party build systems.
 
 ### Adding a resource
 
@@ -125,17 +125,18 @@ find platform/{darwin,ios}/resources platform/macos/sdk -path '*/MYLANG.lproj/*.
 
 To add an example code listing to the documentation for a class or class member:
 
-1. Add a test method named in the form `testMGLClass` or `testMGLClass$method`
-   to [MGLDocumentationExampleTests](test/MGLDocumentationExampleTests.swift).
-   Wrap the code you’d like to appear in the documentation within
-   `//#-example-code` and `//#-end-example-code` comments.
-1. If the header doesn’t already have an example code listing, add the path to
-   the header to platform/darwin/scripts/update-examples.list.
-1. Insert the code listings into the headers:
-
-```bash
-make darwin-update-examples
-```
+ 1. Add a test case named in the form `testMGLClass` or `testMGLClass$method` to [MGLDocumentationExamplesTests](test/MGLDocumentationExampleTests.swift).
+ 2. Wrap the code you'd like to appear in the documentation within the
+    following comment blocks:
+    ```
+    //#-example-code
+    ...
+    //#-end-example-code
+    ```
+ 3. Insert an empty Swift code block inside the header file where you'd like the
+    example code to be inserted.
+ 4. Run `make darwin-update-examples` to extract example code from the test
+    method below and insert it into the header.
 
 [SourceKitten](https://github.com/jpsim/SourceKitten/) is required and will be installed automatically using Homebrew.
 

@@ -13,12 +13,15 @@ import com.mapbox.geojson.Point;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.location.modes.RenderMode;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
+import com.mapbox.mapboxsdk.maps.Style;
 import com.mapbox.mapboxsdk.style.layers.Layer;
 import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static com.mapbox.mapboxsdk.location.LocationComponentConstants.ACCURACY_LAYER;
 import static com.mapbox.mapboxsdk.location.LocationComponentConstants.BACKGROUND_ICON;
@@ -51,37 +54,45 @@ import static com.mapbox.mapboxsdk.style.expressions.Expression.stop;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.zoom;
 import static com.mapbox.mapboxsdk.style.layers.Property.NONE;
 import static com.mapbox.mapboxsdk.style.layers.Property.VISIBLE;
-import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.colorToRgbaString;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconSize;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.visibility;
+import static com.mapbox.mapboxsdk.utils.ColorUtils.colorToRgbaString;
 
-final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsValuesChangeListener {
+final class LocationLayerController {
 
   @RenderMode.Mode
   private int renderMode;
 
   private final MapboxMap mapboxMap;
+  private Style style;
   private final LayerSourceProvider layerSourceProvider;
   private final LayerBitmapProvider bitmapProvider;
   private LocationComponentOptions options;
+  private final OnRenderModeChangedListener internalRenderModeChangedListener;
 
   private final List<String> layerMap = new ArrayList<>();
   private Feature locationFeature;
 
   private boolean isHidden = true;
 
-  LocationLayerController(MapboxMap mapboxMap, LayerSourceProvider layerSourceProvider,
+  @Nullable
+  private String layerBelow;
+
+  LocationLayerController(MapboxMap mapboxMap, Style style, LayerSourceProvider layerSourceProvider,
                           LayerFeatureProvider featureProvider, LayerBitmapProvider bitmapProvider,
-                          LocationComponentOptions options) {
+                          @NonNull LocationComponentOptions options,
+                          @NonNull OnRenderModeChangedListener internalRenderModeChangedListener) {
     this.mapboxMap = mapboxMap;
+    this.style = style;
     this.layerSourceProvider = layerSourceProvider;
     this.bitmapProvider = bitmapProvider;
     this.locationFeature = featureProvider.generateLocationFeature(locationFeature, options);
-    initializeComponents(options);
-    setRenderMode(RenderMode.NORMAL);
+    this.internalRenderModeChangedListener = internalRenderModeChangedListener;
+    initializeComponents(style, options);
   }
 
-  void initializeComponents(LocationComponentOptions options) {
+  void initializeComponents(Style style, LocationComponentOptions options) {
+    this.style = style;
     addLocationSource();
     addLayers(options.layerBelow());
     applyStyle(options);
@@ -94,6 +105,20 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
   }
 
   void applyStyle(@NonNull LocationComponentOptions options) {
+    String newLayerBelowOption = options.layerBelow();
+    if ((layerBelow != null || newLayerBelowOption != null)) {
+      if (layerBelow == null || !layerBelow.equals(newLayerBelowOption)) {
+        removeLayers();
+        addLayers(newLayerBelowOption);
+        if (isHidden) {
+          for (String layerId : layerMap) {
+            setLayerVisibility(layerId, false);
+          }
+        }
+        setRenderMode(renderMode);
+      }
+    }
+
     this.options = options;
 
     float elevation = options.elevation();
@@ -110,6 +135,7 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
   }
 
   void setRenderMode(@RenderMode.Mode int renderMode) {
+    int previousMode = this.renderMode;
     this.renderMode = renderMode;
 
     if (!isHidden) {
@@ -124,7 +150,7 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
           setLayerVisibility(BEARING_LAYER, false);
           break;
         case RenderMode.COMPASS:
-          styleForeground(options);
+          //styleForeground(options);
           setLayerVisibility(SHADOW_LAYER, true);
           // Mappy modif : "Foreground" layer not displayed in compass mode
           setLayerVisibility(FOREGROUND_LAYER, false);
@@ -145,6 +171,10 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
       }
 
       determineIconsSource(options);
+    }
+
+    if (previousMode != renderMode) {
+      internalRenderModeChangedListener.onRenderModeChanged(renderMode);
     }
   }
 
@@ -196,8 +226,8 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
     return renderMode == RenderMode.COMPASS;
   }
 
-  private void setLayerVisibility(String layerId, boolean visible) {
-    Layer layer = mapboxMap.getLayer(layerId);
+  private void setLayerVisibility(@NonNull String layerId, boolean visible) {
+    Layer layer = style.getLayer(layerId);
     if (layer != null) {
       String targetVisibility = visible ? VISIBLE : NONE;
       if (!layer.getVisibility().value.equals(targetVisibility)) {
@@ -206,7 +236,8 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
     }
   }
 
-  private void addLayers(String idBelowLayer) {
+  private void addLayers(@NonNull String idBelowLayer) {
+    layerBelow = idBelowLayer;
     addSymbolLayer(BEARING_LAYER, idBelowLayer);
     addSymbolLayer(FOREGROUND_LAYER, BEARING_LAYER);
     addSymbolLayer(BACKGROUND_LAYER, FOREGROUND_LAYER);
@@ -214,7 +245,7 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
     addAccuracyLayer();
   }
 
-  private void addSymbolLayer(String layerId, String beforeLayerId) {
+  private void addSymbolLayer(@NonNull String layerId, @NonNull String beforeLayerId) {
     Layer layer = layerSourceProvider.generateLayer(layerId);
     addLayerToMap(layer, beforeLayerId);
   }
@@ -226,17 +257,24 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
 
   private void addLayerToMap(Layer layer, @NonNull String idBelowLayer) {
     String layerId = layer.getId();
-    Layer existingLayer = mapboxMap.getLayer(layerId);
+    Layer existingLayer = style.getLayer(layerId);
     if (existingLayer == null) {
-      mapboxMap.addLayerBelow(layer, idBelowLayer);
+      style.addLayerBelow(layer, idBelowLayer);
     }
-    layerMap.add(layerId);
+    layerMap.add(layer.getId());
     if(isHidden) {
       setLayerVisibility(layerId, false);
     }
   }
 
-  private void setBearingProperty(String propertyId, float bearing) {
+  private void removeLayers() {
+    for (String layerId : layerMap) {
+      style.removeLayer(layerId);
+    }
+    layerMap.clear();
+  }
+
+  private void setBearingProperty(@NonNull String propertyId, float bearing) {
     locationFeature.addNumberProperty(propertyId, bearing);
     refreshSource();
   }
@@ -253,14 +291,15 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
   //
 
   private void addLocationSource() {
-    if (mapboxMap.getSource(LOCATION_SOURCE) == null) {
+    if (style.getSource(LOCATION_SOURCE) == null) {
       GeoJsonSource locationSource = layerSourceProvider.generateSource(locationFeature);
-      mapboxMap.addSource(locationSource);
+      locationSource = layerSourceProvider.generateSource(locationFeature);
+      style.addSource(locationSource);
     }
   }
 
   private void refreshSource() {
-    GeoJsonSource source = mapboxMap.getSourceAs(LOCATION_SOURCE);
+    GeoJsonSource source = style.getSourceAs(LOCATION_SOURCE);
     if (source != null) {
         source.setGeoJson(locationFeature);
     }
@@ -285,17 +324,17 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
     Bitmap backgroundStaleBitmap = bitmapProvider.generateBitmap(
       options.backgroundDrawableStale(), options.backgroundStaleTintColor()
     );
-    mapboxMap.addImage(BACKGROUND_ICON, backgroundBitmap);
-    mapboxMap.addImage(BACKGROUND_STALE_ICON, backgroundStaleBitmap);
+    style.addImage(BACKGROUND_ICON, backgroundBitmap);
+    style.addImage(BACKGROUND_STALE_ICON, backgroundStaleBitmap);
   }
 
-  private void styleShadow(LocationComponentOptions options) {
-    mapboxMap.addImage(SHADOW_ICON, bitmapProvider.generateShadowBitmap(options));
+  private void styleShadow(@NonNull LocationComponentOptions options) {
+    style.addImage(SHADOW_ICON, bitmapProvider.generateShadowBitmap(options));
   }
 
   private void styleBearing(LocationComponentOptions options) {
     Bitmap bearingBitmap = bitmapProvider.generateBitmap(options.bearingDrawable(), options.bearingTintColor());
-    mapboxMap.addImage(BEARING_ICON, bearingBitmap);
+    style.addImage(BEARING_ICON, bearingBitmap);
   }
 
   private void styleAccuracy(float accuracyAlpha, @ColorInt int accuracyColor) {
@@ -319,19 +358,19 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
         options.gpsDrawable(), options.foregroundStaleTintColor()
       );
     }
-    mapboxMap.addImage(FOREGROUND_ICON, foregroundBitmap);
-    mapboxMap.addImage(FOREGROUND_STALE_ICON, foregroundBitmapStale);
+    style.addImage(FOREGROUND_ICON, foregroundBitmap);
+    style.addImage(FOREGROUND_STALE_ICON, foregroundBitmapStale);
   }
 
-  private void styleScaling(LocationComponentOptions options) {
+  private void styleScaling(@NonNull LocationComponentOptions options) {
     for (String layerId : layerMap) {
-      Layer layer = mapboxMap.getLayer(layerId);
-      if (layer != null && layer instanceof SymbolLayer) {
+      Layer layer = style.getLayer(layerId);
+      if (layer instanceof SymbolLayer) {
         layer.setProperties(
           iconSize(
             interpolate(linear(), zoom(),
-              stop(options.minZoom(), options.minZoomIconScale()),
-              stop(options.maxZoom(), options.maxZoomIconScale())
+              stop(mapboxMap.getMinZoomLevel(), options.minZoomIconScale()),
+              stop(mapboxMap.getMaxZoomLevel(), options.maxZoomIconScale())
             )
           )
         );
@@ -355,6 +394,7 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
     refreshSource();
   }
 
+  @NonNull
   private String buildIconString(@Nullable String bitmapName, @NonNull String drawableName) {
     if (bitmapName != null) {
       return bitmapName;
@@ -374,7 +414,7 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
   // Map click event
   //
 
-  boolean onMapClick(LatLng point) {
+  boolean onMapClick(@NonNull LatLng point) {
     PointF screenLoc = mapboxMap.getProjection().toScreenLocation(point);
     List<Feature> features = mapboxMap.queryRenderedFeatures(screenLoc,
       BACKGROUND_LAYER,
@@ -384,28 +424,54 @@ final class LocationLayerController implements MapboxAnimator.OnLayerAnimationsV
     return !features.isEmpty();
   }
 
-  @Override
-  public void onNewLatLngValue(LatLng latLng) {
-    Point point = Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude());
-    setLocationPoint(point);
-  }
+  private final MapboxAnimator.AnimationsValueChangeListener<LatLng> latLngValueListener =
+    new MapboxAnimator.AnimationsValueChangeListener<LatLng>() {
+      @Override
+      public void onNewAnimationValue(LatLng value) {
+        Point point = Point.fromLngLat(value.getLongitude(), value.getLatitude());
+        setLocationPoint(point);
+      }
+    };
 
-  @Override
-  public void onNewGpsBearingValue(float gpsBearing) {
+  private final MapboxAnimator.AnimationsValueChangeListener<Float> gpsBearingValueListener =
+    new MapboxAnimator.AnimationsValueChangeListener<Float>() {
+      @Override
+      public void onNewAnimationValue(Float value) {
+        setBearingProperty(PROPERTY_GPS_BEARING, value);
+      }
+    };
+
+  private final MapboxAnimator.AnimationsValueChangeListener<Float> compassBearingValueListener =
+    new MapboxAnimator.AnimationsValueChangeListener<Float>() {
+      @Override
+      public void onNewAnimationValue(Float value) {
+        setBearingProperty(PROPERTY_COMPASS_BEARING, value);
+      }
+    };
+
+  private final MapboxAnimator.AnimationsValueChangeListener<Float> accuracyValueListener =
+    new MapboxAnimator.AnimationsValueChangeListener<Float>() {
+      @Override
+      public void onNewAnimationValue(Float value) {
+        updateAccuracyRadius(value);
+      }
+    };
+
+  Set<AnimatorListenerHolder> getAnimationListeners() {
+    Set<AnimatorListenerHolder> holders = new HashSet<>();
+    holders.add(new AnimatorListenerHolder(MapboxAnimator.ANIMATOR_LAYER_LATLNG, latLngValueListener));
+
     if (renderMode == RenderMode.GPS) {
-      setBearingProperty(PROPERTY_GPS_BEARING, gpsBearing);
+      holders.add(new AnimatorListenerHolder(MapboxAnimator.ANIMATOR_LAYER_GPS_BEARING, gpsBearingValueListener));
+    } else if (renderMode == RenderMode.COMPASS) {
+      holders.add(
+        new AnimatorListenerHolder(MapboxAnimator.ANIMATOR_LAYER_COMPASS_BEARING, compassBearingValueListener));
     }
-  }
 
-  @Override
-  public void onNewCompassBearingValue(float compassBearing) {
-    if (renderMode == RenderMode.COMPASS) {
-      setBearingProperty(PROPERTY_COMPASS_BEARING, compassBearing);
+    if (renderMode == RenderMode.COMPASS || renderMode == RenderMode.NORMAL) {
+      holders.add(new AnimatorListenerHolder(MapboxAnimator.ANIMATOR_LAYER_ACCURACY, accuracyValueListener));
     }
-  }
 
-  @Override
-  public void onNewAccuracyRadiusValue(float accuracyRadiusValue) {
-    updateAccuracyRadius(accuracyRadiusValue);
+    return holders;
   }
 }

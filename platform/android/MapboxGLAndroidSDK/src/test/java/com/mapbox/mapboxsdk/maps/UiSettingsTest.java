@@ -229,18 +229,6 @@ public class UiSettingsTest {
   }
 
   @Test
-  public void testZoomControlsEnabled() {
-    uiSettings.setZoomControlsEnabled(true);
-    assertEquals("Zoom controls should be enabled", true, uiSettings.isZoomControlsEnabled());
-  }
-
-  @Test
-  public void testZoomControlsDisabled() {
-    uiSettings.setZoomControlsEnabled(false);
-    assertEquals("Zoom controls should be disabled", false, uiSettings.isZoomControlsEnabled());
-  }
-
-  @Test
   public void testDoubleTapGesturesEnabled() {
     uiSettings.setDoubleTapGesturesEnabled(true);
     assertEquals("DoubleTap gesture should be enabled", true, uiSettings.isDoubleTapGesturesEnabled());
@@ -258,6 +246,26 @@ public class UiSettingsTest {
     assertEquals("DoubleTap gesture should be false", false, uiSettings.isDoubleTapGesturesEnabled());
     uiSettings.setDoubleTapGesturesEnabled(true);
     assertEquals("DoubleTap gesture should be true", true, uiSettings.isDoubleTapGesturesEnabled());
+  }
+
+  @Test
+  public void testQuickZoomGesturesEnabled() {
+    uiSettings.setQuickZoomGesturesEnabled(true);
+    assertEquals("QuickZoom gesture should be enabled", true, uiSettings.isQuickZoomGesturesEnabled());
+  }
+
+  @Test
+  public void testQuickZoomGesturesDisabled() {
+    uiSettings.setQuickZoomGesturesEnabled(false);
+    assertEquals("QuickZoom gesture should be disabled", false, uiSettings.isQuickZoomGesturesEnabled());
+  }
+
+  @Test
+  public void testQuickZoomGestureChangeAllowed() {
+    uiSettings.setQuickZoomGesturesEnabled(false);
+    assertEquals("QuickZoom gesture should be false", false, uiSettings.isQuickZoomGesturesEnabled());
+    uiSettings.setQuickZoomGesturesEnabled(true);
+    assertEquals("QuickZoom gesture should be true", true, uiSettings.isQuickZoomGesturesEnabled());
   }
 
   @Test

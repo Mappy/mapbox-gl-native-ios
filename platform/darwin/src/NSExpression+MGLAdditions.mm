@@ -46,7 +46,7 @@ const MGLExpressionInterpolationMode MGLExpressionInterpolationModeCubicBezier =
     
     // Effectively categorize the class with some extra class methods.
     Class NSPredicateUtilities = objc_getMetaClass(className.UTF8String);
-#pragma clang push
+#pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wundeclared-selector"
     #define INSTALL_METHOD(sel) \
         { \
@@ -85,7 +85,7 @@ const MGLExpressionInterpolationMode MGLExpressionInterpolationModeCubicBezier =
     INSTALL_CONTROL_STRUCTURE(MGL_FUNCTION);
     
     #undef INSTALL_AFTERMARKET_FN
-#pragma clang pop
+#pragma clang diagnostic pop
 }
 
 /**
@@ -1117,14 +1117,14 @@ NSArray *MGLSubexpressionsWithJSONObjects(NSArray *objects) {
                             format:@"Casting expression to %@ not yet implemented.", type];
             } else if ([function isEqualToString:@"MGL_FUNCTION"] ||
                        [function isEqualToString:@"MGL_FUNCTION:"]) {
-                NSExpression *op = self.arguments.firstObject;
-                if (op.expressionType == NSConstantValueExpressionType
-                    && [op.constantValue isEqualToString:@"collator"]) {
+                NSExpression *firstOp = self.arguments.firstObject;
+                if (firstOp.expressionType == NSConstantValueExpressionType
+                    && [firstOp.constantValue isEqualToString:@"collator"]) {
                     // Avoid wrapping collator options object in literal expression.
                     return @[@"collator", self.arguments[1].constantValue];
                 }
-                if (op.expressionType == NSConstantValueExpressionType
-                    && [op.constantValue isEqualToString:@"format"]) {
+                if (firstOp.expressionType == NSConstantValueExpressionType
+                    && [firstOp.constantValue isEqualToString:@"format"]) {
                     // Avoid wrapping format options object in literal expression.
                     return @[@"format", self.arguments[1].mgl_jsonExpressionObject, self.arguments[2].constantValue];
                 }
@@ -1398,11 +1398,15 @@ NSDictionary<NSNumber *, NSExpression *> *MGLLocalizedStopDictionary(NSDictionar
 - (NSExpression *)mgl_expressionLocalizedIntoLocale:(nullable NSLocale *)locale {
     switch (self.expressionType) {
         case NSConstantValueExpressionType: {
-            NSDictionary *stops = self.constantValue;
-            if ([stops isKindOfClass:[NSDictionary class]]) {
-                NSDictionary *localizedStops = MGLLocalizedStopDictionary(stops, locale);
-                if (localizedStops != stops) {
+            if ([self.constantValue isKindOfClass:[NSDictionary class]]) {
+                NSDictionary *localizedStops = MGLLocalizedStopDictionary(self.constantValue, locale);
+                if (localizedStops != self.constantValue) {
                     return [NSExpression expressionForConstantValue:localizedStops];
+                }
+            } else if ([self.constantValue isKindOfClass:[NSArray class]]) {
+                NSArray *localizedValues = MGLLocalizedCollection(self.constantValue, locale);
+                if (localizedValues != self.constantValue) {
+                    return [NSExpression expressionForConstantValue:localizedValues];
                 }
             }
             return self;
@@ -1422,19 +1426,18 @@ NSDictionary<NSNumber *, NSExpression *> *MGLLocalizedStopDictionary(NSDictionar
                 if ([localizedKeyPath isEqualToString:@"name"]) {
                     return [NSExpression expressionForKeyPath:localizedKeyPath];
                 }
-                // If the keypath is `name_zh-Hans`, fallback to `name_zh` to `name`
-                // The `name_zh-Hans` field was added since Mapbox Streets v7
-                // See the documentation of name fields for detail https://www.mapbox.com/vector-tiles/mapbox-streets-v7/#overview
-                // CN tiles might using `name_zh-CN` for Simplified Chinese
+                // If the keypath is `name_zh-Hans`, fallback to `name_zh` to `name`.
+                // CN tiles might using `name_zh-CN` for Simplified Chinese.
                 if ([localizedKeyPath isEqualToString:@"name_zh-Hans"]) {
                     return [NSExpression expressionWithFormat:@"mgl_coalesce({%K, %K, %K, %K})",
                             localizedKeyPath, @"name_zh-CN", @"name_zh", @"name"];
                 }
-                // Mapbox Streets v8 has `name_zh-Hant`, we should fallback to Simplified Chinese if the filed has no value
+                // Mapbox Streets v8 has `name_zh-Hant`, we should fallback to Simplified Chinese if the field has no value.
                 if ([localizedKeyPath isEqualToString:@"name_zh-Hant"]) {
                     return [NSExpression expressionWithFormat:@"mgl_coalesce({%K, %K, %K, %K, %K})",
                             localizedKeyPath, @"name_zh-Hans", @"name_zh-CN", @"name_zh", @"name"];
                 }
+
                 // Other keypath fallback to `name`
                 return [NSExpression expressionWithFormat:@"mgl_coalesce({%K, %K})", localizedKeyPath, @"name"];
             }

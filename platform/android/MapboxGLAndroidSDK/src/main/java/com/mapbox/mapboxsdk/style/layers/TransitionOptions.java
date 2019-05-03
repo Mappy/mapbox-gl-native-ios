@@ -9,8 +9,12 @@ import android.support.annotation.Keep;
  */
 public class TransitionOptions {
 
+  @Keep
   private long duration;
+  @Keep
   private long delay;
+  @Keep
+  private boolean enablePlacementTransitions;
 
   /**
    * Create a transition property based on duration and a delay.
@@ -19,8 +23,21 @@ public class TransitionOptions {
    * @param delay    the delay to start the transition
    */
   public TransitionOptions(long duration, long delay) {
+    this(duration, delay, true);
+  }
+
+  /**
+   * Create a transition property.
+   *
+   * @param duration                   the duration of the transition
+   * @param delay                      the delay to start the transition
+   * @param enablePlacementTransitions the flag that describes whether the fade in/out symbol placement transition
+   *                                   should be enabled. Defaults to true.
+   */
+  public TransitionOptions(long duration, long delay, boolean enablePlacementTransitions) {
     this.duration = duration;
     this.delay = delay;
+    this.enablePlacementTransitions = enablePlacementTransitions;
   }
 
   /**
@@ -29,10 +46,28 @@ public class TransitionOptions {
    * @param duration the duration of the transition
    * @param delay    the delay to start the transition
    * @return a new transition property object
+   * @deprecated use {@link #fromTransitionOptions(long, long, boolean)} instead
    */
   @Keep
+  @Deprecated
   public static TransitionOptions fromTransitionOptions(long duration, long delay) {
+    // Invoked from JNI only
     return new TransitionOptions(duration, delay);
+  }
+
+  /**
+   * Create a transition property.
+   *
+   * @param duration                   the duration of the transition
+   * @param delay                      the delay to start the transition
+   * @param enablePlacementTransitions the flag that describes whether the fade in/out symbol placement transition
+   *                                   should be enabled. Defaults to true.
+   * @return a new transition property object
+   */
+  @Keep
+  static TransitionOptions fromTransitionOptions(long duration, long delay, boolean enablePlacementTransitions) {
+    // Invoked from JNI only
+    return new TransitionOptions(duration, delay, enablePlacementTransitions);
   }
 
   /**
@@ -53,6 +88,15 @@ public class TransitionOptions {
     return delay;
   }
 
+  /**
+   * Get the flag that describes whether the fade in/out symbol placement transition should be enabled.
+   *
+   * @return true if the fade in/out symbol placement transition should be enabled, false otherwise
+   */
+  public boolean isEnablePlacementTransitions() {
+    return enablePlacementTransitions;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -67,13 +111,17 @@ public class TransitionOptions {
     if (duration != that.duration) {
       return false;
     }
-    return delay == that.delay;
+    if (delay != that.delay) {
+      return false;
+    }
+    return enablePlacementTransitions == that.enablePlacementTransitions;
   }
 
   @Override
   public int hashCode() {
     int result = (int) (duration ^ (duration >>> 32));
     result = 31 * result + (int) (delay ^ (delay >>> 32));
+    result = 31 * result + (enablePlacementTransitions ? 1 : 0);
     return result;
   }
 
@@ -82,6 +130,7 @@ public class TransitionOptions {
     return "TransitionOptions{"
       + "duration=" + duration
       + ", delay=" + delay
+      + ", enablePlacementTransitions=" + enablePlacementTransitions
       + '}';
   }
 }
