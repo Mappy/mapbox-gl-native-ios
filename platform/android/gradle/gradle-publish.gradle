@@ -26,8 +26,7 @@ afterEvaluate { project ->
         }
         repositories {
             maven {
-                // TODO FF
-               url "../../../../emb_mappy_android/sdk_export"
+                url "file://${System.env.MAVEN}"
             }
         }
     }
