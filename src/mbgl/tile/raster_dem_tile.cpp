@@ -5,7 +5,6 @@
 #include <mbgl/style/source.hpp>
 #include <mbgl/storage/resource.hpp>
 #include <mbgl/storage/response.hpp>
-#include <mbgl/storage/file_source.hpp>
 #include <mbgl/renderer/tile_parameters.hpp>
 #include <mbgl/renderer/buckets/hillshade_bucket.hpp>
 #include <mbgl/actor/scheduler.hpp>
@@ -69,7 +68,7 @@ void RasterDEMTile::onError(std::exception_ptr err, const uint64_t resultCorrela
     observer->onTileError(*this, err);
 }
 
-void RasterDEMTile::upload(gl::Context& context) {
+void RasterDEMTile::upload(gfx::Context& context) {
     if (bucket) {
         bucket->upload(context);
     }

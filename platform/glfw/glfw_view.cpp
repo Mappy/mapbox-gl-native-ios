@@ -1,4 +1,5 @@
 #include "glfw_view.hpp"
+#include "glfw_gl_backend.hpp"
 #include "glfw_renderer_frontend.hpp"
 #include "ny_route.hpp"
 
@@ -12,8 +13,9 @@
 #include <mbgl/util/platform.hpp>
 #include <mbgl/util/string.hpp>
 #include <mbgl/util/chrono.hpp>
+#include <mbgl/util/geo.hpp>
 #include <mbgl/renderer/renderer.hpp>
-#include <mbgl/renderer/backend_scope.hpp>
+#include <mbgl/gfx/backend_scope.hpp>
 #include <mbgl/map/camera.hpp>
 
 #include <mapbox/cheap_ruler.hpp>
@@ -104,8 +106,10 @@ GLFWView::GLFWView(bool fullscreen_, bool benchmark_)
     glfwSetKeyCallback(window, onKey);
 
     glfwGetWindowSize(window, &width, &height);
-    glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
-    pixelRatio = static_cast<float>(fbWidth) / width;
+
+    backend = std::make_unique<GLFWGLBackend>(window);
+
+    pixelRatio = static_cast<float>(backend->getSize().width) / width;
 
     glfwMakeContextCurrent(nullptr);
 
@@ -122,6 +126,7 @@ GLFWView::GLFWView(bool fullscreen_, bool benchmark_)
     printf("- Prezz `X` to cycle through the viewport modes\n");
     printf("- Press `A` to cycle through Mapbox offices in the world + dateline monument\n");
     printf("- Press `B` to cycle through the color, stencil, and depth buffer\n");
+    printf("- Press `D` to cycle through camera bounds: inside, crossing IDL at left, crossing IDL at right, and disabled\n");
     printf("\n");
     printf("- Press `1` through `6` to add increasing numbers of point annotations for testing\n");
     printf("- Press `7` through `0` to add increasing numbers of shape annotations for testing\n");
@@ -156,14 +161,8 @@ void GLFWView::setRenderFrontend(GLFWRendererFrontend* rendererFrontend_) {
     rendererFrontend = rendererFrontend_;
 }
 
-void GLFWView::updateAssumedState() {
-    assumeFramebufferBinding(0);
-    assumeViewport(0, 0, getFramebufferSize());
-}
-
-void GLFWView::bind() {
-    setFramebufferBinding(0);
-    setViewport(0, 0, getFramebufferSize());
+mbgl::gfx::RendererBackend& GLFWView::getRendererBackend() {
+    return backend->getRendererBackend();
 }
 
 void GLFWView::onKey(GLFWwindow *window, int key, int /*scancode*/, int action, int mods) {
@@ -182,7 +181,7 @@ void GLFWView::onKey(GLFWwindow *window, int key, int /*scancode*/, int action, 
             break;
         case GLFW_KEY_X:
             if (!mods)
-                view->map->resetPosition();
+                view->map->jumpTo(mbgl::CameraOptions().withCenter(mbgl::LatLng {}).withZoom(0.0).withBearing(0.0).withPitch(0.0));
             break;
         case GLFW_KEY_O:
             view->onlineStatusCallback();
@@ -207,7 +206,7 @@ void GLFWView::onKey(GLFWwindow *window, int key, int /*scancode*/, int action, 
 #endif // MBGL_USE_GLES2
         case GLFW_KEY_N:
             if (!mods)
-                view->map->resetNorth();
+                view->map->easeTo(mbgl::CameraOptions().withBearing(0.0), mbgl::AnimationOptions {{mbgl::Milliseconds(500)}});
             break;
         case GLFW_KEY_Z:
             view->nextOrientation();
@@ -265,20 +264,58 @@ void GLFWView::onKey(GLFWwindow *window, int key, int /*scancode*/, int action, 
                     routeProgress = 0.0;
                 }
 
+                auto camera = routeMap->getCameraOptions();
+
                 auto point = ruler.along(lineString, routeProgress * routeDistance);
                 const mbgl::LatLng center { point.y, point.x };
-                auto latLng = routeMap->getLatLng();
+                auto latLng = *camera.center;
                 double bearing = ruler.bearing({ latLng.longitude(), latLng.latitude() }, point);
-                double easing = bearing - routeMap->getBearing();
+                double easing = bearing - *camera.bearing;
                 easing += easing > 180.0 ? -360.0 : easing < -180 ? 360.0 : 0;
-                bearing = routeMap->getBearing() + (easing / 20);
-                routeMap->jumpTo(mbgl::CameraOptions().withCenter(center).withZoom(18.0).withAngle(bearing).withPitch(60.0));
+                bearing = *camera.bearing + (easing / 20);
+                routeMap->jumpTo(mbgl::CameraOptions().withCenter(center).withZoom(18.0).withBearing(bearing).withPitch(60.0));
             };
             view->animateRouteCallback(view->map);
         } break;
         case GLFW_KEY_E:
             view->toggle3DExtrusions(!view->show3DExtrusions);
             break;
+        case GLFW_KEY_D: {
+            static const std::vector<mbgl::LatLngBounds> bounds = {
+                mbgl::LatLngBounds::hull(mbgl::LatLng { -45.0, -170.0 }, mbgl::LatLng { 45.0, 170.0 }),  // inside
+                mbgl::LatLngBounds::hull(mbgl::LatLng { -45.0, -200.0 }, mbgl::LatLng { 45.0, -160.0 }), // left IDL
+                mbgl::LatLngBounds::hull(mbgl::LatLng { -45.0, 160.0 }, mbgl::LatLng { 45.0, 200.0 }),   // right IDL
+                mbgl::LatLngBounds::unbounded()
+            };
+            static size_t nextBound = 0u;
+            static mbgl::AnnotationID boundAnnotationID = std::numeric_limits<mbgl::AnnotationID>::max();
+
+            mbgl::LatLngBounds bound = bounds[nextBound++];
+            nextBound = nextBound % bounds.size();
+
+            view->map->setBounds(mbgl::BoundOptions().withLatLngBounds(bound));
+
+            if (bound == mbgl::LatLngBounds::unbounded()) {
+                view->map->removeAnnotation(boundAnnotationID);
+                boundAnnotationID = std::numeric_limits<mbgl::AnnotationID>::max();
+            } else {
+                mbgl::Polygon<double> rect;
+                rect.push_back({
+                    mbgl::Point<double>{ bound.west(), bound.north() },
+                    mbgl::Point<double>{ bound.east(), bound.north() },
+                    mbgl::Point<double>{ bound.east(), bound.south() },
+                    mbgl::Point<double>{ bound.west(), bound.south() },
+                });
+
+                auto boundAnnotation = mbgl::FillAnnotation { rect, 0.5f, { view->makeRandomColor() }, { view->makeRandomColor() } };
+
+                if (boundAnnotationID == std::numeric_limits<mbgl::AnnotationID>::max()) {
+                    boundAnnotationID = view->map->addAnnotation(boundAnnotation);
+                } else {
+                    view->map->updateAnnotation(boundAnnotationID, boundAnnotation);
+                }
+            }
+        } break;
         }
     }
 
@@ -345,7 +382,7 @@ GLFWView::makeImage(const std::string& id, int width, int height, float pixelRat
 
 void GLFWView::nextOrientation() {
     using NO = mbgl::NorthOrientation;
-    switch (map->getNorthOrientation()) {
+    switch (map->getMapOptions().northOrientation()) {
         case NO::Upwards: map->setNorthOrientation(NO::Rightwards); break;
         case NO::Rightwards: map->setNorthOrientation(NO::Downwards); break;
         case NO::Downwards: map->setNorthOrientation(NO::Leftwards); break;
@@ -447,7 +484,7 @@ void GLFWView::onScroll(GLFWwindow *window, double /*xOffset*/, double yOffset) 
         scale = 1.0 / scale;
     }
 
-    view->map->setZoom(view->map->getZoom() + ::log2(scale), mbgl::ScreenCoordinate { view->lastX, view->lastY });
+    view->map->scaleBy(scale, mbgl::ScreenCoordinate { view->lastX, view->lastY });
 }
 
 void GLFWView::onWindowResize(GLFWwindow *window, int width, int height) {
@@ -459,11 +496,7 @@ void GLFWView::onWindowResize(GLFWwindow *window, int width, int height) {
 
 void GLFWView::onFramebufferResize(GLFWwindow *window, int width, int height) {
     auto *view = reinterpret_cast<GLFWView *>(glfwGetWindowUserPointer(window));
-    view->fbWidth = width;
-    view->fbHeight = height;
-
-    mbgl::BackendScope scope { *view, mbgl::BackendScope::ScopeType::Implicit };
-    view->bind();
+    view->backend->setSize({ static_cast<uint32_t>(width), static_cast<uint32_t>(height) });
 
     // This is only triggered when the framebuffer is resized, but not the window. It can
     // happen when you move the window between screens with a different pixel ratio.
@@ -490,9 +523,9 @@ void GLFWView::onMouseClick(GLFWwindow *window, int button, int action, int modi
             double now = glfwGetTime();
             if (now - view->lastClick < 0.4 /* ms */) {
                 if (modifiers & GLFW_MOD_SHIFT) {
-                    view->map->setZoom(view->map->getZoom() - 1, mbgl::ScreenCoordinate { view->lastX, view->lastY }, mbgl::AnimationOptions{{mbgl::Milliseconds(500)}});
+                    view->map->scaleBy(0.5, mbgl::ScreenCoordinate { view->lastX, view->lastY }, mbgl::AnimationOptions{{mbgl::Milliseconds(500)}});
                 } else {
-                    view->map->setZoom(view->map->getZoom() + 1, mbgl::ScreenCoordinate { view->lastX, view->lastY }, mbgl::AnimationOptions{{mbgl::Milliseconds(500)}});
+                    view->map->scaleBy(2.0, mbgl::ScreenCoordinate { view->lastX, view->lastY }, mbgl::AnimationOptions{{mbgl::Milliseconds(500)}});
                 }
             }
             view->lastClick = now;
@@ -513,7 +546,7 @@ void GLFWView::onMouseMove(GLFWwindow *window, double x, double y) {
     } else if (view->pitching) {
         const double dy = y - view->lastY;
         if (dy) {
-            view->map->setPitch(view->map->getPitch() - dy / 2);
+            view->map->pitchBy(dy / 2);
         }
     }
     view->lastX = x;
@@ -538,7 +571,7 @@ void GLFWView::run() {
 
             updateAnimatedAnnotations();
 
-            activate();
+            mbgl::gfx::BackendScope scope { backend->getRendererBackend() };
 
             rendererFrontend->render();
 
@@ -566,22 +599,6 @@ float GLFWView::getPixelRatio() const {
 
 mbgl::Size GLFWView::getSize() const {
     return { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
-}
-
-mbgl::Size GLFWView::getFramebufferSize() const {
-    return { static_cast<uint32_t>(fbWidth), static_cast<uint32_t>(fbHeight) };
-}
-
-mbgl::gl::ProcAddress GLFWView::getExtensionFunctionPointer(const char* name) {
-    return glfwGetProcAddress(name);
-}
-
-void GLFWView::activate() {
-    glfwMakeContextCurrent(window);
-}
-
-void GLFWView::deactivate() {
-    glfwMakeContextCurrent(nullptr);
 }
 
 void GLFWView::invalidate() {

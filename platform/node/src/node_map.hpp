@@ -15,20 +15,18 @@
 #pragma GCC diagnostic pop
 
 namespace mbgl {
-class Map;
 class HeadlessFrontend;
 } // namespace mbgl
 
 namespace node_mbgl {
 
-class NodeMapObserver : public mbgl::MapObserver {
-    void onDidFailLoadingMap(std::exception_ptr) override;
+struct NodeMapObserver : public mbgl::MapObserver {
+    void onDidFailLoadingMap(mbgl::MapLoadError, const std::string&) final;
 };
 
 class RenderRequest;
 
-class NodeMap : public Nan::ObjectWrap,
-                public mbgl::FileSource {
+class NodeMap : public Nan::ObjectWrap {
 public:
     struct RenderOptions;
     class RenderWorker;
@@ -78,8 +76,6 @@ public:
 
     static RenderOptions ParseOptions(v8::Local<v8::Object>);
 
-    std::unique_ptr<mbgl::AsyncRequest> request(const mbgl::Resource&, mbgl::FileSource::Callback);
-
     const float pixelRatio;
     mbgl::MapMode mode;
     bool crossSourceCollisions;
@@ -98,4 +94,10 @@ public:
     bool loaded = false;
 };
 
-}
+struct NodeFileSource : public mbgl::FileSource {
+    NodeFileSource(NodeMap* nodeMap_) : nodeMap(nodeMap_) {}
+    std::unique_ptr<mbgl::AsyncRequest> request(const mbgl::Resource&, mbgl::FileSource::Callback) final;
+    NodeMap* nodeMap;
+};
+
+} // namespace node_mbgl

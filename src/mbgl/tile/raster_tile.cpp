@@ -5,7 +5,6 @@
 #include <mbgl/style/source.hpp>
 #include <mbgl/storage/resource.hpp>
 #include <mbgl/storage/response.hpp>
-#include <mbgl/storage/file_source.hpp>
 #include <mbgl/renderer/tile_parameters.hpp>
 #include <mbgl/renderer/buckets/raster_bucket.hpp>
 #include <mbgl/actor/scheduler.hpp>
@@ -58,7 +57,7 @@ void RasterTile::onError(std::exception_ptr err, const uint64_t resultCorrelatio
     observer->onTileError(*this, err);
 }
 
-void RasterTile::upload(gl::Context& context) {
+void RasterTile::upload(gfx::Context& context) {
     if (bucket) {
         bucket->upload(context);
     }

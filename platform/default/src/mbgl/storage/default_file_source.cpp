@@ -14,13 +14,14 @@
 #include <mbgl/util/stopwatch.hpp>
 
 #include <cassert>
+#include <utility>
 
 namespace mbgl {
 
 class DefaultFileSource::Impl {
 public:
     Impl(std::shared_ptr<FileSource> assetFileSource_, std::string cachePath, uint64_t maximumCacheSize)
-            : assetFileSource(assetFileSource_)
+            : assetFileSource(std::move(assetFileSource_))
             , localFileSource(std::make_unique<LocalFileSource>())
             , offlineDatabase(std::make_unique<OfflineDatabase>(cachePath, maximumCacheSize)) {
     }
@@ -43,6 +44,10 @@ public:
 
     void setResourceTransform(optional<ActorRef<ResourceTransform>>&& transform) {
         onlineFileSource.setResourceTransform(std::move(transform));
+    }
+
+    void setResourceCachePath(const std::string& path) {
+        offlineDatabase->changePath(path);
     }
 
     void listRegions(std::function<void (expected<OfflineRegions, std::exception_ptr>)> callback) {
@@ -202,9 +207,9 @@ private:
 };
 
 DefaultFileSource::DefaultFileSource(const std::string& cachePath,
-                                     const std::string& assetRoot,
+                                     const std::string& assetPath,
                                      uint64_t maximumCacheSize)
-    : DefaultFileSource(cachePath, std::make_unique<AssetFileSource>(assetRoot), maximumCacheSize) {
+    : DefaultFileSource(cachePath, std::make_unique<AssetFileSource>(assetPath), maximumCacheSize) {
 }
 
 DefaultFileSource::DefaultFileSource(const std::string& cachePath,
@@ -246,6 +251,10 @@ std::string DefaultFileSource::getAccessToken() {
 
 void DefaultFileSource::setResourceTransform(optional<ActorRef<ResourceTransform>>&& transform) {
     impl->actor().invoke(&Impl::setResourceTransform, std::move(transform));
+}
+
+void DefaultFileSource::setResourceCachePath(const std::string& path) {
+    impl->actor().invoke(&Impl::setResourceCachePath, path);
 }
 
 std::unique_ptr<AsyncRequest> DefaultFileSource::request(const Resource& resource, Callback callback) {

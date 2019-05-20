@@ -3,21 +3,22 @@
 #include <mbgl/programs/program.hpp>
 #include <mbgl/programs/attributes.hpp>
 #include <mbgl/programs/uniforms.hpp>
-#include <mbgl/shaders/extrusion_texture.hpp>
+#include <mbgl/programs/textures.hpp>
 #include <mbgl/style/properties.hpp>
 #include <mbgl/util/geometry.hpp>
 
 namespace mbgl {
 
 class ExtrusionTextureProgram : public Program<
-    shaders::extrusion_texture,
-    gl::Triangle,
-    gl::Attributes<attributes::a_pos>,
-    gl::Uniforms<
-        uniforms::u_matrix,
-        uniforms::u_world,
-        uniforms::u_image,
-        uniforms::u_opacity>,
+    ExtrusionTextureProgram,
+    gfx::PrimitiveType::Triangle,
+    TypeList<attributes::pos>,
+    TypeList<
+        uniforms::matrix,
+        uniforms::world,
+        uniforms::opacity>,
+    TypeList<
+        textures::image>,
     style::Properties<>> {
 public:
     using Program::Program;
@@ -33,6 +34,6 @@ public:
 };
 
 using ExtrusionTextureLayoutVertex = ExtrusionTextureProgram::LayoutVertex;
-using ExtrusionTextureAttributes = ExtrusionTextureProgram::Attributes;
+using ExtrusionTextureAttributes = ExtrusionTextureProgram::AttributeList;
 
 } // namespace mbgl

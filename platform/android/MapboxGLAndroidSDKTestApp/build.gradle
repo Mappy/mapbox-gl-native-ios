@@ -13,7 +13,7 @@ android {
         targetSdkVersion androidVersions.targetSdkVersion
         versionCode 13
         versionName "6.0.0"
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner "com.mapbox.mapboxsdk.InstrumentationRunner"
     }
 
     compileOptions {
@@ -71,7 +71,6 @@ dependencies {
     implementation dependenciesList.supportConstraintLayout
 
     implementation dependenciesList.gmsLocation
-    implementation dependenciesList.reLinker
     implementation dependenciesList.timber
     debugImplementation dependenciesList.leakCanaryDebug
     releaseImplementation dependenciesList.leakCanaryRelease

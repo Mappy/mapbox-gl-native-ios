@@ -9,7 +9,11 @@ buildscript {
         classpath 'com.android.tools.build:gradle:3.3.0'
         classpath dependenciesList.licensesPlugin
         classpath dependenciesList.kotlinPlugin
-        classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1' // for com.github.dcendents.android-maven, https://github.com/dcendents/android-maven-gradle-plugin
+
+        classpath dependenciesList.bintrayPlugin
+        classpath dependenciesList.artifactoryPlugin
+        classpath dependenciesList.androidPublishPlugin
+        classpath dependenciesList.jacocoPlugin
     }
 }
 
@@ -18,8 +22,10 @@ allprojects {
         mavenCentral()
         google()
         jcenter()
+        // For publishing Maps SDK files to Bintray
+        maven { url 'https://mapbox.bintray.com/mapbox' }
         // Snapshot repository
-        //maven { url "http://oss.sonatype.org/content/repositories/snapshots/" }
+        // maven { url "http://oss.sonatype.org/content/repositories/snapshots/" }
     }
 }
 
@@ -30,3 +36,4 @@ subprojects {
 // Load build system information. If this file does not exist, run
 // `make platform/android/gradle/configuration.gradle`
 apply from: "${rootDir}/gradle/configuration.gradle"
+apply from: "${rootDir}/gradle/download-schema.gradle"

@@ -1,7 +1,7 @@
 #include <mbgl/renderer/buckets/raster_bucket.hpp>
 #include <mbgl/renderer/layers/render_raster_layer.hpp>
 #include <mbgl/programs/raster_program.hpp>
-#include <mbgl/gl/context.hpp>
+#include <mbgl/gfx/context.hpp>
 
 namespace mbgl {
 
@@ -17,7 +17,7 @@ RasterBucket::RasterBucket(std::shared_ptr<PremultipliedImage> image_)
 
 RasterBucket::~RasterBucket() = default;
 
-void RasterBucket::upload(gl::Context& context) {
+void RasterBucket::upload(gfx::Context& context) {
     if (!hasData()) {
         return;
     }
@@ -79,7 +79,7 @@ void RasterBucket::setMask(TileMask&& mask_) {
 
         if (segments.back().vertexLength + vertexLength > std::numeric_limits<uint16_t>::max()) {
             // Move to a new segments because the old one can't hold the geometry.
-            segments.emplace_back(vertices.vertexSize(), indices.indexSize());
+            segments.emplace_back(vertices.elements(), indices.elements());
         }
 
         vertices.emplace_back(

@@ -1,8 +1,7 @@
-apply plugin: 'maven-publish'
+apply plugin: 'digital.wup.android-maven-publish'
 apply plugin: 'signing'
 
 allprojects {
-    group project.GROUP
     version project.VERSION_NAME
 
     repositories {
@@ -18,10 +17,7 @@ afterEvaluate { project ->
     publishing {
         publications {
             maven(MavenPublication) {
-                groupId GROUP
-                artifactId POM_ARTIFACT_ID
-                version VERSION_NAME
-                artifact bundleReleaseAar
+                from components.android
             }
         }
         repositories {

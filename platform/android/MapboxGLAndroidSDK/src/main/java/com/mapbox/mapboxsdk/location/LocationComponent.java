@@ -11,7 +11,6 @@ import android.support.annotation.Nullable;
 import android.support.annotation.RequiresPermission;
 import android.support.annotation.StyleRes;
 import android.support.annotation.VisibleForTesting;
-import android.util.Log;
 import android.view.WindowManager;
 
 import com.mapbox.android.core.location.LocationEngine;
@@ -63,6 +62,7 @@ import static com.mapbox.mapboxsdk.location.LocationComponentConstants.DEFAULT_T
  * To get the component object use {@link MapboxMap#getLocationComponent()} and activate it with
  * {@link #activateLocationComponent(Context, Style)} or one of the overloads.
  * Then, manage its visibility with {@link #setLocationComponentEnabled(boolean)}.
+ * The component will not process location updates right after activation, but only after being enabled.
  * </strong>
  * <p>
  * Using this component requires you to request permission beforehand manually or using
@@ -218,8 +218,9 @@ public final class LocationComponent {
    *
    * @param context the context
    * @param style   the proxy object for current map style. More info at {@link Style}
+   * @deprecated use {@link LocationComponentActivationOptions.Builder} instead
    */
-  @RequiresPermission(anyOf = {ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION})
+  @Deprecated
   public void activateLocationComponent(@NonNull Context context, @NonNull Style style) {
     activateLocationComponent(context, style,
       LocationComponentOptions.createFromAttributes(context, R.style.mapbox_LocationComponent));
@@ -233,8 +234,9 @@ public final class LocationComponent {
    * @param style                    the proxy object for current map style. More info at {@link Style}
    * @param useDefaultLocationEngine true if you want to initialize and use the built-in location engine or false if
    *                                 there should be no location engine initialized
+   * @deprecated use {@link LocationComponentActivationOptions.Builder} instead
    */
-  @RequiresPermission(anyOf = {ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION})
+  @Deprecated
   public void activateLocationComponent(@NonNull Context context, @NonNull Style style,
                                         boolean useDefaultLocationEngine) {
     if (useDefaultLocationEngine) {
@@ -253,8 +255,9 @@ public final class LocationComponent {
    * @param useDefaultLocationEngine true if you want to initialize and use the built-in location engine or false if
    *                                 there should be no location engine initialized
    * @param locationEngineRequest    the location request
+   * @deprecated use {@link LocationComponentActivationOptions.Builder} instead
    */
-  @RequiresPermission(anyOf = {ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION})
+  @Deprecated
   public void activateLocationComponent(@NonNull Context context, @NonNull Style style,
                                         boolean useDefaultLocationEngine,
                                         @NonNull LocationEngineRequest locationEngineRequest) {
@@ -276,8 +279,9 @@ public final class LocationComponent {
    *                                 there should be no location engine initialized
    * @param locationEngineRequest    the location request
    * @param options                  the options
+   * @deprecated use {@link LocationComponentActivationOptions.Builder} instead
    */
-  @RequiresPermission(anyOf = {ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION})
+  @Deprecated
   public void activateLocationComponent(@NonNull Context context, @NonNull Style style,
                                         boolean useDefaultLocationEngine,
                                         @NonNull LocationEngineRequest locationEngineRequest,
@@ -299,8 +303,9 @@ public final class LocationComponent {
    * @param context  the context
    * @param style    the proxy object for current map style. More info at {@link Style}
    * @param styleRes the LocationComponent style res
+   * @deprecated use {@link LocationComponentActivationOptions.Builder} instead
    */
-  @RequiresPermission(anyOf = {ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION})
+  @Deprecated
   public void activateLocationComponent(@NonNull Context context, @NonNull Style style, @StyleRes int styleRes) {
     activateLocationComponent(context, style, LocationComponentOptions.createFromAttributes(context, styleRes));
   }
@@ -315,8 +320,9 @@ public final class LocationComponent {
    * @param context the context
    * @param style   the proxy object for current map style. More info at {@link Style}
    * @param options the options
+   * @deprecated use {@link LocationComponentActivationOptions.Builder} instead
    */
-  @RequiresPermission(anyOf = {ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION})
+  @Deprecated
   public void activateLocationComponent(@NonNull Context context, @NonNull Style style,
                                         @NonNull LocationComponentOptions options) {
     initialize(context, style, options);
@@ -332,8 +338,9 @@ public final class LocationComponent {
    * @param style          the proxy object for current map style. More info at {@link Style}
    * @param locationEngine the engine, or null if you'd like to only force location updates
    * @param styleRes       the LocationComponent style res
+   * @deprecated use {@link LocationComponentActivationOptions.Builder} instead
    */
-  @RequiresPermission(anyOf = {ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION})
+  @Deprecated
   public void activateLocationComponent(@NonNull Context context, @NonNull Style style,
                                         @Nullable LocationEngine locationEngine, @StyleRes int styleRes) {
     activateLocationComponent(context, style, locationEngine,
@@ -349,8 +356,9 @@ public final class LocationComponent {
    * @param locationEngine        the engine, or null if you'd like to only force location updates
    * @param locationEngineRequest the location request
    * @param styleRes              the LocationComponent style res
+   * @deprecated use {@link LocationComponentActivationOptions.Builder} instead
    */
-  @RequiresPermission(anyOf = {ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION})
+  @Deprecated
   public void activateLocationComponent(@NonNull Context context, @NonNull Style style,
                                         @Nullable LocationEngine locationEngine,
                                         @NonNull LocationEngineRequest locationEngineRequest, @StyleRes int styleRes) {
@@ -364,8 +372,9 @@ public final class LocationComponent {
    * @param context        the context
    * @param style          the proxy object for current map style. More info at {@link Style}
    * @param locationEngine the engine
+   * @deprecated use {@link LocationComponentActivationOptions.Builder} instead
    */
-  @RequiresPermission(anyOf = {ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION})
+  @Deprecated
   public void activateLocationComponent(@NonNull Context context, @NonNull Style style,
                                         @Nullable LocationEngine locationEngine) {
     activateLocationComponent(context, style, locationEngine, R.style.mapbox_LocationComponent);
@@ -378,8 +387,9 @@ public final class LocationComponent {
    * @param style                 the proxy object for current map style. More info at {@link Style}
    * @param locationEngine        the engine
    * @param locationEngineRequest the location request
+   * @deprecated use {@link LocationComponentActivationOptions.Builder} instead
    */
-  @RequiresPermission(anyOf = {ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION})
+  @Deprecated
   public void activateLocationComponent(@NonNull Context context, @NonNull Style style,
                                         @Nullable LocationEngine locationEngine,
                                         @NonNull LocationEngineRequest locationEngineRequest) {
@@ -393,8 +403,9 @@ public final class LocationComponent {
    * @param locationEngine the engine, or null if you'd like to only force location updates
    * @param style          the proxy object for current map style. More info at {@link Style}
    * @param options        the options
+   * @deprecated use {@link LocationComponentActivationOptions.Builder} instead
    */
-  @RequiresPermission(anyOf = {ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION})
+  @Deprecated
   public void activateLocationComponent(@NonNull Context context, @NonNull Style style,
                                         @Nullable LocationEngine locationEngine,
                                         @NonNull LocationComponentOptions options) {
@@ -412,7 +423,9 @@ public final class LocationComponent {
    * @param locationEngine        the engine, or null if you'd like to only force location updates
    * @param locationEngineRequest the location request
    * @param options               the options
+   * @deprecated use {@link LocationComponentActivationOptions.Builder} instead
    */
+  @Deprecated
   public void activateLocationComponent(@NonNull Context context, @NonNull Style style,
                                         @Nullable LocationEngine locationEngine,
                                         @NonNull LocationEngineRequest locationEngineRequest,
@@ -424,11 +437,56 @@ public final class LocationComponent {
   }
 
   /**
+   * This method initializes the component and needs to be called before any other operations are performed.
+   * Afterwards, you can manage component's visibility by {@link #setLocationComponentEnabled(boolean)}.
+   *
+   * @param activationOptions a fully built {@link LocationComponentActivationOptions} object
+   */
+  public void activateLocationComponent(@NonNull LocationComponentActivationOptions activationOptions) {
+    LocationComponentOptions options = activationOptions.locationComponentOptions();
+    if (options == null) {
+      int styleRes = activationOptions.styleRes();
+      if (styleRes == 0) {
+        styleRes = R.style.mapbox_LocationComponent;
+      }
+      options = LocationComponentOptions.createFromAttributes(activationOptions.context(), styleRes);
+    }
+
+    // Initialize the LocationComponent with Context, the map's `Style`, and either custom LocationComponentOptions
+    // or backup options created from default/custom attributes
+    initialize(activationOptions.context(), activationOptions.style(), options);
+
+    // Apply the LocationComponent styling
+    // TODO avoid doubling style initialization
+    applyStyle(options);
+
+    // Set the LocationEngine request if one was given to LocationComponentActivationOptions
+    LocationEngineRequest locationEngineRequest = activationOptions.locationEngineRequest();
+    if (locationEngineRequest != null) {
+      setLocationEngineRequest(locationEngineRequest);
+    }
+
+    // Set the LocationEngine if one was given to LocationComponentActivationOptions
+    LocationEngine locationEngine = activationOptions.locationEngine();
+    if (locationEngine != null) {
+      setLocationEngine(locationEngine);
+    } else {
+      if (activationOptions.useDefaultLocationEngine()) {
+        initializeLocationEngine(activationOptions.context());
+      } else {
+        setLocationEngine(null);
+      }
+    }
+  }
+
+  /**
    * Manage component's visibility after activation.
    *
    * @param isEnabled true if the plugin should be visible and listen for location updates, false otherwise.
    */
+  @RequiresPermission(anyOf = {ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION})
   public void setLocationComponentEnabled(boolean isEnabled) {
+    checkActivationState();
     if (isEnabled) {
       enableLocationComponent();
     } else {
@@ -442,6 +500,7 @@ public final class LocationComponent {
    * @return true if the plugin is enabled, false otherwise
    */
   public boolean isLocationComponentEnabled() {
+    checkActivationState();
     return isEnabled;
   }
 
@@ -465,6 +524,7 @@ public final class LocationComponent {
    * @param cameraMode one of the modes found in {@link CameraMode}
    */
   public void setCameraMode(@CameraMode.Mode int cameraMode) {
+    checkActivationState();
     setCameraMode(cameraMode, null);
   }
 
@@ -490,6 +550,7 @@ public final class LocationComponent {
    */
   public void setCameraMode(@CameraMode.Mode int cameraMode,
                             @Nullable OnLocationCameraTransitionListener transitionListener) {
+    checkActivationState();
     locationCameraController.setCameraMode(cameraMode, lastLocation, new CameraTransitionListener(transitionListener));
     updateCompassListenerState(true);
   }
@@ -534,6 +595,7 @@ public final class LocationComponent {
    */
   @CameraMode.Mode
   public int getCameraMode() {
+    checkActivationState();
     return locationCameraController.getCameraMode();
   }
 
@@ -549,6 +611,7 @@ public final class LocationComponent {
    * @param renderMode one of the modes found in {@link RenderMode}
    */
   public void setRenderMode(@RenderMode.Mode int renderMode) {
+    checkActivationState();
     locationLayerController.setRenderMode(renderMode);
     updateLayerOffsets(true);
     updateCompassListenerState(true);
@@ -562,6 +625,7 @@ public final class LocationComponent {
    */
   @RenderMode.Mode
   public int getRenderMode() {
+    checkActivationState();
     return locationLayerController.getRenderMode();
   }
 
@@ -584,6 +648,7 @@ public final class LocationComponent {
    * @return the current {@link LocationComponentOptions}
    */
   public LocationComponentOptions getLocationComponentOptions() {
+    checkActivationState();
     return options;
   }
 
@@ -593,6 +658,7 @@ public final class LocationComponent {
    * @param styleRes a XML style overriding some or all the options
    */
   public void applyStyle(@NonNull Context context, @StyleRes int styleRes) {
+    checkActivationState();
     applyStyle(LocationComponentOptions.createFromAttributes(context, styleRes));
   }
 
@@ -602,6 +668,7 @@ public final class LocationComponent {
    * @param options to update the current style
    */
   public void applyStyle(@NonNull final LocationComponentOptions options) {
+    checkActivationState();
     LocationComponent.this.options = options;
     if (mapboxMap.getStyle() != null) {
       locationLayerController.applyStyle(options);
@@ -628,6 +695,7 @@ public final class LocationComponent {
    */
   public void zoomWhileTracking(double zoomLevel, long animationDuration,
                                 @Nullable MapboxMap.CancelableCallback callback) {
+    checkActivationState();
     if (!isLayerReady) {
       return;
     } else if (getCameraMode() == CameraMode.NONE) {
@@ -650,6 +718,7 @@ public final class LocationComponent {
    * @param animationDuration The zoom animation duration.
    */
   public void zoomWhileTracking(double zoomLevel, long animationDuration) {
+    checkActivationState();
     zoomWhileTracking(zoomLevel, animationDuration, null);
   }
 
@@ -663,6 +732,7 @@ public final class LocationComponent {
    * @param zoomLevel The desired zoom level.
    */
   public void zoomWhileTracking(double zoomLevel) {
+    checkActivationState();
     zoomWhileTracking(zoomLevel, DEFAULT_TRACKING_ZOOM_ANIM_DURATION, null);
   }
 
@@ -670,6 +740,7 @@ public final class LocationComponent {
    * Cancels animation started by {@link #zoomWhileTracking(double, long, MapboxMap.CancelableCallback)}.
    */
   public void cancelZoomWhileTrackingAnimation() {
+    checkActivationState();
     locationAnimatorCoordinator.cancelZoomAnimation();
   }
 
@@ -686,6 +757,7 @@ public final class LocationComponent {
    */
   public void tiltWhileTracking(double tilt, long animationDuration,
                                 @Nullable MapboxMap.CancelableCallback callback) {
+    checkActivationState();
     if (!isLayerReady) {
       return;
     } else if (getCameraMode() == CameraMode.NONE) {
@@ -708,6 +780,7 @@ public final class LocationComponent {
    * @param animationDuration The tilt animation duration.
    */
   public void tiltWhileTracking(double tilt, long animationDuration) {
+    checkActivationState();
     tiltWhileTracking(tilt, animationDuration, null);
   }
 
@@ -721,6 +794,7 @@ public final class LocationComponent {
    * @param tilt The desired camera tilt.
    */
   public void tiltWhileTracking(double tilt) {
+    checkActivationState();
     tiltWhileTracking(tilt, DEFAULT_TRACKING_TILT_ANIM_DURATION, null);
   }
 
@@ -728,6 +802,7 @@ public final class LocationComponent {
    * Cancels animation started by {@link #tiltWhileTracking(double, long, MapboxMap.CancelableCallback)}.
    */
   public void cancelTiltWhileTrackingAnimation() {
+    checkActivationState();
     locationAnimatorCoordinator.cancelTiltAnimation();
   }
 
@@ -739,6 +814,7 @@ public final class LocationComponent {
    * @param forceShow (Mappy Modif) whether to force rendering of Location Marker
    */
   public void forceLocationUpdate(@Nullable Location location, /* Mappy Modif */ boolean forceShow) {
+    checkActivationState();
     updateLocation(location, false, forceShow);
   }
 
@@ -783,6 +859,7 @@ public final class LocationComponent {
    * @param maxAnimationFps max location animation FPS
    */
   public void setMaxAnimationFps(int maxAnimationFps) {
+    checkActivationState();
     locationAnimatorCoordinator.setMaxAnimationFps(maxAnimationFps);
   }
 
@@ -796,6 +873,7 @@ public final class LocationComponent {
    */
   @SuppressLint("MissingPermission")
   public void setLocationEngine(@Nullable LocationEngine locationEngine) {
+    checkActivationState();
     if (this.locationEngine != null) {
       // If internal location engines being used, extra steps need to be taken to deconstruct the instance.
       this.locationEngine.removeLocationUpdates(currentLocationEngineListener);
@@ -821,6 +899,7 @@ public final class LocationComponent {
    * @param locationEngineRequest the location request
    */
   public void setLocationEngineRequest(@NonNull LocationEngineRequest locationEngineRequest) {
+    checkActivationState();
     this.locationEngineRequest = locationEngineRequest;
 
     // reset internal LocationEngine ref to re-request location updates if needed
@@ -832,6 +911,7 @@ public final class LocationComponent {
    */
   @NonNull
   public LocationEngineRequest getLocationEngineRequest() {
+    checkActivationState();
     return locationEngineRequest;
   }
 
@@ -842,6 +922,7 @@ public final class LocationComponent {
    */
   @Nullable
   public LocationEngine getLocationEngine() {
+    checkActivationState();
     return locationEngine;
   }
 
@@ -851,6 +932,7 @@ public final class LocationComponent {
    * @param compassEngine to be used
    */
   public void setCompassEngine(@Nullable CompassEngine compassEngine) {
+    checkActivationState();
     if (this.compassEngine != null) {
       updateCompassListenerState(false);
     }
@@ -865,6 +947,7 @@ public final class LocationComponent {
    */
   @Nullable
   public CompassEngine getCompassEngine() {
+    checkActivationState();
     return compassEngine;
   }
 
@@ -874,8 +957,8 @@ public final class LocationComponent {
    * @return the last known location
    */
   @Nullable
-  @RequiresPermission(anyOf = {ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION})
   public Location getLastKnownLocation() {
+    checkActivationState();
     return lastLocation;
   }
 
@@ -1090,6 +1173,7 @@ public final class LocationComponent {
     if (isComponentInitialized) {
       return;
     }
+    isComponentInitialized = true;
 
     if (!style.isFullyLoaded()) {
       throw new IllegalStateException("Style is invalid, provide the most recently loaded one.");
@@ -1128,8 +1212,6 @@ public final class LocationComponent {
 
     setRenderMode(RenderMode.NORMAL);
     setCameraMode(CameraMode.NONE);
-
-    isComponentInitialized = true;
 
     onLocationLayerStart();
   }
@@ -1447,5 +1529,20 @@ public final class LocationComponent {
     LocationEngine getBestLocationEngine(@NonNull Context context, boolean background) {
       return LocationEngineProvider.getBestLocationEngine(context, background);
     }
+  }
+
+  private void checkActivationState() {
+    if (!isComponentInitialized) {
+      throw new LocationComponentNotInitializedException();
+    }
+  }
+
+  /**
+   * Returns whether the location component is activated.
+   *
+   * @return true if the component is activated, false otherwise
+   */
+  public boolean isLocationComponentActivated() {
+    return isComponentInitialized;
   }
 }

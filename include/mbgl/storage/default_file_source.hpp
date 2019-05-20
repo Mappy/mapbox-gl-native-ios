@@ -28,7 +28,7 @@ public:
      * of megabytes).
      */
     DefaultFileSource(const std::string& cachePath,
-                      const std::string& assetRoot,
+                      const std::string& assetPath,
                       uint64_t maximumCacheSize = util::DEFAULT_MAX_CACHE_SIZE);
     DefaultFileSource(const std::string& cachePath,
                       std::unique_ptr<FileSource>&& assetFileSource,
@@ -46,6 +46,8 @@ public:
     std::string getAccessToken();
 
     void setResourceTransform(optional<ActorRef<ResourceTransform>>&&);
+
+    void setResourceCachePath(const std::string&);
 
     std::unique_ptr<AsyncRequest> request(const Resource&, Callback) override;
 
