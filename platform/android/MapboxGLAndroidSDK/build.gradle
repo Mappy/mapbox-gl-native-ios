@@ -1,8 +1,8 @@
 apply plugin: 'com.android.library'
 
 //mappy modif
-apply from: '../configuration.gradle'
-apply from: '../gradle/dependencies.gradle'
+//apply from: '../configuration.gradle'
+//apply from: '../gradle/dependencies.gradle'
 //end mappy modif
 
 apply plugin: 'kotlin-android'
@@ -24,23 +24,20 @@ dependencies {
     api dependenciesList.mapboxJavaGeoJSON
     api dependenciesList.mapboxAndroidGestures
     implementation dependenciesList.mapboxJavaTurf
-    implementation dependenciesList.supportAppcompatV7
     implementation dependenciesList.supportAnnotations
     implementation dependenciesList.supportFragmentV4
     implementation dependenciesList.okhttp3
+    implementation dependenciesList.reLinker
     testImplementation dependenciesList.junit
     testImplementation dependenciesList.mockito
     testImplementation dependenciesList.mockk
     testImplementation dependenciesList.robolectric
     testImplementation dependenciesList.kotlinLib
+    testImplementation dependenciesList.commonsIO
 }
 
 android {
     compileSdkVersion androidVersions.compileSdkVersion
-
-    // Roboelectric 4.0 required config
-    // http://robolectric.org/migrating/#migrating-to-40
-    testOptions.unitTests.includeAndroidResources = true
 
     defaultConfig {
         minSdkVersion androidVersions.minSdkVersion
@@ -93,7 +90,7 @@ android {
                 cmake {
                     arguments "-DANDROID_TOOLCHAIN=clang"
                     arguments "-DANDROID_STL=" + stl
-                    arguments "-DANDROID_CPP_FEATURES=rtti;exceptions"
+                    arguments "-DANDROID_CPP_FEATURES=exceptions"
                     arguments "-DMBGL_PLATFORM=android"
                     arguments "-DMASON_PLATFORM=android"
                     arguments "-DNodeJS_EXECUTABLE=" + node
@@ -151,12 +148,16 @@ android {
     testOptions {
         unitTests {
             returnDefaultValues true
+
+            // Roboelectric 4.0 required config
+            // http://robolectric.org/migrating/#migrating-to-40
             includeAndroidResources = true
         }
     }
 
     buildTypes {
         debug {
+            testCoverageEnabled true
             jniDebuggable true
         }
         release {
@@ -181,8 +182,10 @@ configurations {
 
 //mappy modif : ${rootDir} is ..
 //apply from: "../gradle/gradle-javadoc.gradle"
-apply from: "../gradle/gradle-publish.gradle"
+apply from: "../gradle/gradle-publish.gradle" // TODO FF ?
 //apply from: "../gradle/gradle-checkstyle.gradle"
 apply from: "../gradle/gradle-dependencies-graph.gradle"
 apply from: "../gradle/gradle-update-vendor-modules.gradle"
 //apply from: "../gradle/android-nitpick.gradle"
+//apply from: "${rootDir}/gradle/gradle-bintray.gradle"
+//apply from: "${rootDir}/gradle/jacoco-report.gradle"

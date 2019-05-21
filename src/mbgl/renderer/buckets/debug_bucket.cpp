@@ -16,15 +16,16 @@ DebugBucket::DebugBucket(const OverscaledTileID& id,
                          optional<Timestamp> modified_,
                          optional<Timestamp> expires_,
                          MapDebugOptions debugMode_,
-                         gl::Context& context)
+                         gfx::Context& context)
     : renderable(renderable_),
       complete(complete_),
       modified(std::move(modified_)),
       expires(std::move(expires_)),
-      debugMode(debugMode_) {
+      debugMode(debugMode_),
+      drawScopeID("__debug/borders/" + util::toString(id)) {
 
-    gl::VertexVector<FillLayoutVertex> vertices;
-    gl::IndexVector<gl::Lines> indices;
+    gfx::VertexVector<FillLayoutVertex> vertices;
+    gfx::IndexVector<gfx::Lines> indices;
 
     auto addText = [&] (const std::string& text, double left, double baseline, double scale) {
         for (uint8_t c : text) {
@@ -46,8 +47,8 @@ DebugBucket::DebugBucket(const OverscaledTileID& id,
                     vertices.emplace_back(FillProgram::layoutVertex(p));
 
                     if (prev) {
-                        indices.emplace_back(vertices.vertexSize() - 2,
-                                             vertices.vertexSize() - 1);
+                        indices.emplace_back(vertices.elements() - 2,
+                                             vertices.elements() - 1);
                     }
 
                     prev = p;
@@ -74,7 +75,7 @@ DebugBucket::DebugBucket(const OverscaledTileID& id,
         addText(expiresText, 50, baseline + 200, 5);
     }
 
-    segments.emplace_back(0, 0, vertices.vertexSize(), indices.indexSize());
+    segments.emplace_back(0, 0, vertices.elements(), indices.elements());
 
     vertexBuffer = context.createVertexBuffer(std::move(vertices));
     indexBuffer = context.createIndexBuffer(std::move(indices));

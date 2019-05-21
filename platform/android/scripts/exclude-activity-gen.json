@@ -45,5 +45,10 @@
   "RuntimeStyleActivity",
   "GridSourceActivity",
   "AnimatedImageSourceActivity",
-  "EspressoTestActivity"
+  "EspressoTestActivity",
+  "ChangeResourcesCachePathActivity",
+  "EspressoTestActivity",
+  "FragmentBackStackActivity",
+  "ChildFragmentMapInDialogActivity",
+  "PerformanceMeasurementActivity"
 ]

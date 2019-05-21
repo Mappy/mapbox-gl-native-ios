@@ -7,6 +7,7 @@
 #import "MBXUserLocationAnnotationView.h"
 #import "LimeGreenStyleLayer.h"
 #import "MBXEmbeddedMapViewController.h"
+#import "MBXOrnamentsViewController.h"
 
 #import "MBXFrameTimeGraphView.h"
 
@@ -102,10 +103,12 @@ typedef NS_ENUM(NSInteger, MBXSettingsMiscellaneousRows) {
     MBXSettingsMiscellaneousToggleTwoMaps,
     MBXSettingsMiscellaneousLocalizeLabels,
     MBXSettingsMiscellaneousShowSnapshots,
+    MBXSettingsMiscellaneousMissingIcon,
     MBXSettingsMiscellaneousShouldLimitCameraChanges,
     MBXSettingsMiscellaneousShowCustomLocationManager,
+    MBXSettingsMiscellaneousOrnamentsPlacement,
     MBXSettingsMiscellaneousPrintLogFile,
-    MBXSettingsMiscellaneousDeleteLogFile,
+    MBXSettingsMiscellaneousDeleteLogFile
 };
 
 // Utility methods
@@ -497,8 +500,10 @@ CLLocationCoordinate2D randomWorldCoordinate() {
                 [NSString stringWithFormat:@"%@ Second Map", ([self.view viewWithTag:2] == nil ? @"Show" : @"Hide")],
                 [NSString stringWithFormat:@"Show Labels in %@", (_localizingLabels ? @"Default Language" : [[NSLocale currentLocale] displayNameForKey:NSLocaleIdentifier value:[self bestLanguageForUser]])],
                 @"Show Snapshots",
+                @"Missing Icon",
                 [NSString stringWithFormat:@"%@ Camera Changes", (_shouldLimitCameraChanges ? @"Unlimit" : @"Limit")],
                 @"View Route Simulation",
+                @"Ornaments Placement",
             ]];
 
             if (self.debugLoggingEnabled)
@@ -743,6 +748,11 @@ CLLocationCoordinate2D randomWorldCoordinate() {
                     [self performSegueWithIdentifier:@"ShowSnapshots" sender:nil];
                     break;
                 }
+                case MBXSettingsMiscellaneousMissingIcon:
+                {
+                    [self loadMissingIcon];
+                    break;
+                }
                 case MBXSettingsMiscellaneousShowCustomLocationManager:
                 {
                     [self performSegueWithIdentifier:@"ShowCustomLocationManger" sender:nil];
@@ -754,6 +764,12 @@ CLLocationCoordinate2D randomWorldCoordinate() {
                     if (self.shouldLimitCameraChanges) {
                         [self.mapView setCenterCoordinate:CLLocationCoordinate2DMake(39.748947, -104.995882) zoomLevel:10 direction:0 animated:NO];
                     }
+                    break;
+                }
+                case MBXSettingsMiscellaneousOrnamentsPlacement:
+                {
+                    MBXOrnamentsViewController *ornamentsViewController = [[MBXOrnamentsViewController alloc] init];
+                    [self.navigationController pushViewController:ornamentsViewController animated:YES];
                     break;
                 }
                 default:
@@ -1707,6 +1723,19 @@ CLLocationCoordinate2D randomWorldCoordinate() {
     MGLPolyline *line = [MGLPolyline polylineWithCoordinates:lineCoords
                                                        count:sizeof(lineCoords)/sizeof(lineCoords[0])];
     [self.mapView addAnnotation:line];
+}
+
+- (void)loadMissingIcon
+{
+    self.mapView.centerCoordinate = CLLocationCoordinate2DMake(0, 0);
+    self.mapView.zoomLevel = 1;
+    NSURL *customStyleJSON = [[NSBundle mainBundle] URLForResource:@"missing_icon" withExtension:@"json"];
+    [self.mapView setStyleURL:customStyleJSON];
+}
+
+- (UIImage *)mapView:(MGLMapView *)mapView didFailToLoadImage:(NSString *)imageName {
+    UIImage *backupImage = [UIImage imageNamed:@"AppIcon"];
+    return backupImage;
 }
 
 - (void)printTelemetryLogFile

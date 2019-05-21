@@ -3,18 +3,21 @@
 #include <mbgl/renderer/render_tile.hpp>
 #include <mbgl/style/types.hpp>
 #include <mbgl/tile/tile.hpp>
+#include <mbgl/gfx/context.hpp>
 #include <mbgl/util/logging.hpp>
 
 namespace mbgl {
 
 using namespace style;
 
-RenderLayer::RenderLayer(Immutable<style::Layer::Impl> baseImpl_)
-    : baseImpl(std::move(baseImpl_)) {
+RenderLayer::RenderLayer(Immutable<style::LayerProperties> properties)
+    : evaluatedProperties(std::move(properties)),
+      baseImpl(evaluatedProperties->baseImpl) {
 }
 
-void RenderLayer::setImpl(Immutable<style::Layer::Impl> impl) {
-    baseImpl = std::move(impl);
+void RenderLayer::transition(const TransitionParameters& parameters, Immutable<style::Layer::Impl> newImpl) {
+    baseImpl = std::move(newImpl);
+    transition(parameters);
 }
 
 const std::string& RenderLayer::getID() const {
@@ -25,33 +28,23 @@ bool RenderLayer::hasRenderPass(RenderPass pass) const {
     return bool(passes & pass);
 }
 
-bool RenderLayer::needsRendering(float zoom) const {
+bool RenderLayer::needsRendering() const {
     return passes != RenderPass::None
-           && baseImpl->visibility != style::VisibilityType::None
-           && baseImpl->minZoom <= zoom
-           && baseImpl->maxZoom >= zoom;
+           && baseImpl->visibility != style::VisibilityType::None;
 }
 
-void RenderLayer::setRenderTiles(RenderTiles tiles, const TransformState& state) {
-    renderTiles = filterRenderTiles(std::move(tiles));
-    sortRenderTiles(state);
+bool RenderLayer::supportsZoom(float zoom) const {
+    // TODO: shall we use rounding or epsilon comparisons?
+    return baseImpl->minZoom <= zoom && baseImpl->maxZoom >= zoom;
 }
 
-RenderLayer::RenderTiles RenderLayer::filterRenderTiles(RenderTiles tiles) const {
+void RenderLayer::setRenderTiles(RenderTiles tiles, const TransformState&) {
     auto filterFn = [](auto& tile){ return !tile.tile.isRenderable() || tile.tile.holdForFade(); };
-    return filterRenderTiles(std::move(tiles), filterFn);
-}
-
-void RenderLayer::sortRenderTiles(const TransformState&) {
-    // no-op
+    renderTiles = filterRenderTiles(std::move(tiles), filterFn);
 }
 
 const RenderLayerSymbolInterface* RenderLayer::getSymbolInterface() const {
     return nullptr;
-}
-
-void RenderLayer::update() {
-    // no-op
 }
 
 optional<Color> RenderLayer::getSolidBackground() const {
@@ -61,33 +54,18 @@ optional<Color> RenderLayer::getSolidBackground() const {
 RenderLayer::RenderTiles RenderLayer::filterRenderTiles(RenderTiles tiles, FilterFunctionPtr filterFn) const {
     assert(filterFn != nullptr);
     RenderTiles filtered;
-    // We only need clipping when we're drawing fill or line layers.
-    const bool needsClipping_ =
-            baseImpl->getTypeInfo()->clipping == LayerTypeInfo::Clipping::Required;
 
     for (auto& tileRef : tiles) {
         auto& tile = tileRef.get();
         if (filterFn(tile)) {
             continue;
         }
-
-        if (Bucket* bucket = tile.tile.getBucket(*baseImpl)) {
-            tile.used = true;
-            tile.needsClipping |= needsClipping_;
-            filtered.emplace_back(tile);
-            if (tile.tile.isComplete()) {
-                updateBucketPaintProperties(bucket);
-            }
-        }
+        filtered.emplace_back(tile);
     }
     return filtered;
 }
 
 void RenderLayer::markContextDestroyed() {
-    // no-op
-}
-
-void RenderLayer::updateBucketPaintProperties(Bucket*) const {
     // no-op
 }
 

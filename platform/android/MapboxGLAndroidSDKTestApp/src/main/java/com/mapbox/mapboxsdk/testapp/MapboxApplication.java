@@ -4,15 +4,15 @@ import android.app.Application;
 import android.os.StrictMode;
 import android.text.TextUtils;
 
-import com.getkeepsafe.relinker.ReLinker;
-import com.mapbox.mapboxsdk.LibraryLoader;
 import com.mapbox.mapboxsdk.MapStrictMode;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.log.Logger;
 import com.mapbox.mapboxsdk.maps.TelemetryDefinition;
+import com.mapbox.mapboxsdk.testapp.utils.TileLoadingMeasurementUtils;
 import com.mapbox.mapboxsdk.testapp.utils.TimberLogger;
 import com.mapbox.mapboxsdk.testapp.utils.TokenUtils;
 import com.squareup.leakcanary.LeakCanary;
+
 import timber.log.Timber;
 
 import static timber.log.Timber.DebugTree;
@@ -38,13 +38,12 @@ public class MapboxApplication extends Application {
     if (!initializeLeakCanary()) {
       return;
     }
-    initializeLibraryLoader();
     initializeLogger();
     initializeStrictMode();
     initializeMapbox();
   }
 
-  private boolean initializeLeakCanary() {
+  protected boolean initializeLeakCanary() {
     if (LeakCanary.isInAnalyzerProcess(this)) {
       // This process is dedicated to LeakCanary for heap analysis.
       // You should not init your app in this process.
@@ -52,15 +51,6 @@ public class MapboxApplication extends Application {
     }
     LeakCanary.install(this);
     return true;
-  }
-
-  private void initializeLibraryLoader() {
-    LibraryLoader.setLibraryLoader(new LibraryLoader() {
-      @Override
-      public void load(String name) {
-        ReLinker.log(message -> Logger.v(TAG, message)).loadLibrary(MapboxApplication.this, name);
-      }
-    });
   }
 
   private void initializeLogger() {
@@ -93,6 +83,7 @@ public class MapboxApplication extends Application {
       throw new IllegalStateException("Telemetry was unavailable during test application start.");
     }
     telemetry.setDebugLoggingEnabled(true);
+    TileLoadingMeasurementUtils.setUpTileLoadingMeasurement();
 
     MapStrictMode.setStrictModeEnabled(true);
   }

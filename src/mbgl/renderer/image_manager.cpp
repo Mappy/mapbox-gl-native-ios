@@ -1,8 +1,17 @@
 #include <mbgl/renderer/image_manager.hpp>
+#include <mbgl/actor/actor.hpp>
+#include <mbgl/actor/scheduler.hpp>
 #include <mbgl/util/logging.hpp>
-#include <mbgl/gl/context.hpp>
+#include <mbgl/gfx/context.hpp>
+#include <mbgl/renderer/image_manager_observer.hpp>
 
 namespace mbgl {
+
+static ImageManagerObserver nullObserver;
+
+void ImageManager::setObserver(ImageManagerObserver* observer_) {
+    observer = observer_ ? observer_ : &nullObserver;
+}
 
 void ImageManager::setLoaded(bool loaded_) {
     if (loaded == loaded_) {
@@ -13,7 +22,7 @@ void ImageManager::setLoaded(bool loaded_) {
 
     if (loaded) {
         for (const auto& entry : requestors) {
-            notify(*entry.first, entry.second);
+            checkMissingAndNotify(*entry.first, entry.second);
         }
         requestors.clear();
     }
@@ -28,9 +37,23 @@ void ImageManager::addImage(Immutable<style::Image::Impl> image_) {
     images.emplace(image_->id, std::move(image_));
 }
 
-void ImageManager::updateImage(Immutable<style::Image::Impl> image_) {
+bool ImageManager::updateImage(Immutable<style::Image::Impl> image_) {
+    auto oldImage = images.find(image_->id);
+    assert(oldImage != images.end());
+    if (oldImage == images.end()) return false;
+
+    auto sizeChanged = oldImage->second->image.size != image_->image.size;
+
+    if (sizeChanged) {
+        updatedImageVersions.erase(image_->id);
+    } else {
+        updatedImageVersions[image_->id]++;
+    }
+
     removeImage(image_->id);
     addImage(std::move(image_));
+
+    return sizeChanged;
 }
 
 void ImageManager::removeImage(const std::string& id) {
@@ -60,41 +83,111 @@ const style::Image::Impl* ImageManager::getImage(const std::string& id) const {
 }
 
 void ImageManager::getImages(ImageRequestor& requestor, ImageRequestPair&& pair) {
-    // If the sprite has been loaded, or if all the icon dependencies are already present
-    // (i.e. if they've been addeded via runtime styling), then notify the requestor immediately.
-    // Otherwise, delay notification until the sprite is loaded. At that point, if any of the
-    // dependencies are still unavailable, we'll just assume they are permanently missing.
-    bool hasAllDependencies = true;
+    // remove previous requests from this tile
+    removeRequestor(requestor);
+
+    // If all the icon dependencies are already present ((i.e. if they've been addeded via
+    // runtime styling), then notify the requestor immediately. Otherwise, if the
+    // sprite has not loaded, then wait for it. When the sprite has loaded check
+    // if all icons are available. If any are missing, call `onStyleImageMissing`
+    // to give the user a chance to provide the icon. If they are not provided
+    // by the next frame we'll assume they are permanently missing.
     if (!isLoaded()) {
+        bool hasAllDependencies = true;
         for (const auto& dependency : pair.first) {
             if (images.find(dependency.first) == images.end()) {
                 hasAllDependencies = false;
+                break;
             }
         }
-    }
-    if (isLoaded() || hasAllDependencies) {
-        notify(requestor, std::move(pair));
+
+        if (hasAllDependencies) {
+            notify(requestor, pair);
+        } else {
+            requestors.emplace(&requestor, std::move(pair));
+        }
     } else {
-        requestors.emplace(&requestor, std::move(pair));
+        checkMissingAndNotify(requestor, std::move(pair));
     }
 }
 
 void ImageManager::removeRequestor(ImageRequestor& requestor) {
     requestors.erase(&requestor);
+    missingImageRequestors.erase(&requestor);
+}
+
+void ImageManager::notifyIfMissingImageAdded() {
+    for (auto it = missingImageRequestors.begin(); it != missingImageRequestors.end();) {
+        if (it->second.callbacks.empty()) {
+            notify(*it->first, it->second.pair);
+            missingImageRequestors.erase(it++);
+        } else {
+            it++;
+        }
+    }
+}
+
+void ImageManager::checkMissingAndNotify(ImageRequestor& requestor, const ImageRequestPair& pair) {
+    unsigned int missing = 0;
+    for (const auto& dependency : pair.first) {
+        auto it = images.find(dependency.first);
+        if (it == images.end()) {
+            missing++;
+        }
+    }
+
+    if (missing > 0) {
+        ImageRequestor* requestorPtr = &requestor;
+
+        auto emplaced = missingImageRequestors.emplace(requestorPtr, MissingImageRequestPair { pair, {} });
+        assert(emplaced.second);
+
+        for (const auto& dependency : pair.first) {
+            auto it = images.find(dependency.first);
+            if (it == images.end()) {
+                assert(observer != nullptr);
+                auto callback = std::make_unique<ActorCallback>(
+                        *Scheduler::GetCurrent(),
+                        [this, requestorPtr, imageId = dependency.first] {
+                            auto requestorIt = missingImageRequestors.find(requestorPtr);
+                            if (requestorIt != missingImageRequestors.end()) {
+                                assert(requestorIt->second.callbacks.find(imageId) != requestorIt->second.callbacks.end());
+                                requestorIt->second.callbacks.erase(imageId);
+                            }
+                        });
+
+                auto actorRef = callback->self();
+                emplaced.first->second.callbacks.emplace(dependency.first, std::move(callback));
+                observer->onStyleImageMissing(dependency.first, [actorRef]() mutable {
+                    actorRef.invoke(&Callback::operator());
+                });
+
+            }
+        }
+
+    } else {
+        notify(requestor, pair);
+    }
 }
 
 void ImageManager::notify(ImageRequestor& requestor, const ImageRequestPair& pair) const {
     ImageMap iconMap;
     ImageMap patternMap;
+    ImageVersionMap versionMap;
 
     for (const auto& dependency : pair.first) {
         auto it = images.find(dependency.first);
         if (it != images.end()) {
             dependency.second == ImageType::Pattern ? patternMap.emplace(*it) : iconMap.emplace(*it);
+
+            auto versionIt = updatedImageVersions.find(dependency.first);
+            if (versionIt != updatedImageVersions.end()) {
+                versionMap.emplace(versionIt->first, versionIt->second);
+            }
         }
     }
 
-    requestor.onImagesAvailable(iconMap, patternMap, pair.second);
+    requestor.onImagesAvailable(iconMap, patternMap, std::move(versionMap), pair.second);
 }
 
 void ImageManager::dumpDebugLogs() const {
@@ -167,19 +260,19 @@ Size ImageManager::getPixelSize() const {
     };
 }
 
-void ImageManager::upload(gl::Context& context, gl::TextureUnit unit) {
+void ImageManager::upload(gfx::Context& context) {
     if (!atlasTexture) {
-        atlasTexture = context.createTexture(atlasImage, unit);
+        atlasTexture = context.createTexture(atlasImage);
     } else if (dirty) {
-        context.updateTexture(*atlasTexture, atlasImage, unit);
+        context.updateTexture(*atlasTexture, atlasImage);
     }
 
     dirty = false;
 }
 
-void ImageManager::bind(gl::Context& context, gl::TextureUnit unit) {
-    upload(context, unit);
-    context.bindTexture(*atlasTexture, unit, gl::TextureFilter::Linear);
+gfx::TextureBinding ImageManager::textureBinding(gfx::Context& context) {
+    upload(context);
+    return { atlasTexture->getResource(), gfx::TextureFilterType::Linear };
 }
 
 } // namespace mbgl

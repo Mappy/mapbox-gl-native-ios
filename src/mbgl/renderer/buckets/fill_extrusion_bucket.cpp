@@ -34,8 +34,8 @@ using namespace style;
 
 struct GeometryTooLongException : std::exception {};
 
-FillExtrusionBucket::FillExtrusionBucket(const FillExtrusionBucket::PossiblyEvaluatedLayoutProperties,
-                       std::map<std::string, FillExtrusionBucket::PossiblyEvaluatedPaintProperties> layerPaintProperties,
+FillExtrusionBucket::FillExtrusionBucket(const FillExtrusionBucket::PossiblyEvaluatedLayoutProperties&,
+                       const std::map<std::string, Immutable<style::LayerProperties>>& layerPaintProperties,
                        const float zoom,
                        const uint32_t) {
     for (const auto& pair : layerPaintProperties) {
@@ -43,7 +43,7 @@ FillExtrusionBucket::FillExtrusionBucket(const FillExtrusionBucket::PossiblyEval
             std::piecewise_construct,
             std::forward_as_tuple(pair.first),
             std::forward_as_tuple(
-                pair.second,
+                getEvaluated<FillExtrusionLayerProperties>(pair.second),
                 zoom));
     }
 }
@@ -71,12 +71,12 @@ void FillExtrusionBucket::addFeature(const GeometryTileFeature& feature,
         std::vector<uint32_t> flatIndices;
         flatIndices.reserve(totalVertices);
 
-        std::size_t startVertices = vertices.vertexSize();
+        std::size_t startVertices = vertices.elements();
 
         if (triangleSegments.empty() ||
             triangleSegments.back().vertexLength + (5 * (totalVertices - 1) + 1) >
                 std::numeric_limits<uint16_t>::max()) {
-            triangleSegments.emplace_back(startVertices, triangles.indexSize());
+            triangleSegments.emplace_back(startVertices, triangles.elements());
         }
 
         auto& triangleSegment = triangleSegments.back();
@@ -158,14 +158,14 @@ void FillExtrusionBucket::addFeature(const GeometryTileFeature& feature,
     for (auto& pair : paintPropertyBinders) {
         const auto it = patternDependencies.find(pair.first);
         if (it != patternDependencies.end()){
-            pair.second.populateVertexVectors(feature, vertices.vertexSize(), patternPositions, it->second);
+            pair.second.populateVertexVectors(feature, vertices.elements(), patternPositions, it->second);
         } else {
-            pair.second.populateVertexVectors(feature, vertices.vertexSize(), patternPositions, {});
+            pair.second.populateVertexVectors(feature, vertices.elements(), patternPositions, {});
         }
     }
 }
 
-void FillExtrusionBucket::upload(gl::Context& context) {
+void FillExtrusionBucket::upload(gfx::Context& context) {
     vertexBuffer = context.createVertexBuffer(std::move(vertices));
     indexBuffer = context.createIndexBuffer(std::move(triangles));
 
@@ -185,8 +185,8 @@ bool FillExtrusionBucket::supportsLayer(const style::Layer::Impl& impl) const {
 }
 
 float FillExtrusionBucket::getQueryRadius(const RenderLayer& layer) const {
-    const RenderFillExtrusionLayer* fillExtrusionLayer = toRenderFillExtrusionLayer(&layer);
-    const std::array<float, 2>& translate = fillExtrusionLayer->evaluated.get<FillExtrusionTranslate>();
+    const auto& evaluated = getEvaluated<FillExtrusionLayerProperties>(layer.evaluatedProperties);
+    const std::array<float, 2>& translate = evaluated.get<FillExtrusionTranslate>();
     return util::length(translate[0], translate[1]);
 }
 

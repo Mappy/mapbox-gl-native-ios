@@ -19,6 +19,29 @@ global.isLightProperty = function (property) {
   return property['light-property'] === true;
 };
 
+global.isOverridable = function (property) {
+    return ['text-color'].includes(property.name);
+};
+
+global.expressionType = function (property) {
+    switch (property.type) {
+        case 'boolean':
+            return 'BooleanType';
+        case 'number':
+        case 'enum':
+            return 'NumberType';
+        case 'string':
+            return 'StringType';
+        case 'color':
+            return `ColorType`;
+        case 'formatted':
+            return `FormattedType`;
+        case 'array':
+            return `Array<${expressionType({type: property.value})}>`;
+        default: throw new Error(`unknown type for ${property.name}`)
+    }
+};
+
 global.evaluatedType = function (property) {
   if (/-translate-anchor$/.test(property.name)) {
     return 'TranslateAnchorType';
@@ -49,7 +72,7 @@ global.evaluatedType = function (property) {
     if (property.length) {
       return `std::array<${evaluatedType({type: property.value})}, ${property.length}>`;
     } else {
-      return `std::vector<${evaluatedType({type: property.value})}>`;
+      return `std::vector<${evaluatedType({type: property.value, name: property.name})}>`;
     }
   default: throw new Error(`unknown type for ${property.name}`)
   }
@@ -76,7 +99,7 @@ function attributeUniformType(property, type) {
        [ property.name.replace(type + '-', '').replace(/-/g, '_') ];
 
     return names.map(name => {
-      return `attributes::a_${name}${name === 'offset' ? '<1>' : ''}, uniforms::u_${name}`
+      return `attributes::${name}, uniforms::${name}`
     }).join(', ');
 }
 
@@ -93,6 +116,8 @@ global.layoutPropertyType = function (property) {
 global.paintPropertyType = function (property, type) {
   switch (property['property-type']) {
     case 'data-driven':
+      if (isOverridable(property))
+          return `DataDrivenPaintProperty<${evaluatedType(property)}, ${attributeUniformType(property, type)}, true>`;
       return `DataDrivenPaintProperty<${evaluatedType(property)}, ${attributeUniformType(property, type)}>`;
     case 'cross-faded-data-driven':
       return `CrossFadedDataDrivenPaintProperty<${evaluatedType(property)}, ${attributeUniformType(property, type)}>`;
@@ -128,7 +153,11 @@ global.defaultValue = function (property) {
 
   switch (property.type) {
   case 'number':
+  if (property.default === undefined) {
+    return 0;
+  } else {
     return property.default;
+  }
   case 'formatted':
   case 'string':
     return JSON.stringify(property.default || "");

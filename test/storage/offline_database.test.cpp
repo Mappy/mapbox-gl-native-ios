@@ -91,7 +91,7 @@ const Response response = [] {
     return res;
 }();
 
-} // namespace
+} // namespace fixture
 
 TEST(OfflineDatabase, TEST_REQUIRES_WRITE(Create)) {
     FixtureLog log;
@@ -1351,4 +1351,12 @@ TEST(OfflineDatabase, TEST_REQUIRES_WRITE(MergeDatabaseWithDiskFull)) {
     EXPECT_EQ(0u, log.uncheckedCount());
 }
 #endif // __QT__
+
+TEST(OfflineDatabse, ChangePath) {
+    std::string newPath("test/fixtures/offline_database/test.db");
+    OfflineDatabase db(":memory:");
+    db.changePath(newPath);
+    mapbox::sqlite::Database::open(newPath, mapbox::sqlite::ReadOnly);
+    util::deleteFile(newPath);
+}
 

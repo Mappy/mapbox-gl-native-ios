@@ -1,9 +1,9 @@
 #include <mbgl/test/util.hpp>
 #include <mbgl/test/fixture_log_observer.hpp>
-#include <mbgl/test/stub_file_source.hpp>
 #include <mbgl/test/stub_style_observer.hpp>
 
 #include <mbgl/renderer/image_manager.hpp>
+#include <mbgl/renderer/image_manager_observer.hpp>
 #include <mbgl/sprite/sprite_parser.hpp>
 #include <mbgl/style/image_impl.hpp>
 #include <mbgl/util/io.hpp>
@@ -108,20 +108,24 @@ TEST(ImageManager, RemoveReleasesBinPackRect) {
 
 class StubImageRequestor : public ImageRequestor {
 public:
-    void onImagesAvailable(ImageMap icons, ImageMap patterns, uint64_t imageCorrelationID_) final {
-        if (imagesAvailable && imageCorrelationID == imageCorrelationID_) imagesAvailable(icons, patterns);
+    void onImagesAvailable(ImageMap icons, ImageMap patterns, std::unordered_map<std::string, uint32_t> versionMap, uint64_t imageCorrelationID_) final {
+        if (imagesAvailable && imageCorrelationID == imageCorrelationID_) imagesAvailable(icons, patterns, versionMap);
     }
 
-    std::function<void (ImageMap, ImageMap)> imagesAvailable;
+    std::function<void (ImageMap, ImageMap, std::unordered_map<std::string, uint32_t>)> imagesAvailable;
     uint64_t imageCorrelationID = 0;
 };
 
 TEST(ImageManager, NotifiesRequestorWhenSpriteIsLoaded) {
+    util::RunLoop runLoop;
     ImageManager imageManager;
     StubImageRequestor requestor;
     bool notified = false;
 
-    requestor.imagesAvailable = [&] (ImageMap, ImageMap) {
+    ImageManagerObserver observer;
+    imageManager.setObserver(&observer);
+
+    requestor.imagesAvailable = [&] (ImageMap, ImageMap, std::unordered_map<std::string, uint32_t>) {
         notified = true;
     };
 
@@ -129,9 +133,15 @@ TEST(ImageManager, NotifiesRequestorWhenSpriteIsLoaded) {
     ImageDependencies dependencies;
     dependencies.emplace("one", ImageType::Icon);
     imageManager.getImages(requestor, std::make_pair(dependencies, imageCorrelationID));
+    runLoop.runOnce();
+
     ASSERT_FALSE(notified);
 
     imageManager.setLoaded(true);
+    runLoop.runOnce();
+    ASSERT_FALSE(notified);
+    imageManager.notifyIfMissingImageAdded();
+    runLoop.runOnce();
     ASSERT_TRUE(notified);
 }
 
@@ -140,7 +150,7 @@ TEST(ImageManager, NotifiesRequestorImmediatelyIfDependenciesAreSatisfied) {
     StubImageRequestor requestor;
     bool notified = false;
 
-    requestor.imagesAvailable = [&] (ImageMap, ImageMap) {
+    requestor.imagesAvailable = [&] (ImageMap, ImageMap, std::unordered_map<std::string, uint32_t>) {
         notified = true;
     };
 
@@ -150,5 +160,88 @@ TEST(ImageManager, NotifiesRequestorImmediatelyIfDependenciesAreSatisfied) {
     imageManager.addImage(makeMutable<style::Image::Impl>("one", PremultipliedImage({ 16, 16 }), 2));
     imageManager.getImages(requestor, std::make_pair(dependencies, imageCorrelationID));
 
+    ASSERT_TRUE(notified);
+}
+
+
+class StubImageManagerObserver : public ImageManagerObserver {
+    public:
+    int count = 0;
+    virtual void onStyleImageMissing(const std::string&, std::function<void()> done) override {
+        count++;
+        done();
+    }
+};
+
+TEST(ImageManager, OnStyleImageMissingBeforeSpriteLoaded) {
+    util::RunLoop runLoop;
+    ImageManager imageManager;
+    StubImageRequestor requestor;
+    StubImageManagerObserver observer;
+
+    imageManager.setObserver(&observer);
+
+    bool notified = false;
+
+    requestor.imagesAvailable = [&] (ImageMap, ImageMap, std::unordered_map<std::string, uint32_t>) {
+        notified = true;
+    };
+
+    uint64_t imageCorrelationID = 0;
+    ImageDependencies dependencies;
+    dependencies.emplace("pre", ImageType::Icon);
+    imageManager.getImages(requestor, std::make_pair(dependencies, imageCorrelationID));
+    runLoop.runOnce();
+
+    EXPECT_EQ(observer.count, 0);
+    ASSERT_FALSE(notified);
+
+    imageManager.setLoaded(true);
+    runLoop.runOnce();
+
+    EXPECT_EQ(observer.count, 1);
+    ASSERT_FALSE(notified);
+
+    imageManager.notifyIfMissingImageAdded();
+    runLoop.runOnce();
+
+    EXPECT_EQ(observer.count, 1);
+    ASSERT_TRUE(notified);
+
+}
+
+TEST(ImageManager, OnStyleImageMissingAfterSpriteLoaded) {
+    util::RunLoop runLoop;
+    ImageManager imageManager;
+    StubImageRequestor requestor;
+    StubImageManagerObserver observer;
+
+    imageManager.setObserver(&observer);
+
+    bool notified = false;
+
+    requestor.imagesAvailable = [&] (ImageMap, ImageMap, std::unordered_map<std::string, uint32_t>) {
+        notified = true;
+    };
+
+    EXPECT_EQ(observer.count, 0);
+    ASSERT_FALSE(notified);
+
+    imageManager.setLoaded(true);
+    runLoop.runOnce();
+
+    uint64_t imageCorrelationID = 0;
+    ImageDependencies dependencies;
+    dependencies.emplace("after", ImageType::Icon);
+    imageManager.getImages(requestor, std::make_pair(dependencies, imageCorrelationID));
+    runLoop.runOnce();
+
+    EXPECT_EQ(observer.count, 1);
+    ASSERT_FALSE(notified);
+
+    imageManager.notifyIfMissingImageAdded();
+    runLoop.runOnce();
+
+    EXPECT_EQ(observer.count, 1);
     ASSERT_TRUE(notified);
 }

@@ -50,6 +50,8 @@ public final class Mapbox {
    */
   @UiThread
   public static synchronized Mapbox getInstance(@NonNull Context context, @Nullable String accessToken) {
+    ThreadUtils.init(context);
+    ThreadUtils.checkThread(TAG);
     if (INSTANCE == null) {
       Context appContext = context.getApplicationContext();
       FileSource.initializeFileDirsPaths(appContext);
@@ -188,5 +190,12 @@ public final class Mapbox {
 
     accessToken = accessToken.trim().toLowerCase(MapboxConstants.MAPBOX_LOCALE);
     return accessToken.length() != 0 && (accessToken.startsWith("pk.") || accessToken.startsWith("sk."));
+  }
+
+  /**
+   * Internal use. Check if the {@link Mapbox#INSTANCE} is present.
+   */
+  public static boolean hasInstance() {
+    return INSTANCE != null;
   }
 }

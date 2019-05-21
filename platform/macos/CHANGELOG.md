@@ -8,6 +8,15 @@
 * Fixed a crash when casting large numbers in `NSExpression`. ([#13580](https://github.com/mapbox/mapbox-gl-native/pull/13580))
 * Added the `-[MGLShapeSource leavesOfCluster:offset:limit:]`, `-[MGLShapeSource childrenOfCluster:]`, `-[MGLShapeSource zoomLevelForExpandingCluster:]` methods for inspecting a cluster in an `MGLShapeSource`s created with the `MGLShapeSourceOptionClustered` option. Feature querying now returns clusters represented by `MGLPointFeatureCluster` objects (that conform to the `MGLCluster` protocol). ([#12952](https://github.com/mapbox/mapbox-gl-native/pull/12952)
 * Added `MGLNetworkConfiguration` class to customize the SDK's `NSURLSessionConfiguration` object. ([#11447](https://github.com/mapbox/mapbox-gl-native/pull/13886))
+* Fixed an issue that caused `MGL_FUNCTION` to ignore multiple formatting parameters when passed a `format` function as parameter. ([#14064](https://github.com/mapbox/mapbox-gl-native/pull/14064))
+* Added `mgl_attributed:` expression operator, which concatenate `MGLAttributedExpression` objects for specifying rich text in the `MGLSymbolStyleLayer.text` property. ([#14094](https://github.com/mapbox/mapbox-gl-native/pull/14094))
+* Fixed an issue that caused conditional expressions to crash when passed nested conditional expressions as parameters. ([#14181](https://github.com/mapbox/mapbox-gl-native/pull/14181))
+* Added `-[MGLMapViewDelegate mapView:didFailToLoadImage:]` to load missing symbol icons in the style if they are not found. ([#14302](https://github.com/mapbox/mapbox-gl-native/pull/14302))
+* Fixed a bug where non-opaque `NSColor` values were ignored when assigned to a style layer color property. ([#14406](https://github.com/mapbox/mapbox-gl-native/pull/14406))
+
+### Offline
+
+* Fixed a bug that caused offline packs created prior to v0.7.0 (introduced in [#11055](https://github.com/mapbox/mapbox-gl-native/pull/11055)) to be marked as `MGLOfflinePackStateInactive`. ([#14188](https://github.com/mapbox/mapbox-gl-native/pull/14188))
 
 ### Annotations
 
@@ -16,7 +25,8 @@
 
 ### Packaging
 
-* Added a Czech localization. ([#13782](https://github.com/mapbox/mapbox-gl-native/pull/13782))
+* Added Czech and Galician localizations. ([#13782](https://github.com/mapbox/mapbox-gl-native/pull/13782), [#14095](https://github.com/mapbox/mapbox-gl-native/pull/14095))
+* Added support for building with Xcode 10.2 / iOS SDK 12.2. ([#14241](https://github.com/mapbox/mapbox-gl-native/pull/14241))
 
 ## 0.13.0 - December 20, 2018
 
