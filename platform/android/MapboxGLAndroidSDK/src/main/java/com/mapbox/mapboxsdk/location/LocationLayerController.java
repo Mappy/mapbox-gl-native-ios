@@ -254,11 +254,23 @@ final class LocationLayerController {
   private void addAccuracyLayer() {
     Layer accuracyLayer = layerSourceProvider.generateAccuracyLayer();
     addLayerToMap(accuracyLayer, BACKGROUND_LAYER);
+    // Mappy modif
+    if (isHidden) {
+      setLayerVisibility(accuracyLayer.getId(), false);
+    }
   }
 
   private void addLayerToMap(Layer layer, @NonNull String idBelowLayer) {
-    style.addLayerBelow(layer, idBelowLayer);
+    // Mappy modif
+    String layerId = layer.getId();
+    Layer existingLayer = style.getLayer(layerId);
+    if (existingLayer == null) {
+      style.addLayerBelow(layer, idBelowLayer);
+    }
     layerSet.add(layer.getId());
+    if (isHidden) {
+      setLayerVisibility(layerId, false);
+    }
   }
 
   private void removeLayers() {
@@ -274,6 +286,7 @@ final class LocationLayerController {
   }
 
   private void updateAccuracyRadius(float accuracy) {
+    // Mappy modif
     if (!isHidden && (renderMode == RenderMode.COMPASS || renderMode == RenderMode.NORMAL)) {
       locationFeature.addNumberProperty(PROPERTY_ACCURACY_RADIUS, accuracy);
       refreshSource();
@@ -285,9 +298,9 @@ final class LocationLayerController {
   //
 
   private void addLocationSource() {
+    // mappy
     if (style.getSource(LOCATION_SOURCE) == null) {
       GeoJsonSource locationSource = layerSourceProvider.generateSource(locationFeature);
-      locationSource = layerSourceProvider.generateSource(locationFeature);
       style.addSource(locationSource);
     }
   }
