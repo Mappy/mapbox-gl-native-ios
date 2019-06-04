@@ -10,6 +10,7 @@ import android.support.annotation.Keep;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
+
 import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.Geometry;
 import com.mapbox.mapboxsdk.LibraryLoader;
@@ -654,9 +655,6 @@ final class NativeMapView implements NativeMap {
 
   @Override
   public LatLng latLngForPixel(@NonNull PointF pixel) {
-    if (checkState("latLngForPixel")) {
-      return new LatLng();
-    }
     return nativeLatLngForPixel(pixel.x / pixelRatio, pixel.y / pixelRatio);
   }
 
