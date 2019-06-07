@@ -1,13 +1,6 @@
 apply plugin: 'digital.wup.android-maven-publish'
 apply plugin: 'signing'
 
-def is_mappy_snapshot = "true"
-if (project.hasProperty('is_mappy_snapshot')) {
-    is_mappy_snapshot = project.getProperties().get('is_mappy_snapshot')
-}
-
-print "is_mappy_snapshot: ${is_mappy_snapshot} \n"
-
 allprojects {
     version project.VERSION_NAME
 
@@ -30,7 +23,7 @@ afterEvaluate { project ->
         }
         repositories {
             maven {
-		if(is_mappy_snapshot) {
+		if(project.VERSION_NAME.endsWith('-SNAPSHOT')) {
                 	url "file://${System.env.MAVEN_PRIVATE}"
             	} else {
                 	url "file://${System.env.MAVEN}"
