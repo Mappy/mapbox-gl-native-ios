@@ -12,6 +12,7 @@ apply from: '../gradle/configuration.gradle'
 apply from: '../gradle/dependencies.gradle'
 //end mappy modif
 
+print "project.VERSION_NAME: ${project.VERSION_NAME} \n"
 
 dependencies {
     //    mappy modif
@@ -182,7 +183,7 @@ configurations {
 
 //mappy modif : ${rootDir} is ..
 //apply from: "../gradle/gradle-javadoc.gradle"
-apply from: "../gradle/gradle-publish.gradle" // TODO FF ?
+apply from: "../gradle/gradle-publish.gradle"
 //apply from: "../gradle/gradle-checkstyle.gradle"
 apply from: "../gradle/gradle-dependencies-graph.gradle"
 apply from: "../gradle/gradle-update-vendor-modules.gradle"
