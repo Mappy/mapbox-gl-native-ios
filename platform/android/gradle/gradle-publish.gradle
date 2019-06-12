@@ -27,12 +27,11 @@ afterEvaluate { project ->
         }
         repositories {
             maven {
-		if(project.VERSION_NAME.endsWith('-SNAPSHOT')) {
+		        if(project.VERSION_NAME.endsWith('-SNAPSHOT')) {
                 	url "file://${System.env.MAVEN_PRIVATE}"
             	} else {
                 	url "file://${System.env.MAVEN}"
             	}
-                
             }
         }
     }
