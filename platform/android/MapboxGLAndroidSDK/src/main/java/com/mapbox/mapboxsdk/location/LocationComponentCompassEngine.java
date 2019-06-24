@@ -116,7 +116,7 @@ class LocationComponentCompassEngine implements CompassEngine, SensorEventListen
       return;
     }
     if (lastAccuracySensorStatus == SensorManager.SENSOR_STATUS_UNRELIABLE) {
-      Logger.d(TAG, "Compass sensor is unreliable, device calibration is needed.");
+      //Logger.d(TAG, "Compass sensor is unreliable, device calibration is needed.");
       return;
     }
     if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
