@@ -1,8 +1,10 @@
 apply plugin: 'digital.wup.android-maven-publish'
 apply plugin: 'signing'
+apply from: file('../gradle/artifact-settings.gradle')
 
 allprojects {
     version project.VERSION_NAME
+    group = project.ext.mapboxArtifactGroupId
 
     repositories {
         mavenCentral()
@@ -18,11 +20,18 @@ afterEvaluate { project ->
         publications {
             maven(MavenPublication) {
                 from components.android
+                groupId this.group
+                artifactId project.ext.mapboxArtifactId
+                version this.version
             }
         }
         repositories {
             maven {
-                url "file://${System.env.MAVEN}"
+		        if(project.VERSION_NAME.endsWith('-SNAPSHOT')) {
+                	url "file://${System.env.MAVEN_PRIVATE}"
+            	} else {
+                	url "file://${System.env.MAVEN}"
+            	}
             }
         }
     }
