@@ -66,6 +66,9 @@ public:
 
     void listOfflineRegions(jni::JNIEnv&, const jni::Object<FileSource>&, const jni::Object<ListOfflineRegionsCallback>& callback);
 
+    // Mappy modif
+    void cleanAmbientCache(jni::JNIEnv&, jni::Object<FileSource>&);
+
     void createOfflineRegion(jni::JNIEnv&,
                              const jni::Object<FileSource>& jFileSource_,
                              const jni::Object<OfflineRegionDefinition>& definition,

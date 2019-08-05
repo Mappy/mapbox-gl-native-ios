@@ -63,6 +63,9 @@ public:
     expected<OfflineRegionMetadata, std::exception_ptr>
     updateMetadata(const int64_t regionID, const OfflineRegionMetadata&);
 
+    // Mappy modif
+    void deleteAllTilesAndStyles(void);
+
     std::exception_ptr deleteRegion(OfflineRegion&&);
 
     // Return value is (response, stored size)

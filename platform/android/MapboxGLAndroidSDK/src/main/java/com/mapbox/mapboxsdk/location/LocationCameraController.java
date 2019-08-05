@@ -110,7 +110,8 @@ final class LocationCameraController {
    */
   private void transitionToCurrentLocation(boolean wasTracking, Location lastLocation,
                                            final OnLocationCameraTransitionListener internalTransitionListener) {
-    if (!wasTracking && isLocationTracking() && lastLocation != null) {
+    if (!wasTracking && isLocationTracking() && lastLocation != null /* Mappy Modif not to use default location */
+            && (lastLocation.getLatitude() != 0.0 && lastLocation.getLongitude() != 0.0) /* Mappy Modif */) {
       isTransitioning = true;
       LatLng target = new LatLng(lastLocation);
       CameraPosition.Builder builder = new CameraPosition.Builder().target(target);

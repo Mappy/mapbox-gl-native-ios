@@ -22,12 +22,7 @@ class BubblePopupHelper {
     popupWindow.setHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
     popupWindow.setAnimationStyle(android.R.style.Animation_Dialog);
     // change background color to transparent
-    Drawable drawable;
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-      drawable = context.getDrawable(R.drawable.mapbox_popup_window_transparent);
-    } else {
-      drawable = context.getResources().getDrawable(R.drawable.mapbox_popup_window_transparent);
-    }
+    Drawable drawable = context.getDrawable(R.drawable.mapbox_popup_window_transparent);
     popupWindow.setBackgroundDrawable(drawable);
 
     return popupWindow;

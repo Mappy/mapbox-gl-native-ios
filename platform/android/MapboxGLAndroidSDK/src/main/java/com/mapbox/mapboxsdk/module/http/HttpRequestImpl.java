@@ -34,6 +34,9 @@ import static com.mapbox.mapboxsdk.module.http.HttpRequestUtil.toHumanReadableAs
 
 public class HttpRequestImpl implements HttpRequest {
 
+  //Mappy modifs
+  public static HttpRequestHeaderProvider httpRequestHeaderProvider;
+
   private static final String userAgentString = toHumanReadableAscii(
     String.format("%s %s (%s) Android/%s (%s)",
       HttpIdentifier.getIdentifier(),
@@ -67,12 +70,20 @@ public class HttpRequestImpl implements HttpRequest {
 
       final Request.Builder builder = new Request.Builder()
         .url(resourceUrl)
-        .tag(resourceUrl.toLowerCase(MapboxConstants.MAPBOX_LOCALE))
-        .addHeader("User-Agent", userAgentString);
+        .tag(resourceUrl.toLowerCase(MapboxConstants.MAPBOX_LOCALE));
+      // Mappy Modif : User-Agent is set later
+      //.addHeader("User-Agent", userAgentString);
       if (etag.length() > 0) {
         builder.addHeader("If-None-Match", etag);
       } else if (modified.length() > 0) {
         builder.addHeader("If-Modified-Since", modified);
+      }
+
+      //Mappy modifs
+      if (httpRequestHeaderProvider != null) {
+        httpRequestHeaderProvider.addHeader(builder);
+      } else {
+        builder.addHeader("User-Agent", userAgentString); //Use MapBox Header only if mappy Header is null
       }
 
       final Request request = builder.build();
@@ -186,5 +197,10 @@ public class HttpRequestImpl implements HttpRequest {
     // https://github.com/mapbox/mapbox-gl-native/blob/master/platform/android/src/http_file_source.cpp#L192
     dispatcher.setMaxRequestsPerHost(20);
     return dispatcher;
+  }
+
+  //Mappy modifs
+  interface HttpRequestHeaderProvider {
+    void addHeader(Request.Builder builder);
   }
 }

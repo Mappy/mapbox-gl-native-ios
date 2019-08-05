@@ -196,16 +196,29 @@ std::unique_ptr<AsyncRequest> HTTPFileSource::request(const Resource& resource, 
     auto shared = request->shared; // Explicit copy so that it also gets copied into the completion handler block below.
 
     @autoreleasepool {
-        NSURL* url = [NSURL URLWithString:@(resource.url.c_str())];
+        NSURL *url = [NSURL URLWithString:@(resource.url.c_str())];
         MGLLogDebug(@"Requesting URI: %@", url.relativePath);
+
+#if TARGET_OS_IPHONE || TARGET_OS_SIMULATOR
         if (impl->accountType == 0 &&
             ([url.host isEqualToString:@"mapbox.com"] || [url.host hasSuffix:@".mapbox.com"])) {
-            NSString* absoluteString = [url.absoluteString
-                stringByAppendingFormat:(url.query ? @"&%@" : @"?%@"), @"events=true"];
-            url = [NSURL URLWithString:absoluteString];
-        }
+            NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+            NSURLQueryItem *accountsQueryItem = nil;
 
-        NSMutableURLRequest* req = [NSMutableURLRequest requestWithURL:url];
+            // Only add the token if we have enabled the accounts SDK
+            if (MGLAccountManager.isAccountsSDKEnabled) {
+                NSCAssert(MGLAccountManager.skuToken, @"skuToken should be non-nil if the accounts SDK is enabled");
+                accountsQueryItem = [NSURLQueryItem queryItemWithName:@"sku" value:MGLAccountManager.skuToken];
+            } else {
+                accountsQueryItem = [NSURLQueryItem queryItemWithName:@"events" value:@"true"];
+            }
+
+            components.queryItems = components.queryItems ? [components.queryItems arrayByAddingObject:accountsQueryItem] : @[accountsQueryItem];
+            url = components.URL;
+        }
+#endif
+
+        NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:url];
         if (resource.priorEtag) {
             [req addValue:@(resource.priorEtag->c_str())
                  forHTTPHeaderField:@"If-None-Match"];

@@ -46,6 +46,8 @@ public class Marker extends Annotation {
   private int topOffsetPixels;
   private int rightOffsetPixels;
 
+  private int zOrder;
+
   /**
    * Constructor
    */
@@ -62,11 +64,21 @@ public class Marker extends Annotation {
     this(baseMarkerOptions.position, baseMarkerOptions.icon, baseMarkerOptions.title, baseMarkerOptions.snippet);
   }
 
+  //Mappy modif
+  public Marker(BaseMarkerOptions baseMarkerOptions, int zOrder) {
+    this(baseMarkerOptions.position, baseMarkerOptions.icon, baseMarkerOptions.title, baseMarkerOptions.snippet, zOrder);
+  }
+
   Marker(LatLng position, Icon icon, String title, String snippet) {
+    this(position, icon, title, snippet, 0);
+  }
+
+  Marker(LatLng position, Icon icon, String title, String snippet, int zOrder) {
     this.position = position;
     this.title = title;
     this.snippet = snippet;
     setIcon(icon);
+    this.zOrder = zOrder;
   }
 
   /**
@@ -264,6 +276,17 @@ public class Marker extends Annotation {
    */
   public void setRightOffsetPixels(int rightOffsetPixels) {
     this.rightOffsetPixels = rightOffsetPixels;
+  }
+
+  // Mappy modifs
+  public void setZOrder(int zOrder) {
+    if (this.zOrder != zOrder) {
+      this.zOrder = zOrder;
+    }
+  }
+
+  public int getZOrder() {
+    return zOrder;
   }
 
   /**

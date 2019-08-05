@@ -155,10 +155,12 @@ public final class MapboxMap {
    * Called when the hosting Activity/Fragment is recreated and map state needs to be restored.
    *
    * @param savedInstanceState the bundle containing the saved state
+   * @param mapboxMapOptions
    */
-  void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+  void onRestoreInstanceState(@NonNull Bundle savedInstanceState, MapboxMapOptions mapboxMapOptions) {
     final CameraPosition cameraPosition = savedInstanceState.getParcelable(MapboxConstants.STATE_CAMERA_POSITION);
 
+    transform.initialise(this, mapboxMapOptions); // Mappy modif : Zoom was not reinitialized
     uiSettings.onRestoreInstanceState(savedInstanceState);
 
     if (cameraPosition != null) {
@@ -962,7 +964,20 @@ public final class MapboxMap {
   @Deprecated
   @NonNull
   public List<Polyline> addPolylines(@NonNull List<PolylineOptions> polylineOptionsList) {
-    return annotationManager.addPolylines(polylineOptionsList, this);
+    return annotationManager.addPolylines(polylineOptionsList, this, false);
+  }
+
+  /**
+   * Adds multiple polylines to this map.
+   *
+   * @param polylineOptionsList A list of polyline options objects that defines how to render the polylines.
+   * @param withWhiteStroke     add the polylines with the white stroke or not
+   * @return A list of the {@code Polyline}s that were added to the map.
+   */
+  @UiThread
+  @NonNull
+  public List<Polyline> addPolylines(@NonNull List<PolylineOptions> polylineOptionsList, boolean withWhiteStroke) {
+    return annotationManager.addPolylines(polylineOptionsList, this, withWhiteStroke);
   }
 
   /**
@@ -1750,7 +1765,7 @@ public final class MapboxMap {
   public void setGesturesManager(@NonNull AndroidGesturesManager androidGesturesManager, boolean attachDefaultListeners,
                                  boolean setDefaultMutuallyExclusives) {
     onGesturesManagerInteractionListener.setGesturesManager(
-      androidGesturesManager, attachDefaultListeners, setDefaultMutuallyExclusives);
+            androidGesturesManager, attachDefaultListeners, setDefaultMutuallyExclusives);
   }
 
   /**
@@ -2207,7 +2222,7 @@ public final class MapboxMap {
     /**
      * Called when the user clicks on a marker.
      *
-     * @param marker The marker the user clicked on.
+     * @param marker The clicked marker.
      * @return If true the listener has consumed the event and the info window will not be shown.
      */
     boolean onMarkerClick(@NonNull Marker marker);

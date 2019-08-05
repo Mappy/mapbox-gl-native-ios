@@ -51,38 +51,40 @@ public final class Utils {
     try {
       drawable.draw(canvas);
     } catch (IllegalArgumentException ex) {
-      if (ex.getMessage().equals("radius must be > 0") && Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-        Logger.w(TAG,
-          "Location's shadow gradient drawable has a radius <= 0px, resetting to 1px in order to avoid crashing");
-        ensureShadowGradientRadius(drawable);
-        return generateShadow(drawable, elevation);
-      } else {
-        throw ex;
-      }
+//      mappy modif : dead code for us
+//      if (ex.getMessage().equals("radius must be > 0") && Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+//        Logger.w(TAG,
+//          "Location's shadow gradient drawable has a radius <= 0px, resetting to 1px in order to avoid crashing");
+//        ensureShadowGradientRadius(drawable);
+//        return generateShadow(drawable, elevation);
+//      } else {
+//        throw ex;
+//      }
     }
     bitmap = Bitmap.createScaledBitmap(bitmap,
       toEven(width + elevation), toEven(height + elevation), false);
     return bitmap;
   }
 
-  /**
-   * We need to ensure that the radius of any {@link GradientDrawable} is greater than 0 for API levels < 21.
-   *
-   * @see <a href=https://github.com/mapbox/mapbox-gl-native/issues/15026>mapbox-gl-native-#15026</a>
-   */
-  private static void ensureShadowGradientRadius(Drawable drawable) {
-    if (drawable instanceof GradientDrawable) {
-      ((GradientDrawable) drawable).setGradientRadius(1);
-    } else if (drawable instanceof LayerDrawable) {
-      LayerDrawable layerDrawable = (LayerDrawable) drawable;
-      for (int i = 0; i < layerDrawable.getNumberOfLayers(); i++) {
-        Drawable layers = layerDrawable.getDrawable(i);
-        if (layers instanceof GradientDrawable) {
-          ((GradientDrawable) layers).setGradientRadius(1);
-        }
-      }
-    }
-  }
+  //      mappy modif : dead code for us
+//  /**
+//   * We need to ensure that the radius of any {@link GradientDrawable} is greater than 0 for API levels < 21.
+//   *
+//   * @see <a href=https://github.com/mapbox/mapbox-gl-native/issues/15026>mapbox-gl-native-#15026</a>
+//   */
+//  private static void ensureShadowGradientRadius(Drawable drawable) {
+//    if (drawable instanceof GradientDrawable) {
+//      ((GradientDrawable) drawable).setGradientRadius(1);
+//    } else if (drawable instanceof LayerDrawable) {
+//      LayerDrawable layerDrawable = (LayerDrawable) drawable;
+//      for (int i = 0; i < layerDrawable.getNumberOfLayers(); i++) {
+//        Drawable layers = layerDrawable.getDrawable(i);
+//        if (layers instanceof GradientDrawable) {
+//          ((GradientDrawable) layers).setGradientRadius(1);
+//        }
+//      }
+//    }
+//  }
 
   static float calculateZoomLevelRadius(@NonNull MapboxMap mapboxMap, @Nullable Location location) {
     if (location == null) {

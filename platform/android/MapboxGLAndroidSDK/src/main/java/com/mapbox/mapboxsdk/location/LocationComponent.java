@@ -524,7 +524,9 @@ public final class LocationComponent {
    * @param cameraMode one of the modes found in {@link CameraMode}
    */
   public void setCameraMode(@CameraMode.Mode int cameraMode) {
-    checkActivationState();
+    //mappy modif
+//    checkActivationState();
+    //end mappy modif
     setCameraMode(cameraMode, null);
   }
 
@@ -628,6 +630,19 @@ public final class LocationComponent {
     checkActivationState();
     return locationLayerController.getRenderMode();
   }
+
+  // Mappy modifs : Sometimes we need to show / hide Location marker
+
+  public void hide() {
+    locationLayerController.hide();
+  }
+
+  public void show() {
+    locationLayerController.show();
+  }
+
+  // End of Mappy modifs
+
 
   /**
    * Returns the current location options being used.
@@ -798,10 +813,12 @@ public final class LocationComponent {
    * updated.
    *
    * @param location where the location icon is placed on the map
+   * @param forceShow (Mappy Modif) whether to force rendering of Location Marker
    */
-  public void forceLocationUpdate(@Nullable Location location) {
+
+  public void forceLocationUpdate(@Nullable Location location, /* Mappy Modif */ boolean forceShow) {
     checkActivationState();
-    updateLocation(location, false);
+    updateLocation(location, false, forceShow);
   }
 
   /**
@@ -853,7 +870,7 @@ public final class LocationComponent {
    * Set the location engine to update the current user location.
    * <p>
    * If {@code null} is passed in, all updates will have to occur through the
-   * {@link LocationComponent#forceLocationUpdate(Location)} method.
+   * {@link LocationComponent#forceLocationUpdate(Location, boolean)} method.
    *
    * @param locationEngine a {@link LocationEngine} this component should use to handle updates
    */
@@ -1086,6 +1103,7 @@ public final class LocationComponent {
    * Internal use.
    */
   public void onFinishLoadingStyle() {
+    // MAPPY MODIF : see #reInitLayers(boolean show)
     if (isComponentInitialized) {
       style = mapboxMap.getStyle();
       locationLayerController.initializeComponents(style, options);
@@ -1094,7 +1112,16 @@ public final class LocationComponent {
     }
   }
 
-  @SuppressLint("MissingPermission")
+  public void reInitLayers(boolean show) {
+    //if (isInitialized) {  TODO Mappy : Restore this
+      //locationLayerController.initializeComponents(options);  // TODO Mappy : Restore this
+      locationCameraController.initializeOptions(options);
+      onLocationLayerStart();
+    //}
+  }
+
+
+    @SuppressLint("MissingPermission")
   private void onLocationLayerStart() {
     if (!isComponentInitialized || !isComponentStarted || mapboxMap.getStyle() == null) {
       return;
@@ -1241,7 +1268,7 @@ public final class LocationComponent {
     onLocationLayerStop();
   }
 
-  private void updateMapWithOptions(@NonNull LocationComponentOptions options) {
+  private void updateMapWithOptions(@NonNull final LocationComponentOptions options) {
     int[] padding = options.padding();
     if (padding != null) {
       mapboxMap.setPadding(
@@ -1255,8 +1282,9 @@ public final class LocationComponent {
    *
    * @param location the latest user location
    */
-  private void updateLocation(@Nullable final Location location, boolean fromLastLocation) {
-    if (location == null) {
+  private void updateLocation(@Nullable final Location location, boolean fromLastLocation, /* Mappy Modif */ boolean forceShow) {
+    if (location == null /* Mappy Modif not to use default location */
+            || (location.getLatitude() == 0.0 && location.getLongitude() == 0.0) /* Mappy Modif */) {
       return;
     } else if (!isLayerReady) {
       lastLocation = location;
@@ -1270,7 +1298,9 @@ public final class LocationComponent {
       }
     }
 
-    showLocationLayerIfHidden();
+    if (forceShow) {
+      showLocationLayerIfHidden();
+    }
 
     if (!fromLastLocation) {
       staleStateManager.updateLatestLocationTime();
@@ -1302,7 +1332,7 @@ public final class LocationComponent {
     if (locationEngine != null) {
       locationEngine.getLastLocation(lastLocationEngineListener);
     } else {
-      updateLocation(getLastKnownLocation(), true);
+      updateLocation(getLastKnownLocation(), true, true);
     }
   }
 
@@ -1433,7 +1463,7 @@ public final class LocationComponent {
     public void onSuccess(LocationEngineResult result) {
       LocationComponent component = componentWeakReference.get();
       if (component != null) {
-        component.updateLocation(result.getLastLocation(), false);
+        component.updateLocation(result.getLastLocation(), false, true);
       }
     }
 
@@ -1455,7 +1485,7 @@ public final class LocationComponent {
     public void onSuccess(LocationEngineResult result) {
       LocationComponent component = componentWeakReference.get();
       if (component != null) {
-        component.updateLocation(result.getLastLocation(), true);
+        component.updateLocation(result.getLastLocation(), true, true);
       }
     }
 

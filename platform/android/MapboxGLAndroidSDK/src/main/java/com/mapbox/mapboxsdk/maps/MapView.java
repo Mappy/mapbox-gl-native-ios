@@ -197,11 +197,16 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
     // notify Map object about current connectivity state
     nativeMapView.setReachability(Mapbox.isConnected());
 
+    //Mappy modifs
+    if(mapBoxMapCreatedListener != null){
+      mapBoxMapCreatedListener.onMapBoxMapCreatedListener(mapboxMap);
+    }
+
     // initialise MapboxMap
     if (savedInstanceState == null) {
       mapboxMap.initialise(context, mapboxMapOptions);
     } else {
-      mapboxMap.onRestoreInstanceState(savedInstanceState);
+      mapboxMap.onRestoreInstanceState(savedInstanceState, mapboxMapOptions);
     }
 
     mapCallback.initialised();
@@ -268,9 +273,12 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
   @UiThread
   public void onCreate(@Nullable Bundle savedInstanceState) {
     if (savedInstanceState == null) {
-      TelemetryDefinition telemetry = Mapbox.getTelemetry();
-      if (telemetry != null) {
-        telemetry.onAppUserTurnstileEvent();
+      //Mappy modif
+      if(Mapbox.ENABLE_METRICS_ON_MAPPY) {
+        TelemetryDefinition telemetry = Mapbox.getTelemetry();
+        if (telemetry != null) {
+          telemetry.onAppUserTurnstileEvent();
+        }
       }
     } else if (savedInstanceState.getBoolean(MapboxConstants.STATE_HAS_SAVED_STATE)) {
       this.savedInstanceState = savedInstanceState;
@@ -467,6 +475,10 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
       return super.onTouchEvent(event);
     }
 
+    if (event.getAction() == MotionEvent.ACTION_DOWN) {
+        // Mappy modif : on touch down, stop map inertia
+        nativeMapView.cancelTransitions();
+    }
     return mapGestureDetector.onTouchEvent(event) || super.onTouchEvent(event);
   }
 
@@ -1005,6 +1017,28 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
     }
   }
 
+  // mappy modif
+  /**
+   * Set the minimum zoom
+   * @param zoom minimum zoom
+   */
+  public void setMinZoomPreference(double zoom) {
+    mapboxMap.setMinZoomPreference(zoom);
+  }
+
+  // mappy modif
+  /**
+   * Set the maximum zoom
+   * @param zoom maximum zoom
+   */
+  public void setMaxZoomPreference(double zoom) {
+    mapboxMap.setMaxZoomPreference(zoom);
+  }
+
+  private boolean isMapInitialized() {
+    return nativeMapView != null;
+  }
+
   private boolean isGestureDetectorInitialized() {
     return mapGestureDetector != null;
   }
@@ -1279,6 +1313,16 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
         return defaultDialogManager;
       }
     }
+  }
+
+  //Mappy modifs
+  public interface OnMapBoxMapCreatedListener{
+      void onMapBoxMapCreatedListener(MapboxMap mapboxMap);
+  }
+  private OnMapBoxMapCreatedListener mapBoxMapCreatedListener;
+
+  public void setMapBoxMapCreatedListener(OnMapBoxMapCreatedListener mapBoxMapCreatedListener){
+      this.mapBoxMapCreatedListener = mapBoxMapCreatedListener;
   }
 
   /**

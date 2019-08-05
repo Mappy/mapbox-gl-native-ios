@@ -157,6 +157,12 @@ public class OfflineManager {
     return instance;
   }
 
+  // Mappy modif
+  public static synchronized boolean isAvailable() {
+    //Log.d("OffLineManager"," isAvailable="+(instance != null || FileSource.isAvailable()));
+    return instance != null || FileSource.isAvailable();
+  }
+
   @AnyThread
   private Handler getHandler() {
     if (handler == null) {
@@ -388,11 +394,19 @@ public class OfflineManager {
       }
     });
 
-    TelemetryDefinition telemetry = Mapbox.getTelemetry();
-    if (telemetry != null) {
-      LatLngBounds bounds = definition.getBounds();
-      telemetry.onCreateOfflineRegion(definition);
+    //Mappy modif
+    if(Mapbox.ENABLE_METRICS_ON_MAPPY) {
+      TelemetryDefinition telemetry = Mapbox.getTelemetry();
+      if (telemetry != null) {
+        LatLngBounds bounds = definition.getBounds();
+        telemetry.onCreateOfflineRegion(definition);
+      }
     }
+  }
+
+  // Mappy modif
+  public void cleanAmbientCache() {
+    cleanAmbientCache(fileSource);
   }
 
   /**
@@ -427,6 +441,10 @@ public class OfflineManager {
   @Keep
   private native void createOfflineRegion(FileSource fileSource, OfflineRegionDefinition definition,
                                           byte[] metadata, CreateOfflineRegionCallback callback);
+
+  // Mappy modif
+  @Keep
+  private native void cleanAmbientCache(FileSource fileSource);
 
   @Keep
   private native void mergeOfflineRegions(FileSource fileSource, String path, MergeOfflineRegionsCallback callback);

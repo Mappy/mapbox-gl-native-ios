@@ -1,5 +1,9 @@
 apply plugin: 'com.android.application'
 
+//mappy modif
+apply from: '../configuration.gradle'
+apply from: '../gradle/dependencies.gradle'
+//end mappy modif
 android {
     compileSdkVersion androidVersions.compileSdkVersion
 
@@ -58,6 +62,8 @@ dependencies {
 
     implementation project(':MapboxGLAndroidSDK')
     implementation dependenciesList.mapboxJavaTurf
+    api(project(':MapboxGLAndroidSDKTestApp'))
+    implementation dependenciesList.mapboxJavaServices
 
     implementation dependenciesList.supportAppcompatV7
     implementation dependenciesList.supportRecyclerView
@@ -78,12 +84,10 @@ dependencies {
     androidTestImplementation dependenciesList.testUiAutomator
 }
 
-apply from: "${rootDir}/gradle/gradle-make.gradle"
-apply from: "${rootDir}/gradle/gradle-config.gradle"
-apply from: "${rootDir}/gradle/gradle-checkstyle.gradle"
-apply from: "${rootDir}/gradle/gradle-lint.gradle"
-
-
+apply from: "../gradle/gradle-make.gradle"
+apply from: "../gradle/gradle-config.gradle"
+apply from: "../gradle/gradle-checkstyle.gradle"
+apply from: "../gradle/gradle-lint.gradle"
 
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'

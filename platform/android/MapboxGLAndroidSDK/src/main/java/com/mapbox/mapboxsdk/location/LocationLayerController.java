@@ -73,7 +73,6 @@ final class LocationLayerController {
   @VisibleForTesting
   final Set<String> layerSet = new HashSet<>();
   private Feature locationFeature;
-  private GeoJsonSource locationSource;
 
   private boolean isHidden = true;
 
@@ -152,9 +151,10 @@ final class LocationLayerController {
           setLayerVisibility(BEARING_LAYER, false);
           break;
         case RenderMode.COMPASS:
-          styleForeground(options);
+          //styleForeground(options);
           setLayerVisibility(SHADOW_LAYER, true);
-          setLayerVisibility(FOREGROUND_LAYER, true);
+          // Mappy modif : "Foreground" layer not displayed in compass mode
+          setLayerVisibility(FOREGROUND_LAYER, false);
           setLayerVisibility(BACKGROUND_LAYER, true);
           setLayerVisibility(ACCURACY_LAYER, !isStale);
           setLayerVisibility(BEARING_LAYER, true);
@@ -254,11 +254,23 @@ final class LocationLayerController {
   private void addAccuracyLayer() {
     Layer accuracyLayer = layerSourceProvider.generateAccuracyLayer();
     addLayerToMap(accuracyLayer, BACKGROUND_LAYER);
+    // Mappy modif
+    if (isHidden) {
+      setLayerVisibility(accuracyLayer.getId(), false);
+    }
   }
 
   private void addLayerToMap(Layer layer, @NonNull String idBelowLayer) {
-    style.addLayerBelow(layer, idBelowLayer);
+    // Mappy modif
+    String layerId = layer.getId();
+    Layer existingLayer = style.getLayer(layerId);
+    if (existingLayer == null) {
+      style.addLayerBelow(layer, idBelowLayer);
+    }
     layerSet.add(layer.getId());
+    if (isHidden) {
+      setLayerVisibility(layerId, false);
+    }
   }
 
   private void removeLayers() {
@@ -274,8 +286,11 @@ final class LocationLayerController {
   }
 
   private void updateAccuracyRadius(float accuracy) {
-    locationFeature.addNumberProperty(PROPERTY_ACCURACY_RADIUS, accuracy);
-    refreshSource();
+    // Mappy modif
+    if (!isHidden && (renderMode == RenderMode.COMPASS || renderMode == RenderMode.NORMAL)) {
+      locationFeature.addNumberProperty(PROPERTY_ACCURACY_RADIUS, accuracy);
+      refreshSource();
+    }
   }
 
   //
@@ -283,14 +298,17 @@ final class LocationLayerController {
   //
 
   private void addLocationSource() {
-    locationSource = layerSourceProvider.generateSource(locationFeature);
-    style.addSource(locationSource);
+    // mappy
+    if (style.getSource(LOCATION_SOURCE) == null) {
+      GeoJsonSource locationSource = layerSourceProvider.generateSource(locationFeature);
+      style.addSource(locationSource);
+    }
   }
 
   private void refreshSource() {
     GeoJsonSource source = style.getSourceAs(LOCATION_SOURCE);
     if (source != null) {
-      locationSource.setGeoJson(locationFeature);
+        source.setGeoJson(locationFeature);
     }
   }
 
@@ -394,7 +412,7 @@ final class LocationLayerController {
   void setLocationsStale(boolean isStale) {
     locationFeature.addBooleanProperty(PROPERTY_LOCATION_STALE, isStale);
     refreshSource();
-    if (renderMode != RenderMode.GPS) {
+    if (!isHidden && renderMode != RenderMode.GPS) {
       setLayerVisibility(ACCURACY_LAYER, !isStale);
     }
   }

@@ -102,7 +102,7 @@ public class Projection {
    */
   @NonNull
   public VisibleRegion getVisibleRegion() {
-    return getVisibleRegion(true);
+    return getVisibleRegion(true, 0, 0, 0, 0);
   }
 
   /**
@@ -115,21 +115,45 @@ public class Projection {
    */
   @NonNull
   public VisibleRegion getVisibleRegion(boolean ignorePadding) {
+    return getVisibleRegion(ignorePadding, 0, 0, 0, 0);
+  }
+
+
+  /**
+   * Mappy modif
+   * Gets a projection of the viewing frustum for converting between screen coordinates and
+   * geo-latitude/longitude coordinates.
+   *
+   * @return The projection of the viewing frustum in its current state.
+   */
+  public VisibleRegion getVisibleRegion(int additionalPaddingLeft, int additionalPaddingTop, int additionalPaddingRight, int additionalPaddingBottom) {
+    return getVisibleRegion(false, additionalPaddingLeft, additionalPaddingTop, additionalPaddingRight, additionalPaddingBottom);
+  }
+
+  /**
+   * Mappy modif
+   * Gets a projection of the viewing frustum for converting between screen coordinates and
+   * geo-latitude/longitude coordinates.
+   *
+   * @return The projection of the viewing frustum in its current state.
+   */
+  private VisibleRegion getVisibleRegion(boolean ignorePadding, int additionalPaddingLeft, int additionalPaddingTop, int additionalPaddingRight, int additionalPaddingBottom) {
     float left;
     float right;
     float top;
     float bottom;
 
+    // mappy modif : introduction of additionalPaddingBottom
     if (ignorePadding) {
-      left = 0;
-      right = mapView.getWidth();
-      top = 0;
-      bottom = mapView.getHeight();
+      left = additionalPaddingLeft;
+      right = mapView.getWidth() - additionalPaddingRight;
+      top = additionalPaddingTop;
+      bottom = mapView.getHeight() - additionalPaddingBottom;
     } else {
-      left = (float) contentPadding[0];
-      right = (float) (mapView.getWidth() - contentPadding[2]);
-      top = (float) contentPadding[1];
-      bottom = (float) (mapView.getHeight() - contentPadding[3]);
+      left = (float) contentPadding[0] + additionalPaddingLeft;
+      right = (float) (mapView.getWidth() - contentPadding[2] - additionalPaddingRight);
+      top = (float) contentPadding[1] + additionalPaddingTop;
+      bottom = (float) (mapView.getHeight() - contentPadding[3] - additionalPaddingBottom);
     }
 
     LatLng center = fromScreenLocation(new PointF(left + (right - left) / 2, top + (bottom - top) / 2));

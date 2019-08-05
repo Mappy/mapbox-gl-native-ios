@@ -107,14 +107,16 @@ final class NativeMapView implements NativeMap {
   //
 
   private boolean checkState(String callingMethod) {
+    // mappy modif: do not crash
     // validate if invocation has occurred on the main thread
-    if (thread != Thread.currentThread()) {
-      throw new CalledFromWorkerThreadException(
-        String.format(
-          "Map interactions should happen on the UI thread. Method invoked from wrong thread is %s.",
-          callingMethod)
-      );
-    }
+//    if (thread != Thread.currentThread()) {
+//      throw new CalledFromWorkerThreadException(
+//        String.format(
+//          "Map interactions should happen on the UI thread. Method invoked from wrong thread is %s.",
+//          callingMethod)
+//      );
+//    }
+    // end mappy modif
 
     // validate if map has already been destroyed
     if (destroyed && !TextUtils.isEmpty(callingMethod)) {
@@ -647,9 +649,6 @@ final class NativeMapView implements NativeMap {
   @Override
   @NonNull
   public PointF pixelForLatLng(@NonNull LatLng latLng) {
-    if (checkState("pixelForLatLng")) {
-      return new PointF();
-    }
     PointF pointF = nativePixelForLatLng(latLng.getLatitude(), latLng.getLongitude());
     pointF.set(pointF.x * pixelRatio, pointF.y * pixelRatio);
     return pointF;
@@ -657,9 +656,6 @@ final class NativeMapView implements NativeMap {
 
   @Override
   public LatLng latLngForPixel(@NonNull PointF pixel) {
-    if (checkState("latLngForPixel")) {
-      return new LatLng();
-    }
     return nativeLatLngForPixel(pixel.x / pixelRatio, pixel.y / pixelRatio);
   }
 
