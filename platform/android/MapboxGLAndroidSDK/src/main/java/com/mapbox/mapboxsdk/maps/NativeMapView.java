@@ -108,14 +108,16 @@ final class NativeMapView implements NativeMap {
   //
 
   private boolean checkState(String callingMethod) {
+    // mappy modif: do not crash
     // validate if invocation has occurred on the main thread
-    if (thread != Thread.currentThread()) {
-      throw new CalledFromWorkerThreadException(
-        String.format(
-          "Map interactions should happen on the UI thread. Method invoked from wrong thread is %s.",
-          callingMethod)
-      );
-    }
+//    if (thread != Thread.currentThread()) {
+//      throw new CalledFromWorkerThreadException(
+//        String.format(
+//          "Map interactions should happen on the UI thread. Method invoked from wrong thread is %s.",
+//          callingMethod)
+//      );
+//    }
+    // end mappy modif
 
     // validate if map has already been destroyed
     if (destroyed && !TextUtils.isEmpty(callingMethod)) {

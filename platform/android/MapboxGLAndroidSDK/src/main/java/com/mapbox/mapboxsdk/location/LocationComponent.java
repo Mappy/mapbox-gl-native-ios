@@ -524,7 +524,9 @@ public final class LocationComponent {
    * @param cameraMode one of the modes found in {@link CameraMode}
    */
   public void setCameraMode(@CameraMode.Mode int cameraMode) {
-    checkActivationState();
+    //mappy modif
+//    checkActivationState();
+    //end mappy modif
     setCameraMode(cameraMode, null);
   }
 
