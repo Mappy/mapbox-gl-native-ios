@@ -19,10 +19,7 @@ import android.view.TextureView;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.Toast;
-
 import com.mapbox.android.gestures.AndroidGesturesManager;
-import com.mapbox.mapboxsdk.BuildConfig;
 import com.mapbox.mapboxsdk.MapStrictMode;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.R;
@@ -286,8 +283,6 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
     } else if (savedInstanceState.getBoolean(MapboxConstants.STATE_HAS_SAVED_STATE)) {
       this.savedInstanceState = savedInstanceState;
     }
-
-    Toast.makeText(getContext(), "Map displayed successfully !", Toast.LENGTH_LONG).show();
   }
 
   private void initialiseDrawingSurface(MapboxMapOptions options) {
