@@ -7,6 +7,7 @@ import android.net.NetworkInfo;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.UiThread;
+
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
 import com.mapbox.mapboxsdk.exceptions.MapboxConfigurationException;
 import com.mapbox.mapboxsdk.log.Logger;
@@ -87,8 +88,45 @@ public final class Mapbox {
   public static void setAccessToken(String accessToken) {
     validateMapbox();
     INSTANCE.accessToken = accessToken;
+
+    //  mappy modif : no accounts
+    /*
+    // cleanup telemetry which is dependent on an access token
+    if (INSTANCE.telemetry != null) {
+      INSTANCE.telemetry.disableTelemetrySession();
+      INSTANCE.telemetry = null;
+    }
+
+    // initialize components dependent on a token
+    if (isAccessTokenValid(accessToken)) {
+      initializeTelemetry();
+      INSTANCE.accounts = new AccountsManager();
+    } else {
+      INSTANCE.accounts = null;
+    }
+    */
     FileSource.getInstance(getApplicationContext()).setAccessToken(accessToken);
   }
+
+//  mappy modif : no accounts
+  /**
+   * Returns a SKU token, refreshed if necessary. This method is meant for internal SDK
+   * usage only.
+   *
+   * @return the SKU token
+   */
+/*
+  public static String getSkuToken() {
+    if (INSTANCE.accounts == null) {
+      throw new MapboxConfigurationException(
+        "A valid access token parameter is required when using a Mapbox service."
+          + "\nPlease see https://www.mapbox.com/help/create-api-access-token/ to learn how to create one."
+          + "\nMore information in this guide https://www.mapbox.com/help/first-steps-android-sdk/#access-tokens."
+          + "Currently provided token is: " + INSTANCE.accessToken);
+    }
+    return INSTANCE.accounts.getSkuToken();
+  }
+*/
 
   /**
    * Application context

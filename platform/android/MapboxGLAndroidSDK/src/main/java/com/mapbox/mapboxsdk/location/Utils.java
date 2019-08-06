@@ -79,11 +79,11 @@ public final class Utils {
   }
 
 //  mappy modif : dead code for us
-//  /**
-//   * We need to ensure that the radius of any {@link GradientDrawable} is greater than 0 for API levels < 21.
-//   *
-//   * @see <a href=https://github.com/mapbox/mapbox-gl-native/issues/15026>mapbox-gl-native-#15026</a>
-//   */
+  /**
+   * We need to ensure that the radius of any {@link GradientDrawable} is greater than 0 for API levels < 21.
+   *
+   * @see <a href=https://github.com/mapbox/mapbox-gl-native/issues/15026>mapbox-gl-native-#15026</a>
+   */
 /*
   private static void ensureShadowGradientRadius(Drawable drawable) {
     if (drawable instanceof GradientDrawable) {

@@ -73,9 +73,10 @@ bool RenderFillLayer::hasCrossfade() const {
 }
 
 void RenderFillLayer::render(PaintParameters& parameters) {
+    assert(renderTiles);
     if (unevaluated.get<FillPattern>().isUndefined()) {
         parameters.renderTileClippingMasks(renderTiles);
-        for (const RenderTile& tile : renderTiles) {
+        for (const RenderTile& tile : *renderTiles) {
             const LayerRenderData* renderData = getRenderDataForPass(tile, parameters.pass);
             if (!renderData) {
                 continue;
@@ -161,7 +162,7 @@ void RenderFillLayer::render(PaintParameters& parameters) {
 
         parameters.renderTileClippingMasks(renderTiles);
 
-        for (const RenderTile& tile : renderTiles) {
+        for (const RenderTile& tile : *renderTiles) {
             const LayerRenderData* renderData = getRenderDataForPass(tile, parameters.pass);
             if (!renderData) {
                 continue;

@@ -55,11 +55,11 @@
 #import "MGLUserLocation_Private.h"
 #import "MGLAnnotationImage_Private.h"
 #import "MGLAnnotationView_Private.h"
+#import "MGLCompassButton_Private.h"
 #import "MGLScaleBar.h"
 #import "MGLStyle_Private.h"
 #import "MGLStyleLayer_Private.h"
 #import "MGLMapboxEvents.h"
-#import "MMEConstants.h"
 #import "MGLSDKUpdateChecker.h"
 #import "MGLCompactCalloutView.h"
 #import "MGLAnnotationContainerView.h"
@@ -68,6 +68,7 @@
 #import "MGLMapAccessibilityElement.h"
 #import "MGLLocationManager_Private.h"
 #import "MGLLoggingConfiguration_Private.h"
+#import "MMEConstants.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -86,7 +87,6 @@ const MGLMapViewPreferredFramesPerSecond MGLMapViewPreferredFramesPerSecondMaxim
 
 const MGLExceptionName MGLMissingLocationServicesUsageDescriptionException = @"MGLMissingLocationServicesUsageDescriptionException";
 const MGLExceptionName MGLUserLocationAnnotationTypeException = @"MGLUserLocationAnnotationTypeException";
-const MGLExceptionName MGLResourceNotFoundException = @"MGLResourceNotFoundException";
 const MGLExceptionName MGLUnderlyingMapUnavailableException = @"MGLUnderlyingMapUnavailableException";
 
 const CGPoint MGLOrnamentDefaultPositionOffset = CGPointMake(8, 8);
@@ -197,7 +197,7 @@ public:
 
 @property (nonatomic) NSMutableArray<NSLayoutConstraint *> *scaleBarConstraints;
 @property (nonatomic, readwrite) MGLScaleBar *scaleBar;
-@property (nonatomic, readwrite) UIImageView *compassView;
+@property (nonatomic, readwrite) MGLCompassButton *compassView;
 @property (nonatomic) NSMutableArray<NSLayoutConstraint *> *compassViewConstraints;
 @property (nonatomic, readwrite) UIImageView *logoView;
 @property (nonatomic) NSMutableArray<NSLayoutConstraint *> *logoViewConstraints;
@@ -308,7 +308,6 @@ public:
     BOOL _delegateHasFillColorsForShapeAnnotations;
     BOOL _delegateHasLineWidthsForShapeAnnotations;
 
-    MGLCompassDirectionFormatter *_accessibilityCompassFormatter;
     NSArray<id <MGLFeature>> *_visiblePlaceFeatures;
     NSArray<id <MGLFeature>> *_visibleRoadFeatures;
     NSMutableSet<MGLFeatureAccessibilityElement *> *_featureAccessibilityElements;
@@ -436,8 +435,6 @@ public:
 //    self.isAccessibilityElement = YES;
     self.accessibilityLabel = NSLocalizedStringWithDefaultValue(@"MAP_A11Y_LABEL", nil, nil, @"Map", @"Accessibility label");
     self.accessibilityTraits = UIAccessibilityTraitAllowsDirectInteraction | UIAccessibilityTraitAdjustable;
-    _accessibilityCompassFormatter = [[MGLCompassDirectionFormatter alloc] init];
-    _accessibilityCompassFormatter.unitStyle = NSFormattingUnitStyleLong;
     self.backgroundColor = [UIColor clearColor];
     self.clipsToBounds = YES;
     if (@available(iOS 11.0, *)) { self.accessibilityIgnoresInvertColors = YES; }
@@ -510,7 +507,7 @@ public:
 
     // setup logo
     //
-    UIImage *logo = [MGLMapView resourceImageNamed:@"mapbox"];
+    UIImage *logo = [UIImage mgl_resourceImageNamed:@"mapbox"];
     _logoView = [[UIImageView alloc] initWithImage:logo];
     _logoView.accessibilityTraits = UIAccessibilityTraitStaticText;
     _logoView.accessibilityLabel = NSLocalizedStringWithDefaultValue(@"LOGO_A11Y_LABEL", nil, nil, @"Mapbox", @"Accessibility label");
@@ -538,14 +535,7 @@ public:
 
     // setup compass
     //
-    _compassView = [[UIImageView alloc] initWithImage:self.compassImage];
-    _compassView.alpha = 0;
-    _compassView.userInteractionEnabled = YES;
-    [_compassView addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleCompassTapGesture:)]];
-    _compassView.accessibilityTraits = UIAccessibilityTraitButton;
-    _compassView.accessibilityLabel = NSLocalizedStringWithDefaultValue(@"COMPASS_A11Y_LABEL", nil, nil, @"Compass", @"Accessibility label");
-    _compassView.accessibilityHint = NSLocalizedStringWithDefaultValue(@"COMPASS_A11Y_HINT", nil, nil, @"Rotates the map to face due north", @"Accessibility hint");
-    _compassView.translatesAutoresizingMaskIntoConstraints = NO;
+    _compassView = [MGLCompassButton compassButtonWithMapView:self];
     [self addSubview:_compassView];
     _compassViewConstraints = [NSMutableArray array];
     _compassViewPosition = MGLOrnamentPositionTopRight;
@@ -662,26 +652,6 @@ public:
     CGSize size = CGSizeMake(MAX(self.bounds.size.width, 64), MAX(self.bounds.size.height, 64));
     return { static_cast<uint32_t>(size.width),
              static_cast<uint32_t>(size.height) };
-}
-
-- (UIImage *)compassImage
-{
-    UIImage *scaleImage = [MGLMapView resourceImageNamed:@"Compass"];
-    UIGraphicsBeginImageContextWithOptions(scaleImage.size, NO, [UIScreen mainScreen].scale);
-    [scaleImage drawInRect:{ CGPointZero, scaleImage.size }];
-
-    NSAttributedString *north = [[NSAttributedString alloc] initWithString:NSLocalizedStringWithDefaultValue(@"COMPASS_NORTH", nil, nil, @"N", @"Compass abbreviation for north") attributes:@{
-        NSFontAttributeName: [UIFont systemFontOfSize:11 weight:UIFontWeightUltraLight],
-        NSForegroundColorAttributeName: [UIColor whiteColor],
-    }];
-    CGRect stringRect = CGRectMake((scaleImage.size.width - north.size.width) / 2,
-                                   scaleImage.size.height * 0.435,
-                                   north.size.width, north.size.height);
-    [north drawInRect:stringRect];
-
-    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    return image;
 }
 
 - (void)reachabilityChanged:(NSNotification *)notification
@@ -1015,28 +985,35 @@ public:
 
 - (void)setContentInset:(UIEdgeInsets)contentInset
 {
-    MGLLogDebug(@"Setting contentInset: %@", NSStringFromUIEdgeInsets(contentInset));
-    [self setContentInset:contentInset animated:NO];
+    [self setContentInset:contentInset animated:NO completionHandler:nil];
 }
 
 - (void)setContentInset:(UIEdgeInsets)contentInset animated:(BOOL)animated
 {
+    [self setContentInset:contentInset animated:animated completionHandler:nil];
+}
+
+- (void)setContentInset:(UIEdgeInsets)contentInset animated:(BOOL)animated completionHandler:(nullable void (^)(void))completion
+{
     MGLLogDebug(@"Setting contentInset: %@ animated:", NSStringFromUIEdgeInsets(contentInset), MGLStringFromBOOL(animated));
     if (UIEdgeInsetsEqualToEdgeInsets(contentInset, self.contentInset))
     {
+        if (completion) {
+            completion();
+        }
         return;
     }
 
     if (self.userTrackingMode == MGLUserTrackingModeNone)
     {
         // Don’t call -setCenterCoordinate:, which resets the user tracking mode.
-        [self _setCenterCoordinate:self.centerCoordinate edgePadding:contentInset zoomLevel:self.zoomLevel direction:self.direction duration:animated ? MGLAnimationDuration : 0 animationTimingFunction:nil completionHandler:nil];
+        [self _setCenterCoordinate:self.centerCoordinate edgePadding:contentInset zoomLevel:self.zoomLevel direction:self.direction duration:animated ? MGLAnimationDuration : 0 animationTimingFunction:nil completionHandler:completion];
         _contentInset = contentInset;
     }
     else
     {
         _contentInset = contentInset;
-        [self didUpdateLocationWithUserTrackingAnimated:animated];
+        [self didUpdateLocationWithUserTrackingAnimated:animated completionHandler:completion];
     }
 
     // Compass, logo and attribution button constraints needs to be updated.z
@@ -1515,19 +1492,6 @@ public:
 
 #pragma mark - Gestures -
 
-- (void)handleCompassTapGesture:(__unused id)sender
-{
-    self.cameraChangeReasonBitmask |= MGLCameraChangeReasonResetNorth;
-
-    [self resetNorthAnimated:YES];
-
-    if (self.userTrackingMode == MGLUserTrackingModeFollowWithHeading ||
-        self.userTrackingMode == MGLUserTrackingModeFollowWithCourse)
-    {
-        self.userTrackingMode = MGLUserTrackingModeFollow;
-    }
-}
-
 - (void)touchesBegan:(__unused NSSet<UITouch *> *)touches withEvent:(__unused UIEvent *)event
 {
     if (!self.zoomEnabled && !self.pitchEnabled && !self.rotateEnabled && !self.scrollEnabled)
@@ -1538,7 +1502,7 @@ public:
     self.mbglMap.setGestureInProgress(false);
     if (self.userTrackingState == MGLUserTrackingStateBegan)
     {
-        [self setUserTrackingMode:MGLUserTrackingModeNone animated:NO];
+        [self setUserTrackingMode:MGLUserTrackingModeNone animated:NO completionHandler:nil];
     }
     
     [self cancelTransitions];
@@ -1869,7 +1833,7 @@ public:
     {
         CGPoint calloutPoint = [singleTap locationInView:self];
         CGRect positionRect = [self positioningRectForAnnotation:annotation defaultCalloutPoint:calloutPoint];
-        [self selectAnnotation:annotation moveIntoView:YES animateSelection:YES calloutPositioningRect:positionRect];
+        [self selectAnnotation:annotation moveIntoView:YES animateSelection:YES calloutPositioningRect:positionRect completionHandler:nil];
     }
     else if (self.selectedAnnotation)
     {
@@ -2058,6 +2022,12 @@ public:
 
     if (twoFingerDrag.state == UIGestureRecognizerStateBegan || twoFingerDrag.state == UIGestureRecognizerStateChanged)
     {
+        if (twoFingerDrag.numberOfTouches != 2)
+        {
+            twoFingerDrag.state = UIGestureRecognizerStateEnded;
+            return;
+        }
+
         CGFloat gestureDistance = CGPoint([twoFingerDrag translationInView:twoFingerDrag.view]).y;
         CGFloat slowdown = 2.0;
 
@@ -2530,6 +2500,8 @@ public:
 
 - (void)resetNorthAnimated:(BOOL)animated
 {
+    self.cameraChangeReasonBitmask |= MGLCameraChangeReasonResetNorth;
+
     [self setDirection:0 animated:animated];
 }
 
@@ -3309,17 +3281,20 @@ public:
 
 - (void)setVisibleCoordinateBounds:(MGLCoordinateBounds)bounds
 {
-    MGLLogDebug(@"Setting visibleCoordinateBounds: %@", MGLStringFromCoordinateBounds(bounds));
     [self setVisibleCoordinateBounds:bounds animated:NO];
 }
 
 - (void)setVisibleCoordinateBounds:(MGLCoordinateBounds)bounds animated:(BOOL)animated
 {
-    MGLLogDebug(@"Setting visibleCoordinateBounds: %@ animated: %@", MGLStringFromCoordinateBounds(bounds), MGLStringFromBOOL(animated));
-    [self setVisibleCoordinateBounds:bounds edgePadding:UIEdgeInsetsZero animated:animated];
+    [self setVisibleCoordinateBounds:bounds edgePadding:UIEdgeInsetsZero animated:animated completionHandler:nil];
 }
 
 - (void)setVisibleCoordinateBounds:(MGLCoordinateBounds)bounds edgePadding:(UIEdgeInsets)insets animated:(BOOL)animated
+{
+    [self setVisibleCoordinateBounds:bounds edgePadding:insets animated:animated completionHandler:nil];
+}
+
+- (void)setVisibleCoordinateBounds:(MGLCoordinateBounds)bounds edgePadding:(UIEdgeInsets)insets animated:(BOOL)animated completionHandler:(nullable void (^)(void))completion
 {
     MGLLogDebug(@"Setting visibleCoordinateBounds: %@ edgePadding: %@ animated: %@",
                 MGLStringFromCoordinateBounds(bounds),
@@ -3334,27 +3309,10 @@ public:
     [self setVisibleCoordinates:coordinates
                           count:sizeof(coordinates) / sizeof(coordinates[0])
                     edgePadding:insets
-                       animated:animated];
-}
-
-- (void)setVisibleCoordinateBounds:(MGLCoordinateBounds)bounds edgePadding:(UIEdgeInsets)insets direction:(CLLocationDirection)direction animated:(BOOL)animated
-{
-    MGLLogDebug(@"Setting visibleCoordinateBounds: %@ edgePadding: %@ direction: %f animated: %@",
-                MGLStringFromCoordinateBounds(bounds),
-                NSStringFromUIEdgeInsets(insets),
-                direction,
-                MGLStringFromBOOL(animated));
-    CLLocationCoordinate2D coordinates[] = {
-        {bounds.ne.latitude, bounds.sw.longitude},
-        bounds.sw,
-        {bounds.sw.latitude, bounds.ne.longitude},
-        bounds.ne,
-    };
-    [self setVisibleCoordinates:coordinates
-                          count:sizeof(coordinates) / sizeof(coordinates[0])
-                    edgePadding:insets
-                      direction:direction
-                       animated:animated];
+                      direction:self.direction
+                       duration:animated ? MGLAnimationDuration : 0
+        animationTimingFunction:nil
+              completionHandler:completion];
 }
 
 - (void)setVisibleCoordinates:(const CLLocationCoordinate2D *)coordinates count:(NSUInteger)count edgePadding:(UIEdgeInsets)insets animated:(BOOL)animated
@@ -3363,17 +3321,7 @@ public:
                 count,
                 NSStringFromUIEdgeInsets(insets),
                 MGLStringFromBOOL(animated));
-    [self setVisibleCoordinates:coordinates count:count edgePadding:insets direction:self.direction animated:animated];
-}
-
-- (void)setVisibleCoordinates:(const CLLocationCoordinate2D *)coordinates count:(NSUInteger)count edgePadding:(UIEdgeInsets)insets direction:(CLLocationDirection)direction animated:(BOOL)animated
-{
-    MGLLogDebug(@"Setting: %lu coordinates edgePadding: %@ direction: %f animated: %@",
-                count,
-                NSStringFromUIEdgeInsets(insets),
-                direction,
-                MGLStringFromBOOL(animated));
-    [self setVisibleCoordinates:coordinates count:count edgePadding:insets direction:direction duration:animated ? MGLAnimationDuration : 0 animationTimingFunction:nil];
+    [self setVisibleCoordinates:coordinates count:count edgePadding:insets direction:self.direction duration:animated ? MGLAnimationDuration : 0 animationTimingFunction:nil];
 }
 
 - (void)setVisibleCoordinates:(const CLLocationCoordinate2D *)coordinates count:(NSUInteger)count edgePadding:(UIEdgeInsets)insets direction:(CLLocationDirection)direction duration:(NSTimeInterval)duration animationTimingFunction:(nullable CAMediaTimingFunction *)function {
@@ -3474,7 +3422,8 @@ public:
     MGLLogDebug(@"Setting direction: %f animated: %@", direction, MGLStringFromBOOL(animated));
     if ( ! animated && ! self.rotationAllowed) return;
 
-    if (self.userTrackingMode == MGLUserTrackingModeFollowWithHeading)
+    if (self.userTrackingMode == MGLUserTrackingModeFollowWithHeading ||
+        self.userTrackingMode == MGLUserTrackingModeFollowWithCourse)
     {
         self.userTrackingMode = MGLUserTrackingModeFollow;
     }
@@ -4184,7 +4133,7 @@ public:
 /// rect therefore excludes the bottom half.
 - (MGLAnnotationImage *)defaultAnnotationImage
 {
-    UIImage *image = [MGLMapView resourceImageNamed:MGLDefaultStyleMarkerSymbolName];
+    UIImage *image = [UIImage mgl_resourceImageNamed:MGLDefaultStyleMarkerSymbolName];
     image = [image imageWithAlignmentRectInsets:
              UIEdgeInsetsMake(0, 0, image.size.height / 2, 0)];
     MGLAnnotationImage *annotationImage = [MGLAnnotationImage annotationImageWithImage:image
@@ -4675,7 +4624,6 @@ public:
 
 - (void)setSelectedAnnotations:(NSArray<id <MGLAnnotation>> *)selectedAnnotations
 {
-    MGLLogDebug(@"Selecting: %lu annotations", selectedAnnotations.count);
     if ( ! selectedAnnotations.count) return;
 
     id <MGLAnnotation> firstAnnotation = selectedAnnotations[0];
@@ -4684,22 +4632,27 @@ public:
 
     if ([firstAnnotation isKindOfClass:[MGLMultiPoint class]]) return;
 
-    [self selectAnnotation:firstAnnotation animated:YES];
+    [self selectAnnotation:firstAnnotation animated:YES completionHandler:nil];
 }
 
 - (void)selectAnnotation:(id <MGLAnnotation>)annotation animated:(BOOL)animated
 {
-    [self selectAnnotation:annotation moveIntoView:animated animateSelection:animated];
+    [self selectAnnotation:annotation animated:animated completionHandler:nil];
 }
 
-- (void)selectAnnotation:(id <MGLAnnotation>)annotation moveIntoView:(BOOL)moveIntoView animateSelection:(BOOL)animateSelection
+- (void)selectAnnotation:(id <MGLAnnotation>)annotation animated:(BOOL)animated completionHandler:(nullable void (^)(void))completion
+{
+    [self selectAnnotation:annotation moveIntoView:animated animateSelection:animated completionHandler:completion];
+}
+
+- (void)selectAnnotation:(id <MGLAnnotation>)annotation moveIntoView:(BOOL)moveIntoView animateSelection:(BOOL)animateSelection completionHandler:(nullable void (^)(void))completion
 {
     MGLLogDebug(@"Selecting annotation: %@ moveIntoView: %@ animateSelection: %@", annotation, MGLStringFromBOOL(moveIntoView), MGLStringFromBOOL(animateSelection));
     CGRect positioningRect = [self positioningRectForAnnotation:annotation defaultCalloutPoint:CGPointZero];
-    [self selectAnnotation:annotation moveIntoView:moveIntoView animateSelection:animateSelection calloutPositioningRect:positioningRect];
+    [self selectAnnotation:annotation moveIntoView:moveIntoView animateSelection:animateSelection calloutPositioningRect:positioningRect completionHandler:completion];
 }
 
-- (void)selectAnnotation:(id <MGLAnnotation>)annotation moveIntoView:(BOOL)moveIntoView animateSelection:(BOOL)animateSelection calloutPositioningRect:(CGRect)calloutPositioningRect
+- (void)selectAnnotation:(id <MGLAnnotation>)annotation moveIntoView:(BOOL)moveIntoView animateSelection:(BOOL)animateSelection calloutPositioningRect:(CGRect)calloutPositioningRect completionHandler:(nullable void (^)(void))completion
 {
     if ( ! annotation) return;
 
@@ -4909,7 +4862,11 @@ public:
     {
         CGPoint center = CGPointMake(CGRectGetMidX(constrainedRect), CGRectGetMidY(constrainedRect));
         CLLocationCoordinate2D centerCoord = [self convertPoint:center toCoordinateFromView:self];
-        [self setCenterCoordinate:centerCoord animated:animateSelection];
+        [self setCenterCoordinate:centerCoord zoomLevel:self.zoomLevel direction:self.direction animated:animateSelection completionHandler:completion];
+    }
+    else if (completion)
+    {
+        completion();
     }
 }
 
@@ -5095,20 +5052,30 @@ public:
 
 - (void)showAnnotations:(NSArray<id <MGLAnnotation>> *)annotations animated:(BOOL)animated
 {
-    MGLLogDebug(@"Showing: %lu annotations animated: %@", annotations.count, MGLStringFromBOOL(animated));
     CGFloat maximumPadding = 100;
     CGFloat yPadding = (self.frame.size.height / 5 <= maximumPadding) ? (self.frame.size.height / 5) : maximumPadding;
     CGFloat xPadding = (self.frame.size.width / 5 <= maximumPadding) ? (self.frame.size.width / 5) : maximumPadding;
 
     UIEdgeInsets edgeInsets = UIEdgeInsetsMake(yPadding, xPadding, yPadding, xPadding);
 
-    [self showAnnotations:annotations edgePadding:edgeInsets animated:animated];
+    [self showAnnotations:annotations edgePadding:edgeInsets animated:animated completionHandler:nil];
 }
 
 - (void)showAnnotations:(NSArray<id <MGLAnnotation>> *)annotations edgePadding:(UIEdgeInsets)insets animated:(BOOL)animated
 {
+    [self showAnnotations:annotations edgePadding:insets animated:animated completionHandler:nil];
+}
+
+- (void)showAnnotations:(NSArray<id <MGLAnnotation>> *)annotations edgePadding:(UIEdgeInsets)insets animated:(BOOL)animated completionHandler:(nullable void (^)(void))completion
+{
     MGLLogDebug(@"Showing: %lu annotations edgePadding: %@ animated: %@", annotations.count, NSStringFromUIEdgeInsets(insets), MGLStringFromBOOL(animated));
-    if ( ! annotations || ! annotations.count) return;
+    if ( ! annotations.count)
+    {
+        if (completion) {
+            completion();
+        }
+        return;
+    }
 
     mbgl::LatLngBounds bounds = mbgl::LatLngBounds::empty();
 
@@ -5126,7 +5093,8 @@ public:
 
     [self setVisibleCoordinateBounds:MGLCoordinateBoundsFromLatLngBounds(bounds)
                          edgePadding:insets
-                            animated:animated];
+                            animated:animated
+                   completionHandler:completion];
 }
 
 
@@ -5289,7 +5257,7 @@ public:
             [self.delegate mapViewDidStopLocatingUser:self];
         }
 
-        [self setUserTrackingMode:MGLUserTrackingModeNone animated:YES];
+        [self setUserTrackingMode:MGLUserTrackingModeNone animated:YES completionHandler:nil];
 
         [self.userLocationAnnotationView removeFromSuperview];
         self.userLocationAnnotationView = nil;
@@ -5329,14 +5297,25 @@ public:
 
 - (void)setUserTrackingMode:(MGLUserTrackingMode)mode
 {
-    MGLLogDebug(@"Setting userTrackingMode: %lu", mode);
-    [self setUserTrackingMode:mode animated:YES];
+    [self setUserTrackingMode:mode animated:YES completionHandler:nil];
 }
 
 - (void)setUserTrackingMode:(MGLUserTrackingMode)mode animated:(BOOL)animated
 {
+    [self setUserTrackingMode:mode animated:animated completionHandler:nil];
+}
+
+- (void)setUserTrackingMode:(MGLUserTrackingMode)mode animated:(BOOL)animated completionHandler:(nullable void (^)(void))completion
+{
     MGLLogDebug(@"Setting userTrackingMode: %lu animated: %@", mode, MGLStringFromBOOL(animated));
-    if (mode == _userTrackingMode) return;
+    if (mode == _userTrackingMode)
+    {
+        if (completion)
+        {
+            completion();
+        }
+        return;
+    }
 
     MGLUserTrackingMode oldMode = _userTrackingMode;
     [self willChangeValueForKey:@"userTrackingMode"];
@@ -5381,13 +5360,14 @@ public:
         }
     }
 
-    if (_userTrackingMode != MGLUserTrackingModeNone)
+    CLLocation *location;
+    if (_userTrackingMode != MGLUserTrackingModeNone && (location = self.userLocation.location) && self.userLocationAnnotationView)
     {
-        CLLocation *location = self.userLocation.location;
-        if (location && self.userLocationAnnotationView)
-        {
-            [self locationManager:self.locationManager didUpdateLocations:@[location] animated:animated];
-        }
+        [self locationManager:self.locationManager didUpdateLocations:@[location] animated:animated completionHandler:completion];
+    }
+    else if (completion)
+    {
+        completion();
     }
 
     [self validateUserHeadingUpdating];
@@ -5411,20 +5391,25 @@ public:
         CLLocation *location = self.userLocation.location;
         if (location)
         {
-            [self locationManager:self.locationManager didUpdateLocations:@[location] animated:animated];
+            [self locationManager:self.locationManager didUpdateLocations:@[location] animated:animated completionHandler:nil];
         }
     }
 }
 
 - (void)setTargetCoordinate:(CLLocationCoordinate2D)targetCoordinate
 {
-    MGLLogDebug(@"Setting targetCoordinate: %@", MGLStringFromCLLocationCoordinate2D(targetCoordinate));
-    [self setTargetCoordinate:targetCoordinate animated:YES];
+    [self setTargetCoordinate:targetCoordinate animated:YES completionHandler:nil];
 }
 
 - (void)setTargetCoordinate:(CLLocationCoordinate2D)targetCoordinate animated:(BOOL)animated
 {
+    [self setTargetCoordinate:targetCoordinate animated:animated completionHandler:nil];
+}
+
+- (void)setTargetCoordinate:(CLLocationCoordinate2D)targetCoordinate animated:(BOOL)animated completionHandler:(nullable void (^)(void))completion
+{
     MGLLogDebug(@"Setting targetCoordinate: %@ animated: %@", MGLStringFromCLLocationCoordinate2D(targetCoordinate), MGLStringFromBOOL(animated));
+    BOOL isSynchronous = YES;
     if (targetCoordinate.latitude != self.targetCoordinate.latitude
         || targetCoordinate.longitude != self.targetCoordinate.longitude)
     {
@@ -5433,12 +5418,16 @@ public:
         {
             self.userTrackingState = MGLUserTrackingStatePossible;
 
-            CLLocation *location = self.userLocation.location;
-            if (location)
+            if (CLLocation *location = self.userLocation.location)
             {
-                [self locationManager:self.locationManager didUpdateLocations:@[location] animated:animated];
+                isSynchronous = NO;
+                [self locationManager:self.locationManager didUpdateLocations:@[location] animated:animated completionHandler:completion];
             }
         }
+    }
+    if (isSynchronous && completion)
+    {
+        completion();
     }
 }
 
@@ -5471,10 +5460,10 @@ public:
 
 - (void)locationManager:(id<MGLLocationManager>)manager didUpdateLocations:(NSArray *)locations
 {
-    [self locationManager:manager didUpdateLocations:locations animated:YES];
+    [self locationManager:manager didUpdateLocations:locations animated:YES completionHandler:nil];
 }
 
-- (void)locationManager:(__unused id<MGLLocationManager>)manager didUpdateLocations:(NSArray *)locations animated:(BOOL)animated
+- (void)locationManager:(__unused id<MGLLocationManager>)manager didUpdateLocations:(NSArray *)locations animated:(BOOL)animated completionHandler:(nullable void (^)(void))completion
 {
     CLLocation *oldLocation = self.userLocation.location;
     CLLocation *newLocation = locations.lastObject;
@@ -5496,7 +5485,7 @@ public:
         }
     }
 
-    [self didUpdateLocationWithUserTrackingAnimated:animated];
+    [self didUpdateLocationWithUserTrackingAnimated:animated completionHandler:completion];
 
     NSTimeInterval duration = MGLAnimationDuration;
     if (oldLocation && ! CGPointEqualToPoint(self.userLocationAnnotationView.center, CGPointZero))
@@ -5513,13 +5502,17 @@ public:
     }
 }
 
-- (void)didUpdateLocationWithUserTrackingAnimated:(BOOL)animated
+- (void)didUpdateLocationWithUserTrackingAnimated:(BOOL)animated completionHandler:(nullable void (^)(void))completion
 {
     CLLocation *location = self.userLocation.location;
     if ( ! _showsUserLocation || ! location
         || ! CLLocationCoordinate2DIsValid(location.coordinate)
         || self.userTrackingMode == MGLUserTrackingModeNone)
     {
+        if (completion)
+        {
+            completion();
+        }
         return;
     }
 
@@ -5530,6 +5523,10 @@ public:
     if (std::abs(currentPoint.x - correctPoint.x) <= 1.0 && std::abs(currentPoint.y - correctPoint.y) <= 1.0
         && self.userTrackingMode != MGLUserTrackingModeFollowWithCourse)
     {
+        if (completion)
+        {
+            completion();
+        }
         return;
     }
 
@@ -5539,25 +5536,25 @@ public:
         if (self.userTrackingState != MGLUserTrackingStateBegan)
         {
             // Keep both the user and the destination in view.
-            [self didUpdateLocationWithTargetAnimated:animated];
+            [self didUpdateLocationWithTargetAnimated:animated completionHandler:completion];
         }
     }
     else if (self.userTrackingState == MGLUserTrackingStatePossible)
     {
         // The first location update is often a great distance away from the
         // current viewport, so fly there to provide additional context.
-        [self didUpdateLocationSignificantlyAnimated:animated];
+        [self didUpdateLocationSignificantlyAnimated:animated completionHandler:completion];
     }
     else if (self.userTrackingState == MGLUserTrackingStateChanged)
     {
         // Subsequent updates get a more subtle animation.
-        [self didUpdateLocationIncrementallyAnimated:animated];
+        [self didUpdateLocationIncrementallyAnimated:animated completionHandler:completion];
     }
     [self unrotateIfNeededAnimated:YES];
 }
 
 /// Changes the viewport based on an incremental location update.
-- (void)didUpdateLocationIncrementallyAnimated:(BOOL)animated
+- (void)didUpdateLocationIncrementallyAnimated:(BOOL)animated completionHandler:(nullable void (^)(void))completion
 {
     [self _setCenterCoordinate:self.userLocation.location.coordinate
                    edgePadding:self.edgePaddingForFollowing
@@ -5565,12 +5562,12 @@ public:
                      direction:self.directionByFollowingWithCourse
                       duration:animated ? MGLUserLocationAnimationDuration : 0
        animationTimingFunction:[CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear]
-             completionHandler:nil];
+             completionHandler:completion];
 }
 
 /// Changes the viewport based on a significant location update, such as the
 /// first location update.
-- (void)didUpdateLocationSignificantlyAnimated:(BOOL)animated
+- (void)didUpdateLocationSignificantlyAnimated:(BOOL)animated completionHandler:(nullable void (^)(void))completion
 {
     
     if (_distanceFromOldUserLocation >= MGLDistanceThresholdForCameraPause) {
@@ -5602,24 +5599,32 @@ public:
         {
             strongSelf.userTrackingState = MGLUserTrackingStateChanged;
         }
+        if (completion)
+        {
+            completion();
+        }
     }];
 }
 
 /// Changes the viewport based on a location update in the presence of a target
 /// coordinate that must also be displayed on the map concurrently.
-- (void)didUpdateLocationWithTargetAnimated:(BOOL)animated
+- (void)didUpdateLocationWithTargetAnimated:(BOOL)animated completionHandler:(nullable void (^)(void))completion
 {
     BOOL firstUpdate = self.userTrackingState == MGLUserTrackingStatePossible;
-    void (^completion)(void);
+    void (^animationCompletion)(void);
     if (animated && firstUpdate)
     {
         self.userTrackingState = MGLUserTrackingStateBegan;
         __weak MGLMapView *weakSelf = self;
-        completion = ^{
+        animationCompletion = ^{
             MGLMapView *strongSelf = weakSelf;
             if (strongSelf.userTrackingState == MGLUserTrackingStateBegan)
             {
                 strongSelf.userTrackingState = MGLUserTrackingStateChanged;
+            }
+            if (completion)
+            {
+                completion();
             }
         };
     }
@@ -5644,7 +5649,7 @@ public:
                        direction:self.directionByFollowingWithCourse
                         duration:animated ? MGLUserLocationAnimationDuration : 0
          animationTimingFunction:[CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear]
-               completionHandler:completion];
+               completionHandler:animationCompletion];
 }
 
 /// Returns the edge padding to apply when moving the map to a tracked location.
@@ -6185,6 +6190,14 @@ public:
     }
 }
 
+- (BOOL)shouldRemoveStyleImage:(NSString *)imageName {
+    if ([self.delegate respondsToSelector:@selector(mapView:shouldRemoveStyleImage:)]) {
+        return [self.delegate mapView:self shouldRemoveStyleImage:imageName];
+    }
+    
+    return YES;
+}
+
 - (void)updateUserLocationAnnotationView
 {
     [self updateUserLocationAnnotationViewAnimatedWithDuration:0];
@@ -6490,35 +6503,7 @@ public:
 
 - (void)updateCompass
 {
-    CLLocationDirection direction = self.direction;
-    CLLocationDirection plateDirection = mbgl::util::wrap(-direction, 0., 360.);
-    self.compassView.transform = CGAffineTransformMakeRotation(MGLRadiansFromDegrees(plateDirection));
-
-    self.compassView.isAccessibilityElement = direction > 0;
-    self.compassView.accessibilityValue = [_accessibilityCompassFormatter stringFromDirection:direction];
-
-    if (direction > 0 && self.compassView.alpha < 1)
-    {
-        [UIView animateWithDuration:MGLAnimationDuration
-                              delay:0
-                            options:UIViewAnimationOptionBeginFromCurrentState
-                         animations:^
-                         {
-                             self.compassView.alpha = 1;
-                         }
-                         completion:nil];
-    }
-    else if (direction == 0 && self.compassView.alpha > 0)
-    {
-        [UIView animateWithDuration:MGLAnimationDuration
-                              delay:0
-                            options:UIViewAnimationOptionBeginFromCurrentState
-                         animations:^
-                         {
-                             self.compassView.alpha = 0;
-                         }
-                         completion:nil];
-    }
+    [self.compassView updateCompass];
 }
 
 - (void)updateScaleBar
@@ -6534,21 +6519,6 @@ public:
             [self installScaleBarConstraints];
         }
     }
-}
-
-+ (UIImage *)resourceImageNamed:(NSString *)imageName
-{
-    UIImage *image = [UIImage imageNamed:imageName
-                                inBundle:[NSBundle mgl_frameworkBundle]
-           compatibleWithTraitCollection:nil];
-
-    if ( ! image)
-    {
-        [NSException raise:MGLResourceNotFoundException format:
-         @"The resource named “%@” could not be found in the Mapbox framework bundle.", imageName];
-    }
-
-    return image;
 }
 
 - (BOOL)isFullyLoaded

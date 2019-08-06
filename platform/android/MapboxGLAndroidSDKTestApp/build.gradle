@@ -85,6 +85,7 @@ dependencies {
     androidTestImplementation dependenciesList.testEspressoIntents
     androidTestImplementation dependenciesList.testEspressoContrib
     androidTestImplementation dependenciesList.testUiAutomator
+    androidTestImplementation dependenciesList.appCenter
 }
 
 apply from: "../gradle/gradle-make.gradle"

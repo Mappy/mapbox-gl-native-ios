@@ -37,7 +37,8 @@ void RenderBackgroundLayer::evaluate(const PropertyEvaluationParameters &paramet
         parameters.getCrossfadeParameters(),
         unevaluated.evaluate(parameters));
 
-    passes = properties->evaluated.get<style::BackgroundOpacity>() > 0 ? RenderPass::Translucent : RenderPass::None;
+    passes = properties->evaluated.get<style::BackgroundOpacity>() > 0 ? RenderPass::Translucent
+                                                                       : RenderPass::None;
     properties->renderPasses = mbgl::underlying_type(passes);
     evaluatedProperties = std::move(properties);
 }
@@ -152,7 +153,7 @@ void addPatternIfNeeded(const std::string& id, const LayerPrepareParameters& par
 } // namespace
 
 void RenderBackgroundLayer::prepare(const LayerPrepareParameters& params) {
-    const auto& evaluated = static_cast<const BackgroundLayerProperties&>(*evaluatedProperties).evaluated;
+    const auto& evaluated = getEvaluated<BackgroundLayerProperties>(evaluatedProperties);
     if (!evaluated.get<BackgroundPattern>().to.empty()) {
         // Ensures that the pattern bitmap gets copied to atlas bitmap. 
         // Atlas bitmap is uploaded to atlas texture in upload.
