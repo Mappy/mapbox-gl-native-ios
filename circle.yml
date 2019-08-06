@@ -539,9 +539,6 @@ jobs:
           name: Initialize vendor submodules
           command: git submodule update --init platform/android/vendor
       - run:
-          name: Android nitpick
-          command: make run-android-nitpick
-      - run:
           name: Check code style
           command: make android-check
       - run:
@@ -912,7 +909,7 @@ jobs:
 # ------------------------------------------------------------------------------
   ios-debug:
     macos:
-      xcode: "10.2.0"
+      xcode: "10.2.1"
     environment:
       BUILDTYPE: Debug
       HOMEBREW_NO_AUTO_UPDATE: 1
@@ -952,7 +949,7 @@ jobs:
 # ------------------------------------------------------------------------------
   ios-sanitize-nightly:
     macos:
-      xcode: "10.2.0"
+      xcode: "10.2.1"
     environment:
       BUILDTYPE: Debug
       HOMEBREW_NO_AUTO_UPDATE: 1
@@ -975,7 +972,7 @@ jobs:
 # ------------------------------------------------------------------------------
   ios-sanitize-address-nightly:
     macos:
-      xcode: "10.2.0"
+      xcode: "10.2.1"
     environment:
       BUILDTYPE: Debug
       HOMEBREW_NO_AUTO_UPDATE: 1
@@ -994,7 +991,7 @@ jobs:
 # ------------------------------------------------------------------------------
   ios-static-analyzer-nightly:
     macos:
-      xcode: "10.2.0"
+      xcode: "10.2.1"
     environment:
       BUILDTYPE: Debug
       HOMEBREW_NO_AUTO_UPDATE: 1
@@ -1013,7 +1010,7 @@ jobs:
 # ------------------------------------------------------------------------------
   ios-release-template:
     macos:
-      xcode: "10.2.0"
+      xcode: "10.2.1"
     environment:
       BUILDTYPE: Release
       HOMEBREW_NO_AUTO_UPDATE: 1
@@ -1053,7 +1050,7 @@ jobs:
 # ------------------------------------------------------------------------------
   ios-release-tag:
     macos:
-      xcode: "10.2.0"
+      xcode: "10.2.1"
     environment:
       BUILDTYPE: Release
       HOMEBREW_NO_AUTO_UPDATE: 1
@@ -1148,7 +1145,7 @@ jobs:
 # ------------------------------------------------------------------------------
   qt5-macos-debug:
     macos:
-      xcode: "9.3.0"
+      xcode: "9.3.1"
     environment:
       BUILDTYPE: Debug
       HOMEBREW_NO_AUTO_UPDATE: 1

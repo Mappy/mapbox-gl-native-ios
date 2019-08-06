@@ -1,6 +1,8 @@
 #include <mbgl/gl/command_encoder.hpp>
+#include <mbgl/gl/upload_pass.hpp>
 #include <mbgl/gl/render_pass.hpp>
 #include <mbgl/gl/context.hpp>
+#include <mbgl/gl/renderable_resource.hpp>
 #include <mbgl/gl/debugging_extension.hpp>
 #include <mbgl/platform/gl_functions.hpp>
 
@@ -14,9 +16,18 @@ CommandEncoder::~CommandEncoder() {
     context.performCleanup();
 }
 
+std::unique_ptr<gfx::UploadPass>
+CommandEncoder::createUploadPass(const char* name) {
+    return std::make_unique<gl::UploadPass>(*this, name);
+}
+
 std::unique_ptr<gfx::RenderPass>
 CommandEncoder::createRenderPass(const char* name, const gfx::RenderPassDescriptor& descriptor) {
     return std::make_unique<gl::RenderPass>(*this, name, descriptor);
+}
+
+void CommandEncoder::present(gfx::Renderable& renderable) {
+    renderable.getResource<gl::RenderableResource>().swap();
 }
 
 void CommandEncoder::pushDebugGroup(const char* name) {

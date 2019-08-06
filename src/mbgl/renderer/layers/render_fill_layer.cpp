@@ -1,6 +1,7 @@
 #include <mbgl/renderer/layers/render_fill_layer.hpp>
 #include <mbgl/renderer/buckets/fill_bucket.hpp>
 #include <mbgl/renderer/render_tile.hpp>
+#include <mbgl/renderer/render_source.hpp>
 #include <mbgl/renderer/paint_parameters.hpp>
 #include <mbgl/renderer/image_manager.hpp>
 #include <mbgl/programs/programs.hpp>
@@ -73,6 +74,7 @@ bool RenderFillLayer::hasCrossfade() const {
 
 void RenderFillLayer::render(PaintParameters& parameters, RenderSource*) {
     if (unevaluated.get<FillPattern>().isUndefined()) {
+        parameters.renderTileClippingMasks(renderTiles);
         for (const RenderTile& tile : renderTiles) {
             const LayerRenderData* renderData = getRenderDataForPass(tile, parameters.pass);
             if (!renderData) {
@@ -115,7 +117,7 @@ void RenderFillLayer::render(PaintParameters& parameters, RenderSource*) {
                     *parameters.renderPass,
                     drawMode,
                     depthMode,
-                    parameters.stencilModeForClipping(tile.clip),
+                    parameters.stencilModeForClipping(tile.id),
                     parameters.colorModeForRenderPass(),
                     gfx::CullFaceMode::disabled(),
                     indexBuffer,
@@ -127,10 +129,10 @@ void RenderFillLayer::render(PaintParameters& parameters, RenderSource*) {
                 );
             };
 
-            // Only draw the fill when it's opaque and we're drawing opaque fragments,
-            // or when it's translucent and we're drawing translucent fragments.
-            if ((evaluated.get<FillColor>().constantOr(Color()).a >= 1.0f
-              && evaluated.get<FillOpacity>().constantOr(0) >= 1.0f) == (parameters.pass == RenderPass::Opaque)) {
+            auto fillRenderPass = (evaluated.get<FillColor>().constantOr(Color()).a >= 1.0f
+                && evaluated.get<FillOpacity>().constantOr(0) >= 1.0f
+                && parameters.currentLayer >= parameters.opaquePassCutoff) ? RenderPass::Opaque : RenderPass::Translucent;
+            if (parameters.pass == fillRenderPass) {
                 draw(parameters.programs.getFillLayerPrograms().fill,
                      gfx::Triangles(),
                      parameters.depthModeForSublayer(1, parameters.pass == RenderPass::Opaque
@@ -156,6 +158,8 @@ void RenderFillLayer::render(PaintParameters& parameters, RenderSource*) {
         if (parameters.pass != RenderPass::Translucent) {
             return;
         }
+
+        parameters.renderTileClippingMasks(renderTiles);
 
         for (const RenderTile& tile : renderTiles) {
             const LayerRenderData* renderData = getRenderDataForPass(tile, parameters.pass);
@@ -209,7 +213,7 @@ void RenderFillLayer::render(PaintParameters& parameters, RenderSource*) {
                     *parameters.renderPass,
                     drawMode,
                     depthMode,
-                    parameters.stencilModeForClipping(tile.clip),
+                    parameters.stencilModeForClipping(tile.id),
                     parameters.colorModeForRenderPass(),
                     gfx::CullFaceMode::disabled(),
                     indexBuffer,

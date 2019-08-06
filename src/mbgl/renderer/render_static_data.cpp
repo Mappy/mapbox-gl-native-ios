@@ -1,5 +1,6 @@
 #include <mbgl/renderer/render_static_data.hpp>
 #include <mbgl/gfx/context.hpp>
+#include <mbgl/gfx/upload_pass.hpp>
 #include <mbgl/programs/program_parameters.hpp>
 
 namespace mbgl {
@@ -39,22 +40,17 @@ static gfx::VertexVector<RasterLayoutVertex> rasterVertices() {
     return result;
 }
 
-static gfx::VertexVector<ExtrusionTextureLayoutVertex> extrusionTextureVertices() {
-    gfx::VertexVector<ExtrusionTextureLayoutVertex> result;
-    result.emplace_back(ExtrusionTextureProgram::layoutVertex({ 0, 0 }));
-    result.emplace_back(ExtrusionTextureProgram::layoutVertex({ 1, 0 }));
-    result.emplace_back(ExtrusionTextureProgram::layoutVertex({ 0, 1 }));
-    result.emplace_back(ExtrusionTextureProgram::layoutVertex({ 1, 1 }));
+static gfx::VertexVector<HeatmapTextureLayoutVertex> heatmapTextureVertices() {
+    gfx::VertexVector<HeatmapTextureLayoutVertex> result;
+    result.emplace_back(HeatmapTextureProgram::layoutVertex({ 0, 0 }));
+    result.emplace_back(HeatmapTextureProgram::layoutVertex({ 1, 0 }));
+    result.emplace_back(HeatmapTextureProgram::layoutVertex({ 0, 1 }));
+    result.emplace_back(HeatmapTextureProgram::layoutVertex({ 1, 1 }));
     return result;
 }
 
 RenderStaticData::RenderStaticData(gfx::Context& context, float pixelRatio, const optional<std::string>& programCacheDir)
-    : tileVertexBuffer(context.createVertexBuffer(tileVertices())),
-      rasterVertexBuffer(context.createVertexBuffer(rasterVertices())),
-      extrusionTextureVertexBuffer(context.createVertexBuffer(extrusionTextureVertices())),
-      quadTriangleIndexBuffer(context.createIndexBuffer(quadTriangleIndices())),
-      tileBorderIndexBuffer(context.createIndexBuffer(tileLineStripIndices())),
-      programs(context, ProgramParameters { pixelRatio, false, programCacheDir })
+    : programs(context, ProgramParameters { pixelRatio, false, programCacheDir })
 #ifndef NDEBUG
     , overdrawPrograms(context, ProgramParameters { pixelRatio, true, programCacheDir })
 #endif
@@ -62,7 +58,18 @@ RenderStaticData::RenderStaticData(gfx::Context& context, float pixelRatio, cons
     tileTriangleSegments.emplace_back(0, 0, 4, 6);
     tileBorderSegments.emplace_back(0, 0, 4, 5);
     rasterSegments.emplace_back(0, 0, 4, 6);
-    extrusionTextureSegments.emplace_back(0, 0, 4, 6);
+    heatmapTextureSegments.emplace_back(0, 0, 4, 6);
+}
+
+void RenderStaticData::upload(gfx::UploadPass& uploadPass) {
+    if (!uploaded) {
+        tileVertexBuffer = uploadPass.createVertexBuffer(tileVertices());
+        rasterVertexBuffer = uploadPass.createVertexBuffer(rasterVertices());
+        heatmapTextureVertexBuffer = uploadPass.createVertexBuffer(heatmapTextureVertices());
+        quadTriangleIndexBuffer = uploadPass.createIndexBuffer(quadTriangleIndices());
+        tileBorderIndexBuffer = uploadPass.createIndexBuffer(tileLineStripIndices());
+        uploaded = true;
+    }
 }
 
 } // namespace mbgl

@@ -1,6 +1,7 @@
 #import "MGLMapboxEvents.h"
 #import "MBXSKUToken.h"
 #import "NSBundle+MGLAdditions.h"
+#import "MGLAccountManager_Private.h"
 
 static NSString * const MGLAPIClientUserAgentBase = @"mapbox-maps-ios";
 static NSString * const MGLMapboxAccountType = @"MGLMapboxAccountType";
@@ -44,7 +45,7 @@ static NSString * const MGLVariableGeofence = @"VariableGeofence";
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _eventsManager = [[MMEEventsManager alloc] init];
+        _eventsManager = MMEEventsManager.sharedManager;
         _eventsManager.debugLoggingEnabled = [[NSUserDefaults standardUserDefaults] boolForKey:MGLMapboxMetricsDebugLoggingEnabled];
         _eventsManager.accountType = [[NSUserDefaults standardUserDefaults] integerForKey:MGLMapboxAccountType];
         _eventsManager.metricsEnabled = [[NSUserDefaults standardUserDefaults] boolForKey:MGLMapboxMetricsEnabled];
@@ -144,9 +145,7 @@ static NSString * const MGLVariableGeofence = @"VariableGeofence";
             [[MGLMapboxEvents sharedInstance] eventsManager].baseURL = [MGLMapboxEvents sharedInstance].baseURL;
         }
 
-        if (MGLAccountManager.isAccountsSDKEnabled) {
-            [[self sharedInstance] eventsManager].skuId = MBXAccountsMapsSKUIDMaps;
-        }
+        [[self sharedInstance] eventsManager].skuId = MBXAccountsSKUIDMaps;
         
         [self flush];
     });

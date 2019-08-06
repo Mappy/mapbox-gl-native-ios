@@ -84,6 +84,7 @@ void RenderCircleLayer::render(PaintParameters& parameters, RenderSource*) {
                         tile.id.pixelsToTileUnits(1, parameters.state.getZoom()),
                         tile.id.pixelsToTileUnits(1, parameters.state.getZoom()) }}
                     : parameters.pixelsToGLUnits ),
+                uniforms::device_pixel_ratio::Value( parameters.pixelRatio ),
                 uniforms::camera_to_center_distance::Value( parameters.state.getCameraToCenterDistance() ),
                 uniforms::pitch_with_map::Value( pitchWithMap )
             },
@@ -104,9 +105,7 @@ void RenderCircleLayer::render(PaintParameters& parameters, RenderSource*) {
             *parameters.renderPass,
             gfx::Triangles(),
             parameters.depthModeForSublayer(0, gfx::DepthMaskType::ReadOnly),
-            parameters.mapMode != MapMode::Continuous
-                ? parameters.stencilModeForClipping(tile.clip)
-                : gfx::StencilMode::disabled(),
+            gfx::StencilMode::disabled(),
             parameters.colorModeForRenderPass(),
             gfx::CullFaceMode::disabled(),
             *bucket.indexBuffer,

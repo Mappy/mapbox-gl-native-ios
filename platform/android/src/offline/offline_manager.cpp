@@ -42,8 +42,8 @@ void OfflineManager::listOfflineRegions(jni::JNIEnv& env_, const jni::Object<Fil
 }
 
 // Mappy modif
-void OfflineManager::cleanAmbientCache(jni::JNIEnv&, jni::Object<FileSource>&) {
-    fileSource->cleanAmbientCache();
+void OfflineManager::cleanAmbientCache(jni::JNIEnv& env_) {
+    fileSource->resetCache([&] (std::exception_ptr){  });
 }
 
 void OfflineManager::createOfflineRegion(jni::JNIEnv& env_,

@@ -5,9 +5,11 @@
 
 #include <mbgl/annotation/annotation.hpp>
 #include <mbgl/style/style.hpp>
+#include <mbgl/style/sources/custom_geometry_source.hpp>
 #include <mbgl/style/image.hpp>
 #include <mbgl/style/transition_options.hpp>
 #include <mbgl/style/layers/fill_extrusion_layer.hpp>
+#include <mbgl/style/layers/line_layer.hpp>
 #include <mbgl/style/expression/dsl.hpp>
 #include <mbgl/util/logging.hpp>
 #include <mbgl/util/platform.hpp>
@@ -89,15 +91,6 @@ GLFWView::GLFWView(bool fullscreen_, bool benchmark_)
     }
 
     glfwSetWindowUserPointer(window, this);
-    glfwMakeContextCurrent(window);
-    if (benchmark) {
-        // Disables vsync on platforms that support it.
-        glfwSwapInterval(0);
-    } else {
-        glfwSwapInterval(1);
-    }
-
-
     glfwSetCursorPosCallback(window, onMouseMove);
     glfwSetMouseButtonCallback(window, onMouseClick);
     glfwSetWindowSizeCallback(window, onWindowResize);
@@ -107,7 +100,7 @@ GLFWView::GLFWView(bool fullscreen_, bool benchmark_)
 
     glfwGetWindowSize(window, &width, &height);
 
-    backend = std::make_unique<GLFWGLBackend>(window);
+    backend = std::make_unique<GLFWGLBackend>(window, benchmark);
 
     pixelRatio = static_cast<float>(backend->getSize().width) / width;
 
@@ -124,9 +117,11 @@ GLFWView::GLFWView(bool fullscreen_, bool benchmark_)
     printf("- Press `O` to toggle online connectivity\n");
     printf("- Press `Z` to cycle through north orientations\n");
     printf("- Prezz `X` to cycle through the viewport modes\n");
+    printf("- Press `I` to Delete existing database and re-initialize\n");
     printf("- Press `A` to cycle through Mapbox offices in the world + dateline monument\n");
     printf("- Press `B` to cycle through the color, stencil, and depth buffer\n");
     printf("- Press `D` to cycle through camera bounds: inside, crossing IDL at left, crossing IDL at right, and disabled\n");
+    printf("- Press `T` to add custom geometry source\n");
     printf("\n");
     printf("- Press `1` through `6` to add increasing numbers of point annotations for testing\n");
     printf("- Press `7` through `0` to add increasing numbers of shape annotations for testing\n");
@@ -220,6 +215,9 @@ void GLFWView::onKey(GLFWwindow *window, int key, int /*scancode*/, int action, 
             break;
         case GLFW_KEY_C:
             view->clearAnnotations();
+            break;
+        case GLFW_KEY_I:
+            view->resetCacheCallback();
             break;
         case GLFW_KEY_K:
             view->addRandomCustomPointAnnotations(1);
@@ -316,6 +314,9 @@ void GLFWView::onKey(GLFWwindow *window, int key, int /*scancode*/, int action, 
                 }
             }
         } break;
+        case GLFW_KEY_T:
+            view->toggleCustomSource();
+            break;
         }
     }
 
@@ -575,8 +576,6 @@ void GLFWView::run() {
 
             rendererFrontend->render();
 
-            glfwSwapBuffers(window);
-
             report(1000 * (glfwGetTime() - started));
             if (benchmark) {
                 invalidate();
@@ -670,6 +669,51 @@ void GLFWView::toggle3DExtrusions(bool visible) {
     extrusionLayer->setFillExtrusionBase(PropertyExpression<float>(get("min_height")));
 
     map->getStyle().addLayer(std::move(extrusionLayer));
+}
+
+void GLFWView::toggleCustomSource() {
+    if (!map->getStyle().getSource("custom")) {
+        mbgl::style::CustomGeometrySource::Options options;
+        options.cancelTileFunction = [](const mbgl::CanonicalTileID&) {};
+        options.fetchTileFunction = [&](const mbgl::CanonicalTileID& tileID) {
+            double gridSpacing = 0.1;
+            mbgl::FeatureCollection features;
+            const mbgl::LatLngBounds bounds(tileID);
+            for (double y = ceil(bounds.north() / gridSpacing) * gridSpacing; y >= floor(bounds.south() / gridSpacing) * gridSpacing; y -= gridSpacing) {
+
+                mapbox::geojson::line_string gridLine;
+                gridLine.emplace_back(bounds.west(), y);
+                gridLine.emplace_back(bounds.east(), y);
+
+                features.emplace_back(gridLine);
+            }
+
+            for (double x = floor(bounds.west() / gridSpacing) * gridSpacing; x <= ceil(bounds.east() / gridSpacing) * gridSpacing; x += gridSpacing) {
+                mapbox::geojson::line_string gridLine;
+                gridLine.emplace_back(x, bounds.south());
+                gridLine.emplace_back(x, bounds.north());
+
+                features.emplace_back(gridLine);
+            }
+            auto source = static_cast<mbgl::style::CustomGeometrySource *>(map->getStyle().getSource("custom"));
+            if (source) {
+                source->setTileData(tileID, features);
+                source->invalidateTile(tileID);
+            }
+        };
+        map->getStyle().addSource(std::make_unique<mbgl::style::CustomGeometrySource>("custom", options));
+    }
+
+    auto* layer = map->getStyle().getLayer("grid");
+
+    if (!layer) {
+        auto lineLayer = std::make_unique<mbgl::style::LineLayer>("grid", "custom");
+        lineLayer->setLineColor(mbgl::Color{ 1.0, 0.0, 0.0, 1.0 });
+        map->getStyle().addLayer(std::move(lineLayer));
+    } else {
+        layer->setVisibility(layer->getVisibility() == mbgl::style::VisibilityType::Visible ?
+                             mbgl::style::VisibilityType::None : mbgl::style::VisibilityType::Visible);
+    }
 }
 
 namespace mbgl {

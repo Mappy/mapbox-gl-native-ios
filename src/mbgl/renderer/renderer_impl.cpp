@@ -6,6 +6,7 @@
 #include <mbgl/renderer/render_layer.hpp>
 #include <mbgl/renderer/render_static_data.hpp>
 #include <mbgl/renderer/update_parameters.hpp>
+#include <mbgl/renderer/upload_parameters.hpp>
 #include <mbgl/renderer/paint_parameters.hpp>
 #include <mbgl/renderer/transition_parameters.hpp>
 #include <mbgl/renderer/property_evaluation_parameters.hpp>
@@ -16,6 +17,7 @@
 #include <mbgl/gfx/backend_scope.hpp>
 #include <mbgl/renderer/image_manager.hpp>
 #include <mbgl/gfx/renderer_backend.hpp>
+#include <mbgl/gfx/upload_pass.hpp>
 #include <mbgl/gfx/render_pass.hpp>
 #include <mbgl/gfx/cull_face_mode.hpp>
 #include <mbgl/gfx/context.hpp>
@@ -40,21 +42,24 @@ static RendererObserver& nullObserver() {
 
 Renderer::Impl::Impl(gfx::RendererBackend& backend_,
                      float pixelRatio_,
-                     Scheduler& scheduler_,
                      const optional<std::string> programCacheDir_,
                      const optional<std::string> localFontFamily_)
     : backend(backend_)
-    , scheduler(scheduler_)
     , observer(&nullObserver())
     , pixelRatio(pixelRatio_)
     , programCacheDir(std::move(programCacheDir_))
     , localFontFamily(std::move(localFontFamily_))
+    , glyphManager(std::make_unique<GlyphManager>(std::make_unique<LocalGlyphRasterizer>(localFontFamily)))
+    , imageManager(std::make_unique<ImageManager>())
     , lineAtlas(std::make_unique<LineAtlas>(Size{ 256, 512 }))
     , imageImpls(makeMutable<std::vector<Immutable<style::Image::Impl>>>())
     , sourceImpls(makeMutable<std::vector<Immutable<style::Source::Impl>>>())
     , layerImpls(makeMutable<std::vector<Immutable<style::Layer::Impl>>>())
     , renderLight(makeMutable<Light::Impl>())
-    , placement(std::make_unique<Placement>(TransformState{}, MapMode::Static, TransitionOptions{}, true)) {}
+    , placement(std::make_unique<Placement>(TransformState{}, MapMode::Static, TransitionOptions{}, true)) {
+    glyphManager->setObserver(this);
+    imageManager->setObserver(this);
+}
 
 Renderer::Impl::~Impl() {
     assert(gfx::BackendScope::exists());
@@ -76,17 +81,8 @@ void Renderer::Impl::setObserver(RendererObserver* observer_) {
 }
 
 void Renderer::Impl::render(const UpdateParameters& updateParameters) {
-    if (!glyphManager) {
-        glyphManager = std::make_unique<GlyphManager>(updateParameters.fileSource, std::make_unique<LocalGlyphRasterizer>(localFontFamily));
-        glyphManager->setObserver(this);
-    }
-
-    if (!imageManager) {
-        imageManager = std::make_unique<ImageManager>();
-        imageManager->setObserver(this);
-    }
-
-    if (updateParameters.mode != MapMode::Continuous) {
+    const bool isMapModeContinuous = updateParameters.mode == MapMode::Continuous;
+    if (!isMapModeContinuous) {
         // Reset zoom history state.
         zoomHistory.first = true;
     }
@@ -97,8 +93,6 @@ void Renderer::Impl::render(const UpdateParameters& updateParameters) {
     }
 
     const bool zoomChanged = zoomHistory.update(updateParameters.transformState.getZoom(), updateParameters.timePoint);
-
-    const bool isMapModeContinuous = updateParameters.mode == MapMode::Continuous;
 
     const TransitionOptions transitionOptions = isMapModeContinuous ? updateParameters.transitionOptions : TransitionOptions();
 
@@ -117,7 +111,6 @@ void Renderer::Impl::render(const UpdateParameters& updateParameters) {
         updateParameters.pixelRatio,
         updateParameters.debugOptions,
         updateParameters.transformState,
-        scheduler,
         updateParameters.fileSource,
         updateParameters.mode,
         updateParameters.annotationManager,
@@ -287,8 +280,8 @@ void Renderer::Impl::render(const UpdateParameters& updateParameters) {
                        tileParameters);
     }
 
-    bool loaded = updateParameters.styleLoaded && isLoaded();
-    if (updateParameters.mode != MapMode::Continuous && !loaded) {
+    const bool loaded = updateParameters.styleLoaded && isLoaded();
+    if (!isMapModeContinuous && !loaded) {
         return;
     }
 
@@ -311,7 +304,7 @@ void Renderer::Impl::render(const UpdateParameters& updateParameters) {
     }
 
     {
-        if (updateParameters.mode != MapMode::Continuous) {
+        if (!isMapModeContinuous) {
             // TODO: Think about right way for symbol index to handle still rendering
             crossTileSymbolIndex.reset();
         }
@@ -356,8 +349,13 @@ void Renderer::Impl::render(const UpdateParameters& updateParameters) {
         }
     }
 
+    auto& context = backend.getContext();
+
+    // Blocks execution until the renderable is available.
+    backend.getDefaultRenderable().wait();
+
     PaintParameters parameters {
-        backend.getContext(),
+        context,
         pixelRatio,
         backend,
         updateParameters,
@@ -365,25 +363,58 @@ void Renderer::Impl::render(const UpdateParameters& updateParameters) {
         *staticData,
         *imageManager,
         *lineAtlas,
-        placement->getVariableOffsets()
     };
 
     parameters.symbolFadeChange = placement->symbolFadeChange(updateParameters.timePoint);
 
+    // TODO: move this pass to before the PaintParameters initialization
+    // - PREPARE PASS -------------------------------------------------------------------------------
+    // Runs an initialization pass for all sources.
+    {
+        // Update all matrices and generate data that we should upload to the GPU.
+        for (const auto& entry : renderSources) {
+            if (entry.second->isEnabled()) {
+                entry.second->prepare(parameters);
+            }
+        }
+    }
+
     // - UPLOAD PASS -------------------------------------------------------------------------------
     // Uploads all required buffers and images before we do any actual rendering.
     {
-        const auto debugGroup(parameters.encoder->createDebugGroup("upload"));
+        const auto uploadPass = parameters.encoder->createUploadPass("upload");
 
-        parameters.imageManager.upload(parameters.context);
-        parameters.lineAtlas.upload(parameters.context);
-        
         // Update all clipping IDs + upload buckets.
         for (const auto& entry : renderSources) {
             if (entry.second->isEnabled()) {
-                entry.second->startRender(parameters);
+                entry.second->upload(*uploadPass);
             }
         }
+
+        UploadParameters uploadParameters{
+            updateParameters.transformState,
+            placement->getVariableOffsets(),
+            *imageManager,
+            *lineAtlas,
+        };
+
+        auto opaquePassCutoffEstimation = renderItems.size();
+        for (auto& renderItem : renderItems) {
+            RenderLayer& renderLayer = renderItem.layer;
+            if (parameters.opaquePassCutoff == 0) {
+                --opaquePassCutoffEstimation;
+                if (renderLayer.is3D()) {
+                    parameters.opaquePassCutoff = uint32_t(opaquePassCutoffEstimation);
+                }
+            }
+            if (renderLayer.hasRenderPass(RenderPass::Upload)) {
+                renderLayer.upload(*uploadPass, uploadParameters);
+            }
+        }
+
+        staticData->upload(*uploadPass);
+        imageManager->upload(*uploadPass);
+        lineAtlas->upload(*uploadPass);
     }
 
     // - 3D PASS -------------------------------------------------------------------------------------
@@ -425,61 +456,6 @@ void Renderer::Impl::render(const UpdateParameters& updateParameters) {
         }
         parameters.renderPass = parameters.encoder->createRenderPass("main buffer", { parameters.backend.getDefaultRenderable(), color, 1, 0 });
     }
-
-    // - CLIPPING MASKS ----------------------------------------------------------------------------
-    // Draws the clipping masks to the stencil buffer.
-    {
-        const auto debugGroup(parameters.renderPass->createDebugGroup("clipping masks"));
-
-        static const Properties<>::PossiblyEvaluated properties {};
-        static const ClippingMaskProgram::Binders paintAttributeData(properties, 0);
-
-        for (const auto& clipID : parameters.clipIDGenerator.getClipIDs()) {
-            auto& program = parameters.staticData.programs.clippingMask;
-
-            program.draw(
-                parameters.context,
-                *parameters.renderPass,
-                gfx::Triangles(),
-                gfx::DepthMode::disabled(),
-                gfx::StencilMode {
-                    gfx::StencilMode::Always(),
-                    static_cast<int32_t>(clipID.second.reference.to_ulong()),
-                    0b11111111,
-                    gfx::StencilOpType::Keep,
-                    gfx::StencilOpType::Keep,
-                    gfx::StencilOpType::Replace
-                },
-                gfx::ColorMode::disabled(),
-                gfx::CullFaceMode::disabled(),
-                parameters.staticData.quadTriangleIndexBuffer,
-                parameters.staticData.tileTriangleSegments,
-                program.computeAllUniformValues(
-                    ClippingMaskProgram::LayoutUniformValues {
-                        uniforms::matrix::Value( parameters.matrixForTile(clipID.first) ),
-                    },
-                    paintAttributeData,
-                    properties,
-                    parameters.state.getZoom()
-                ),
-                program.computeAllAttributeBindings(
-                    parameters.staticData.tileVertexBuffer,
-                    paintAttributeData,
-                    properties
-                ),
-                ClippingMaskProgram::TextureBindings{},
-                "clipping"
-            );
-        }
-    }
-
-#if not defined(NDEBUG)
-    // Render tile clip boundaries, using stencil buffer to calculate fill color.
-    if (parameters.debugOptions & MapDebugOptions::StencilClip) {
-        parameters.context.visualizeStencilBuffer();
-        return;
-    }
-#endif
 
     // Actually render the layers
 
@@ -536,15 +512,18 @@ void Renderer::Impl::render(const UpdateParameters& updateParameters) {
     }
 
 #if not defined(NDEBUG)
-    // Render the depth buffer.
-    if (parameters.debugOptions & MapDebugOptions::DepthBuffer) {
+    if (parameters.debugOptions & MapDebugOptions::StencilClip) {
+        // Render tile clip boundaries, using stencil buffer to calculate fill color.
+        parameters.context.visualizeStencilBuffer();
+    } else if (parameters.debugOptions & MapDebugOptions::DepthBuffer) {
+        // Render the depth buffer.
         parameters.context.visualizeDepthBuffer(parameters.depthRangeSize);
     }
 #endif
 
     observer->onDidFinishRenderingFrame(
         loaded ? RendererObserver::RenderMode::Full : RendererObserver::RenderMode::Partial,
-        updateParameters.mode == MapMode::Continuous && hasTransitions(parameters.timePoint)
+        isMapModeContinuous && hasTransitions(parameters.timePoint)
     );
 
     if (!loaded) {
@@ -552,6 +531,10 @@ void Renderer::Impl::render(const UpdateParameters& updateParameters) {
     } else if (renderState != RenderState::Fully) {
         renderState = RenderState::Fully;
         observer->onDidFinishRenderingMap();
+    }
+
+    if (updateParameters.mode == MapMode::Continuous) {
+        parameters.encoder->present(parameters.backend.getDefaultRenderable());
     }
 
     // CommandEncoder destructor submits render commands.
@@ -689,16 +672,17 @@ void Renderer::Impl::reduceMemoryUse() {
     }
     backend.getContext().performCleanup();
     observer->onInvalidate();
+    if (imageManager) {
+        imageManager->reduceMemoryUse();
+    }
 }
 
-void Renderer::Impl::dumDebugLogs() {
+void Renderer::Impl::dumpDebugLogs() {
     for (const auto& entry : renderSources) {
         entry.second->dumpDebugLogs();
     }
 
-    if (imageManager) {
-        imageManager->dumpDebugLogs();
-    }
+    imageManager->dumpDebugLogs();
 }
 
 RenderLayer* Renderer::Impl::getRenderLayer(const std::string& id) {
@@ -758,7 +742,7 @@ bool Renderer::Impl::isLoaded() const {
         }
     }
 
-    if (!imageManager || !imageManager->isLoaded()) {
+    if (!imageManager->isLoaded()) {
         return false;
     }
 

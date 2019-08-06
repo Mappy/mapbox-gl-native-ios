@@ -3,9 +3,6 @@
 #include <mbgl/renderer/paint_parameters.hpp>
 #include <mbgl/tile/vector_tile.hpp>
 
-#include <mbgl/algorithm/generate_clip_ids.hpp>
-#include <mbgl/algorithm/generate_clip_ids_impl.hpp>
-
 namespace mbgl {
 
 using namespace style;
@@ -60,9 +57,12 @@ void RenderVectorSource::update(Immutable<style::Source::Impl> baseImpl_,
                        });
 }
 
-void RenderVectorSource::startRender(PaintParameters& parameters) {
-    parameters.clipIDGenerator.update(tilePyramid.getRenderTiles());
-    tilePyramid.startRender(parameters);
+void RenderVectorSource::upload(gfx::UploadPass& parameters) {
+    tilePyramid.upload(parameters);
+}
+
+void RenderVectorSource::prepare(PaintParameters& parameters) {
+    tilePyramid.prepare(parameters);
 }
 
 void RenderVectorSource::finishRender(PaintParameters& parameters) {

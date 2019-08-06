@@ -41,7 +41,7 @@ void RenderHeatmapLayer::evaluate(const PropertyEvaluationParameters& parameters
         unevaluated.evaluate(parameters));
 
     passes = (properties->evaluated.get<style::HeatmapOpacity>() > 0)
-            ? (RenderPass::Translucent | RenderPass::Pass3D)
+            ? (RenderPass::Translucent | RenderPass::Pass3D | RenderPass::Upload)
             : RenderPass::None;
     properties->renderPasses = mbgl::underlying_type(passes);
     evaluatedProperties = std::move(properties);
@@ -55,6 +55,13 @@ bool RenderHeatmapLayer::hasCrossfade() const {
     return false;
 }
 
+void RenderHeatmapLayer::upload(gfx::UploadPass& uploadPass, UploadParameters&) {
+    if (!colorRampTexture) {
+        colorRampTexture =
+            uploadPass.createTexture(colorRamp, gfx::TextureChannelDataType::UnsignedByte);
+    }
+}
+
 void RenderHeatmapLayer::render(PaintParameters& parameters, RenderSource*) {
     if (parameters.pass == RenderPass::Opaque) {
         return;
@@ -64,9 +71,7 @@ void RenderHeatmapLayer::render(PaintParameters& parameters, RenderSource*) {
         const auto& viewportSize = parameters.staticData.backendSize;
         const auto size = Size{viewportSize.width / 4, viewportSize.height / 4};
 
-        if (!colorRampTexture) {
-            colorRampTexture = parameters.context.createTexture(colorRamp, gfx::TextureChannelDataType::UnsignedByte);
-        }
+        assert(colorRampTexture);
 
         if (!renderTexture || renderTexture->getSize() != size) {
             renderTexture.reset();
@@ -98,14 +103,10 @@ void RenderHeatmapLayer::render(PaintParameters& parameters, RenderSource*) {
 
             const auto extrudeScale = tile.id.pixelsToTileUnits(1, parameters.state.getZoom());
 
-            const auto stencilMode = parameters.mapMode != MapMode::Continuous
-                ? parameters.stencilModeForClipping(tile.clip)
-                : gfx::StencilMode::disabled();
-
             const auto& paintPropertyBinders = bucket.paintPropertyBinders.at(getID());
 
             auto& programInstance = parameters.programs.getHeatmapLayerPrograms().heatmap;
-       
+
             const auto allUniformValues = programInstance.computeAllUniformValues(
                 HeatmapProgram::LayoutUniformValues {
                     uniforms::intensity::Value( evaluated.get<style::HeatmapIntensity>() ),
@@ -129,7 +130,7 @@ void RenderHeatmapLayer::render(PaintParameters& parameters, RenderSource*) {
                 *renderPass,
                 gfx::Triangles(),
                 parameters.depthModeForSublayer(0, gfx::DepthMaskType::ReadOnly),
-                stencilMode,
+                gfx::StencilMode::disabled(),
                 gfx::ColorMode::additive(),
                 gfx::CullFaceMode::disabled(),
                 *bucket.indexBuffer,
@@ -163,7 +164,7 @@ void RenderHeatmapLayer::render(PaintParameters& parameters, RenderSource*) {
             parameters.state.getZoom()
         );
         const auto allAttributeBindings = programInstance.computeAllAttributeBindings(
-            parameters.staticData.extrusionTextureVertexBuffer,
+            *parameters.staticData.heatmapTextureVertexBuffer,
             paintAttributeData,
             properties
         );
@@ -178,8 +179,8 @@ void RenderHeatmapLayer::render(PaintParameters& parameters, RenderSource*) {
             gfx::StencilMode::disabled(),
             parameters.colorModeForRenderPass(),
             gfx::CullFaceMode::disabled(),
-            parameters.staticData.quadTriangleIndexBuffer,
-            parameters.staticData.extrusionTextureSegments,
+            *parameters.staticData.quadTriangleIndexBuffer,
+            parameters.staticData.heatmapTextureSegments,
             allUniformValues,
             allAttributeBindings,
             HeatmapTextureProgram::TextureBindings{

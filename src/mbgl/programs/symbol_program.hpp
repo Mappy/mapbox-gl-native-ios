@@ -28,7 +28,7 @@ class RenderTile;
 class TransformState;
 
 namespace uniforms {
-MBGL_DEFINE_UNIFORM_MATRIX(double, 4, gl_coord_matrix);
+MBGL_DEFINE_UNIFORM_MATRIX(double, 4, coord_matrix);
 MBGL_DEFINE_UNIFORM_MATRIX(double, 4, label_plane_matrix);
 MBGL_DEFINE_UNIFORM_SCALAR(bool, is_halo);
 MBGL_DEFINE_UNIFORM_SCALAR(float, gamma_scale);
@@ -231,7 +231,7 @@ public:
 
     static gfx::Vertex<SymbolOpacityAttributes> opacityVertex(bool placed, float opacity) {
         return {
-            {{ static_cast<uint8_t>((static_cast<uint8_t>(opacity * 127) << 1) | static_cast<uint8_t>(placed)) }}
+            {{ static_cast<float>((static_cast<uint8_t>(opacity * 127) << 1) | static_cast<uint8_t>(placed)) }}
         };
     }
 };
@@ -385,7 +385,7 @@ class SymbolIconProgram : public SymbolProgram<
     TypeList<
         uniforms::matrix,
         uniforms::label_plane_matrix,
-        uniforms::gl_coord_matrix,
+        uniforms::coord_matrix,
         uniforms::extrude_scale,
         uniforms::texsize,
         uniforms::fade_change,
@@ -426,7 +426,7 @@ class SymbolSDFProgram : public SymbolProgram<
     TypeList<
         uniforms::matrix,
         uniforms::label_plane_matrix,
-        uniforms::gl_coord_matrix,
+        uniforms::coord_matrix,
         uniforms::extrude_scale,
         uniforms::texsize,
         uniforms::fade_change,
@@ -437,6 +437,7 @@ class SymbolSDFProgram : public SymbolProgram<
         uniforms::rotate_symbol,
         uniforms::aspect_ratio,
         uniforms::gamma_scale,
+        uniforms::device_pixel_ratio,
         uniforms::is_halo>,
     TypeList<
         textures::texture>,
@@ -450,7 +451,7 @@ public:
         TypeList<
             uniforms::matrix,
             uniforms::label_plane_matrix,
-            uniforms::gl_coord_matrix,
+            uniforms::coord_matrix,
             uniforms::extrude_scale,
             uniforms::texsize,
             uniforms::fade_change,
@@ -461,6 +462,7 @@ public:
             uniforms::rotate_symbol,
             uniforms::aspect_ratio,
             uniforms::gamma_scale,
+            uniforms::device_pixel_ratio,
             uniforms::is_halo>,
         TypeList<
             textures::texture>,
@@ -477,6 +479,7 @@ public:
                                                    const style::SymbolPropertyValues&,
                                                    const Size& texsize,
                                                    const std::array<float, 2>& pixelsToGLUnits,
+                                                   const float pixelRatio,
                                                    const bool alongLine,
                                                    const RenderTile&,
                                                    const TransformState&,

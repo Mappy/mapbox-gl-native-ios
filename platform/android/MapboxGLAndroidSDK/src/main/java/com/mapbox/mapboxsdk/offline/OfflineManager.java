@@ -404,11 +404,6 @@ public class OfflineManager {
     }
   }
 
-  // Mappy modif
-  public void cleanAmbientCache() {
-    cleanAmbientCache(fileSource);
-  }
-
   /**
    * Validates if the offline region definition bounds is valid for an offline region download.
    *
@@ -444,7 +439,7 @@ public class OfflineManager {
 
   // Mappy modif
   @Keep
-  private native void cleanAmbientCache(FileSource fileSource);
+  public native void cleanAmbientCache();
 
   @Keep
   private native void mergeOfflineRegions(FileSource fileSource, String path, MergeOfflineRegionsCallback callback);

@@ -40,9 +40,15 @@ bool TilePyramid::isLoaded() const {
     return true;
 }
 
-void TilePyramid::startRender(PaintParameters& parameters) {
+void TilePyramid::upload(gfx::UploadPass& parameters) {
     for (auto& tile : renderTiles) {
-        tile.startRender(parameters);
+        tile.upload(parameters);
+    }
+}
+
+void TilePyramid::prepare(PaintParameters& parameters) {
+    for (auto& tile : renderTiles) {
+        tile.prepare(parameters);
     }
 }
 
@@ -130,7 +136,6 @@ void TilePyramid::update(const std::vector<Immutable<style::LayerProperties>>& l
     // use because they're still loading. In addition to that, we also need to retain all tiles that
     // we're actively using, e.g. as a replacement for tile that aren't loaded yet.
     std::set<OverscaledTileID> retain;
-    std::set<UnwrappedTileID> rendered;
 
     auto retainTileFn = [&](Tile& tile, TileNecessity necessity) -> void {
         if (retain.emplace(tile.id).second) {
@@ -178,7 +183,6 @@ void TilePyramid::update(const std::vector<Immutable<style::LayerProperties>>& l
 
     auto renderTileFn = [&](const UnwrappedTileID& tileID, Tile& tile) {
         addRenderTile(tileID, tile);
-        rendered.emplace(tileID);
         previouslyRenderedTiles.erase(tileID); // Still rendering this tile, no need for special fading logic.
         tile.markRenderedIdeal();
     };
@@ -201,7 +205,6 @@ void TilePyramid::update(const std::vector<Immutable<style::LayerProperties>>& l
             // Don't mark the tile "Required" to avoid triggering a new network request
             retainTileFn(tile, TileNecessity::Optional);
             addRenderTile(previouslyRenderedTile.first, tile);
-            rendered.emplace(previouslyRenderedTile.first);
         }
     }
 
@@ -242,7 +245,7 @@ void TilePyramid::update(const std::vector<Immutable<style::LayerProperties>>& l
     // Initialize render tiles fields and update the tile contained layer render data.
     for (RenderTile& renderTile : renderTiles) {
         Tile& tile = renderTile.tile;
-        if (!tile.isRenderable()) continue;
+        assert(tile.isRenderable());
 
         const bool holdForFade = tile.holdForFade();
         for (const auto& layerProperties : layers) {
@@ -255,7 +258,6 @@ void TilePyramid::update(const std::vector<Immutable<style::LayerProperties>>& l
                                                            : static_cast<bool>(tile.getBucket(*layerProperties->baseImpl));
             if (layerRenderableInTile) {
                 renderTile.used = true;
-                renderTile.needsClipping = (renderTile.needsClipping || typeInfo->clipping == LayerTypeInfo::Clipping::Required);
             }
         }
     }
@@ -393,6 +395,7 @@ void TilePyramid::clearAll() {
 }
 
 void TilePyramid::addRenderTile(const UnwrappedTileID& tileID, Tile& tile) {
+    assert(tile.isRenderable());
     auto it = std::lower_bound(renderTiles.begin(), renderTiles.end(), tileID,
         [](const RenderTile& a, const UnwrappedTileID& id) { return a.id < id; });
     renderTiles.emplace(it, tileID, tile);

@@ -19,14 +19,10 @@ template <class T>
 class Actor;
 
 namespace gfx {
-class Context;
+class UploadPass;
 } // namespace gfx
 
-class ImageRequestor {
-public:
-    virtual ~ImageRequestor() = default;
-    virtual void onImagesAvailable(ImageMap icons, ImageMap patterns, ImageVersionMap versionMap, uint64_t imageCorrelationID) = 0;
-};
+class ImageRequestor;
 
 /*
     ImageManager does two things:
@@ -59,12 +55,14 @@ public:
     void getImages(ImageRequestor&, ImageRequestPair&&);
     void removeRequestor(ImageRequestor&);
     void notifyIfMissingImageAdded();
+    void reduceMemoryUse();
 
     ImageVersionMap updatedImageVersions;
 
 private:
     void checkMissingAndNotify(ImageRequestor&, const ImageRequestPair&);
     void notify(ImageRequestor&, const ImageRequestPair&) const;
+    void removePattern(const std::string&);
 
     bool loaded = false;
 
@@ -76,6 +74,7 @@ private:
         std::map<std::string, std::unique_ptr<ActorCallback>> callbacks;
     };
     std::map<ImageRequestor*, MissingImageRequestPair> missingImageRequestors;
+    std::map<std::string, std::set<ImageRequestor*>> requestedImages;
     ImageMap images;
 
     ImageManagerObserver* observer = nullptr;
@@ -84,8 +83,8 @@ private:
 public:
     optional<ImagePosition> getPattern(const std::string& name);
 
-    gfx::TextureBinding textureBinding(gfx::Context&);
-    void upload(gfx::Context&);
+    gfx::TextureBinding textureBinding();
+    void upload(gfx::UploadPass&);
 
     Size getPixelSize() const;
 
@@ -105,6 +104,15 @@ private:
     PremultipliedImage atlasImage;
     mbgl::optional<gfx::Texture> atlasTexture;
     bool dirty = true;
+};
+
+class ImageRequestor {
+public:
+    explicit ImageRequestor(ImageManager&);
+    virtual ~ImageRequestor();
+    virtual void onImagesAvailable(ImageMap icons, ImageMap patterns, ImageVersionMap versionMap, uint64_t imageCorrelationID) = 0;
+private:
+    ImageManager& imageManager;
 };
 
 } // namespace mbgl

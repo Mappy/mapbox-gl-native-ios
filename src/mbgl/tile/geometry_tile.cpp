@@ -1,4 +1,5 @@
 #include <mbgl/tile/geometry_tile.hpp>
+
 #include <mbgl/tile/geometry_tile_worker.hpp>
 #include <mbgl/tile/geometry_tile_data.hpp>
 #include <mbgl/tile/tile_observer.hpp>
@@ -42,9 +43,10 @@ GeometryTile::GeometryTile(const OverscaledTileID& id_,
                            std::string sourceID_,
                            const TileParameters& parameters)
     : Tile(Kind::Geometry, id_),
+      ImageRequestor(parameters.imageManager),
       sourceID(std::move(sourceID_)),
       mailbox(std::make_shared<Mailbox>(*Scheduler::GetCurrent())),
-      worker(parameters.workerScheduler,
+      worker(Scheduler::GetBackground(),
              ActorRef<GeometryTile>(*this, mailbox),
              id_,
              sourceID,
@@ -52,6 +54,7 @@ GeometryTile::GeometryTile(const OverscaledTileID& id_,
              parameters.mode,
              parameters.pixelRatio,
              parameters.debugOptions & MapDebugOptions::Collision),
+      fileSource(parameters.fileSource),
       glyphManager(parameters.glyphManager),
       imageManager(parameters.imageManager),
       mode(parameters.mode),
@@ -60,7 +63,6 @@ GeometryTile::GeometryTile(const OverscaledTileID& id_,
 
 GeometryTile::~GeometryTile() {
     glyphManager.removeRequestor(*this);
-    imageManager.removeRequestor(*this);
     markObsolete();
 }
 
@@ -155,7 +157,7 @@ void GeometryTile::onGlyphsAvailable(GlyphMap glyphs) {
 }
 
 void GeometryTile::getGlyphs(GlyphDependencies glyphDependencies) {
-    glyphManager.getGlyphs(*this, std::move(glyphDependencies));
+    glyphManager.getGlyphs(*this, std::move(glyphDependencies), *fileSource);
 }
 
 void GeometryTile::onImagesAvailable(ImageMap images, ImageMap patterns, ImageVersionMap versionMap, uint64_t imageCorrelationID) {
@@ -174,10 +176,10 @@ const optional<ImagePosition> GeometryTile::getPattern(const std::string& patter
     return {};
 }
 
-void GeometryTile::upload(gfx::Context& context) {
+void GeometryTile::upload(gfx::UploadPass& uploadPass) {
     auto uploadFn = [&] (Bucket& bucket) {
         if (bucket.needsUpload()) {
-            bucket.upload(context);
+            bucket.upload(uploadPass);
         }
     };
 
@@ -186,17 +188,17 @@ void GeometryTile::upload(gfx::Context& context) {
     }
 
     if (glyphAtlasImage) {
-        glyphAtlasTexture = context.createTexture(*glyphAtlasImage);
+        glyphAtlasTexture = uploadPass.createTexture(*glyphAtlasImage);
         glyphAtlasImage = {};
     }
 
     if (iconAtlas.image.valid()) {
-        iconAtlasTexture = context.createTexture(iconAtlas.image);
+        iconAtlasTexture = uploadPass.createTexture(iconAtlas.image);
         iconAtlas.image = {};
     }
 
     if (iconAtlasTexture) {
-        iconAtlas.patchUpdatedImages(context, *iconAtlasTexture, imageManager);
+        iconAtlas.patchUpdatedImages(uploadPass, *iconAtlasTexture, imageManager);
     }
 }
 

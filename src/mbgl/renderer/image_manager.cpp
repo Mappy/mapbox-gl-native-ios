@@ -2,6 +2,7 @@
 #include <mbgl/actor/actor.hpp>
 #include <mbgl/actor/scheduler.hpp>
 #include <mbgl/util/logging.hpp>
+#include <mbgl/gfx/upload_pass.hpp>
 #include <mbgl/gfx/context.hpp>
 #include <mbgl/renderer/image_manager_observer.hpp>
 
@@ -50,8 +51,8 @@ bool ImageManager::updateImage(Immutable<style::Image::Impl> image_) {
         updatedImageVersions[image_->id]++;
     }
 
-    removeImage(image_->id);
-    addImage(std::move(image_));
+    removePattern(image_->id);
+    oldImage->second = std::move(image_);
 
     return sizeChanged;
 }
@@ -59,7 +60,11 @@ bool ImageManager::updateImage(Immutable<style::Image::Impl> image_) {
 void ImageManager::removeImage(const std::string& id) {
     assert(images.find(id) != images.end());
     images.erase(id);
+    requestedImages.erase(id);
+    removePattern(id);
+}
 
+void ImageManager::removePattern(const std::string& id) {
     auto it = patterns.find(id);
     if (it != patterns.end()) {
         // Clear pattern from the atlas image.
@@ -97,7 +102,12 @@ void ImageManager::getImages(ImageRequestor& requestor, ImageRequestPair&& pair)
         for (const auto& dependency : pair.first) {
             if (images.find(dependency.first) == images.end()) {
                 hasAllDependencies = false;
-                break;
+            } else {
+                // Associate requestor with an image that was provided by the client.
+                auto it = requestedImages.find(dependency.first);
+                if (it != requestedImages.end()) {
+                    it->second.emplace(&requestor);
+                }
             }
         }
 
@@ -114,15 +124,30 @@ void ImageManager::getImages(ImageRequestor& requestor, ImageRequestPair&& pair)
 void ImageManager::removeRequestor(ImageRequestor& requestor) {
     requestors.erase(&requestor);
     missingImageRequestors.erase(&requestor);
+    for (auto& requestedImage : requestedImages) {
+        requestedImage.second.erase(&requestor);
+    }
 }
 
 void ImageManager::notifyIfMissingImageAdded() {
     for (auto it = missingImageRequestors.begin(); it != missingImageRequestors.end();) {
         if (it->second.callbacks.empty()) {
             notify(*it->first, it->second.pair);
-            missingImageRequestors.erase(it++);
+            it = missingImageRequestors.erase(it);
         } else {
-            it++;
+            ++it;
+        }
+    }
+}
+
+void ImageManager::reduceMemoryUse() {
+    for (auto it = requestedImages.cbegin(); it != requestedImages.cend();) {
+        if (it->second.empty() && images.find(it->first) != images.end()) {
+            images.erase(it->first);
+            removePattern(it->first);
+            it = requestedImages.erase(it);
+        } else {
+            ++it;
         }
     }
 }
@@ -133,6 +158,7 @@ void ImageManager::checkMissingAndNotify(ImageRequestor& requestor, const ImageR
         auto it = images.find(dependency.first);
         if (it == images.end()) {
             missing++;
+            requestedImages[dependency.first].emplace(&requestor);
         }
     }
 
@@ -158,7 +184,7 @@ void ImageManager::checkMissingAndNotify(ImageRequestor& requestor, const ImageR
 
                 auto actorRef = callback->self();
                 emplaced.first->second.callbacks.emplace(dependency.first, std::move(callback));
-                observer->onStyleImageMissing(dependency.first, [actorRef]() mutable {
+                observer->onStyleImageMissing(dependency.first, [actorRef]() {
                     actorRef.invoke(&Callback::operator());
                 });
 
@@ -260,19 +286,27 @@ Size ImageManager::getPixelSize() const {
     };
 }
 
-void ImageManager::upload(gfx::Context& context) {
+void ImageManager::upload(gfx::UploadPass& uploadPass) {
     if (!atlasTexture) {
-        atlasTexture = context.createTexture(atlasImage);
+        atlasTexture = uploadPass.createTexture(atlasImage);
     } else if (dirty) {
-        context.updateTexture(*atlasTexture, atlasImage);
+        uploadPass.updateTexture(*atlasTexture, atlasImage);
     }
 
     dirty = false;
 }
 
-gfx::TextureBinding ImageManager::textureBinding(gfx::Context& context) {
-    upload(context);
+gfx::TextureBinding ImageManager::textureBinding() {
+    assert(atlasTexture);
+    assert(!dirty);
     return { atlasTexture->getResource(), gfx::TextureFilterType::Linear };
+}
+
+ImageRequestor::ImageRequestor(ImageManager& imageManager_) : imageManager(imageManager_) {
+}
+
+ImageRequestor::~ImageRequestor() {
+    imageManager.removeRequestor(*this);
 }
 
 } // namespace mbgl

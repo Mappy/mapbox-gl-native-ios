@@ -1,4 +1,5 @@
 #include <mbgl/tile/raster_dem_tile.hpp>
+
 #include <mbgl/tile/raster_dem_tile_worker.hpp>
 #include <mbgl/tile/tile_observer.hpp>
 #include <mbgl/tile/tile_loader_impl.hpp>
@@ -17,7 +18,7 @@ RasterDEMTile::RasterDEMTile(const OverscaledTileID& id_,
     : Tile(Kind::RasterDEM, id_),
       loader(*this, id_, parameters, tileset),
       mailbox(std::make_shared<Mailbox>(*Scheduler::GetCurrent())),
-      worker(parameters.workerScheduler,
+      worker(Scheduler::GetBackground(),
              ActorRef<RasterDEMTile>(*this, mailbox)) {
 
     encoding = tileset.encoding;
@@ -68,9 +69,9 @@ void RasterDEMTile::onError(std::exception_ptr err, const uint64_t resultCorrela
     observer->onTileError(*this, err);
 }
 
-void RasterDEMTile::upload(gfx::Context& context) {
+void RasterDEMTile::upload(gfx::UploadPass& uploadPass) {
     if (bucket) {
-        bucket->upload(context);
+        bucket->upload(uploadPass);
     }
 }
 

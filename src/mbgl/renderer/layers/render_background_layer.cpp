@@ -1,6 +1,7 @@
 #include <mbgl/renderer/layers/render_background_layer.hpp>
 #include <mbgl/style/layers/background_layer_impl.hpp>
 #include <mbgl/renderer/bucket.hpp>
+#include <mbgl/renderer/upload_parameters.hpp>
 #include <mbgl/renderer/paint_parameters.hpp>
 #include <mbgl/renderer/image_manager.hpp>
 #include <mbgl/renderer/render_static_data.hpp>
@@ -37,6 +38,9 @@ void RenderBackgroundLayer::evaluate(const PropertyEvaluationParameters &paramet
 
     passes = properties->evaluated.get<style::BackgroundOpacity>() > 0 ? RenderPass::Translucent
                                                                        : RenderPass::None;
+    if (passes != RenderPass::None && !properties->evaluated.get<style::BackgroundPattern>().to.empty()) {
+        passes |= RenderPass::Upload;
+    }
     properties->renderPasses = mbgl::underlying_type(passes);
     evaluatedProperties = std::move(properties);
 }
@@ -47,6 +51,15 @@ bool RenderBackgroundLayer::hasTransition() const {
 
 bool RenderBackgroundLayer::hasCrossfade() const {
     return getCrossfade<BackgroundLayerProperties>(evaluatedProperties).t != 1;
+}
+
+void RenderBackgroundLayer::upload(gfx::UploadPass&, UploadParameters& parameters) {
+    const auto& evaluated = static_cast<const BackgroundLayerProperties&>(*evaluatedProperties).evaluated;
+    if (!evaluated.get<BackgroundPattern>().to.empty()) {
+        // Ensures that the texture gets added and uploaded to the atlas.
+        parameters.imageManager.getPattern(evaluated.get<BackgroundPattern>().from);
+        parameters.imageManager.getPattern(evaluated.get<BackgroundPattern>().to);
+    }
 }
 
 void RenderBackgroundLayer::render(PaintParameters& parameters, RenderSource*) {
@@ -64,7 +77,7 @@ void RenderBackgroundLayer::render(PaintParameters& parameters, RenderSource*) {
             parameters.state.getZoom()
         );
         const auto allAttributeBindings = program.computeAllAttributeBindings(
-            parameters.staticData.tileVertexBuffer,
+            *parameters.staticData.tileVertexBuffer,
             paintAttributeData,
             properties
         );
@@ -79,7 +92,7 @@ void RenderBackgroundLayer::render(PaintParameters& parameters, RenderSource*) {
             gfx::StencilMode::disabled(),
             parameters.colorModeForRenderPass(),
             gfx::CullFaceMode::disabled(),
-            parameters.staticData.quadTriangleIndexBuffer,
+            *parameters.staticData.quadTriangleIndexBuffer,
             parameters.staticData.tileTriangleSegments,
             allUniformValues,
             allAttributeBindings,
@@ -110,7 +123,7 @@ void RenderBackgroundLayer::render(PaintParameters& parameters, RenderSource*) {
                     parameters.state
                 ),
                 BackgroundPatternProgram::TextureBindings{
-                    textures::image::Value{ parameters.imageManager.textureBinding(parameters.context) },
+                    textures::image::Value{ parameters.imageManager.textureBinding() },
                 }
             );
         }

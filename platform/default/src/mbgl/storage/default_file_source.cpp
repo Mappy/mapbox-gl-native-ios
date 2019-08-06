@@ -97,7 +97,7 @@ public:
     }
 
     void request(AsyncRequest* req, Resource resource, ActorRef<FileSourceRequest> ref) {
-        auto callback = [ref] (const Response& res) mutable {
+        auto callback = [ref] (const Response& res) {
             ref.invoke(&FileSourceRequest::setResponse, res);
         };
 
@@ -145,7 +145,7 @@ public:
             // Get from the online file source
             if (resource.hasLoadingMethod(Resource::LoadingMethod::Network)) {
                 MBGL_TIMING_START(watch);
-                tasks[req] = onlineFileSource.request(resource, [=] (Response onlineResponse) mutable {
+                tasks[req] = onlineFileSource.request(resource, [=] (Response onlineResponse) {
                     this->offlineDatabase->put(resource, onlineResponse);
                     if (resource.kind == Resource::Kind::Tile) {
                         // onlineResponse.data will be null if data not modified
@@ -177,9 +177,8 @@ public:
         offlineDatabase->put(resource, response);
     }
 
-    // Mappy modif
-    void cleanAmbientCache(void) {
-        offlineDatabase->deleteAllTilesAndStyles();
+    void resetCache(std::function<void (std::exception_ptr)> callback) {
+        callback(offlineDatabase->resetCache());
     }
 
 private:
@@ -260,7 +259,7 @@ void DefaultFileSource::setResourceCachePath(const std::string& path) {
 std::unique_ptr<AsyncRequest> DefaultFileSource::request(const Resource& resource, Callback callback) {
     auto req = std::make_unique<FileSourceRequest>(std::move(callback));
 
-    req->onCancel([fs = impl->actor(), req = req.get()] () mutable { fs.invoke(&Impl::cancel, req); });
+    req->onCancel([fs = impl->actor(), req = req.get()] () { fs.invoke(&Impl::cancel, req); });
 
     impl->actor().invoke(&Impl::request, req.get(), resource, req->actor());
 
@@ -309,11 +308,6 @@ void DefaultFileSource::setOfflineMapboxTileCountLimit(uint64_t limit) const {
     impl->actor().invoke(&Impl::setOfflineMapboxTileCountLimit, limit);
 }
 
-//Mappy modif
-void DefaultFileSource::cleanAmbientCache(void) {
-    impl->actor().invoke(&Impl::cleanAmbientCache);
-}
-
 void DefaultFileSource::pause() {
     impl->pause();
 }
@@ -324,6 +318,10 @@ void DefaultFileSource::resume() {
     
 void DefaultFileSource::put(const Resource& resource, const Response& response) {
     impl->actor().invoke(&Impl::put, resource, response);
+}
+
+void DefaultFileSource::resetCache(std::function<void (std::exception_ptr)> callback) {
+    impl->actor().invoke(&Impl::resetCache, callback);
 }
 
 // For testing only:

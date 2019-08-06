@@ -31,7 +31,6 @@
 #include <mbgl/util/image.hpp>
 
 #include <mbgl/util/tileset.hpp>
-#include <mbgl/util/shared_thread_pool.hpp>
 #include <mbgl/util/logging.hpp>
 #include <mbgl/util/optional.hpp>
 #include <mbgl/util/range.hpp>
@@ -50,22 +49,20 @@ using SourceType = mbgl::style::SourceType;
 class SourceTest {
 public:
     util::RunLoop loop;
-    StubFileSource fileSource;
+    std::shared_ptr<StubFileSource> fileSource = std::make_shared<StubFileSource>();
     StubStyleObserver styleObserver;
     StubRenderSourceObserver renderSourceObserver;
     Transform transform;
     TransformState transformState;
-    ThreadPool threadPool { 1 };
-    Style style { loop, fileSource, 1 };
+    Style style { *fileSource, 1 };
     AnnotationManager annotationManager { style };
     ImageManager imageManager;
-    GlyphManager glyphManager { fileSource };
+    GlyphManager glyphManager;
 
     TileParameters tileParameters {
         1.0,
         MapDebugOptions(),
         transformState,
-        threadPool,
         fileSource,
         MapMode::Continuous,
         annotationManager,
@@ -96,7 +93,7 @@ public:
 TEST(Source, LoadingFail) {
     SourceTest test;
 
-    test.fileSource.sourceResponse = [&] (const Resource& resource) {
+    test.fileSource->sourceResponse = [&] (const Resource& resource) {
         EXPECT_EQ("url", resource.url);
         Response response;
         response.error = std::make_unique<Response::Error>(
@@ -113,7 +110,7 @@ TEST(Source, LoadingFail) {
 
     VectorSource source("source", "url");
     source.setObserver(&test.styleObserver);
-    source.loadDescription(test.fileSource);
+    source.loadDescription(*test.fileSource);
 
     test.run();
 }
@@ -121,7 +118,7 @@ TEST(Source, LoadingFail) {
 TEST(Source, LoadingCorrupt) {
     SourceTest test;
 
-    test.fileSource.sourceResponse = [&] (const Resource& resource) {
+    test.fileSource->sourceResponse = [&] (const Resource& resource) {
         EXPECT_EQ("url", resource.url);
         Response response;
         response.data = std::make_unique<std::string>("CORRUPTED");
@@ -136,7 +133,7 @@ TEST(Source, LoadingCorrupt) {
 
     VectorSource source("source", "url");
     source.setObserver(&test.styleObserver);
-    source.loadDescription(test.fileSource);
+    source.loadDescription(*test.fileSource);
 
     test.run();
 }
@@ -144,7 +141,7 @@ TEST(Source, LoadingCorrupt) {
 TEST(Source, RasterTileEmpty) {
     SourceTest test;
 
-    test.fileSource.tileResponse = [&] (const Resource&) {
+    test.fileSource->tileResponse = [&] (const Resource&) {
         Response response;
         response.noContent = true;
         return response;
@@ -158,7 +155,7 @@ TEST(Source, RasterTileEmpty) {
     tileset.tiles = { "tiles" };
 
     RasterSource source("source", tileset, 512);
-    source.loadDescription(test.fileSource);
+    source.loadDescription(*test.fileSource);
 
     test.renderSourceObserver.tileChanged = [&] (RenderSource& source_, const OverscaledTileID&) {
         EXPECT_EQ("source", source_.baseImpl->id);
@@ -183,7 +180,7 @@ TEST(Source, RasterTileEmpty) {
 TEST(Source, RasterDEMTileEmpty) {
     SourceTest test;
 
-    test.fileSource.tileResponse = [&] (const Resource&) {
+    test.fileSource->tileResponse = [&] (const Resource&) {
         Response response;
         response.noContent = true;
         return response;
@@ -197,7 +194,7 @@ TEST(Source, RasterDEMTileEmpty) {
     tileset.tiles = { "tiles" };
 
     RasterDEMSource source("source", tileset, 512);
-    source.loadDescription(test.fileSource);
+    source.loadDescription(*test.fileSource);
 
     test.renderSourceObserver.tileChanged = [&] (RenderSource& source_, const OverscaledTileID&) {
         EXPECT_EQ("source", source_.baseImpl->id);
@@ -222,7 +219,7 @@ TEST(Source, RasterDEMTileEmpty) {
 TEST(Source, VectorTileEmpty) {
     SourceTest test;
 
-    test.fileSource.tileResponse = [&] (const Resource&) {
+    test.fileSource->tileResponse = [&] (const Resource&) {
         Response response;
         response.noContent = true;
         return response;
@@ -238,7 +235,7 @@ TEST(Source, VectorTileEmpty) {
     tileset.tiles = { "tiles" };
 
     VectorSource source("source", tileset);
-    source.loadDescription(test.fileSource);
+    source.loadDescription(*test.fileSource);
 
     test.renderSourceObserver.tileChanged = [&] (RenderSource& source_, const OverscaledTileID&) {
         EXPECT_EQ("source", source_.baseImpl->id);
@@ -263,7 +260,7 @@ TEST(Source, VectorTileEmpty) {
 TEST(Source, RasterTileFail) {
     SourceTest test;
 
-    test.fileSource.tileResponse = [&] (const Resource&) {
+    test.fileSource->tileResponse = [&] (const Resource&) {
         Response response;
         response.error = std::make_unique<Response::Error>(
             Response::Error::Reason::Other,
@@ -279,7 +276,7 @@ TEST(Source, RasterTileFail) {
     tileset.tiles = { "tiles" };
 
     RasterSource source("source", tileset, 512);
-    source.loadDescription(test.fileSource);
+    source.loadDescription(*test.fileSource);
 
     test.renderSourceObserver.tileError = [&] (RenderSource& source_, const OverscaledTileID& tileID, std::exception_ptr error) {
         EXPECT_EQ(SourceType::Raster, source_.baseImpl->type);
@@ -302,7 +299,7 @@ TEST(Source, RasterTileFail) {
 TEST(Source, RasterDEMTileFail) {
     SourceTest test;
 
-    test.fileSource.tileResponse = [&] (const Resource&) {
+    test.fileSource->tileResponse = [&] (const Resource&) {
         Response response;
         response.error = std::make_unique<Response::Error>(
             Response::Error::Reason::Other,
@@ -318,7 +315,7 @@ TEST(Source, RasterDEMTileFail) {
     tileset.tiles = { "tiles" };
 
     RasterDEMSource source("source", tileset, 512);
-    source.loadDescription(test.fileSource);
+    source.loadDescription(*test.fileSource);
 
     test.renderSourceObserver.tileError = [&] (RenderSource& source_, const OverscaledTileID& tileID, std::exception_ptr error) {
         EXPECT_EQ(SourceType::RasterDEM, source_.baseImpl->type);
@@ -341,7 +338,7 @@ TEST(Source, RasterDEMTileFail) {
 TEST(Source, VectorTileFail) {
     SourceTest test;
 
-    test.fileSource.tileResponse = [&] (const Resource&) {
+    test.fileSource->tileResponse = [&] (const Resource&) {
         Response response;
         response.error = std::make_unique<Response::Error>(
             Response::Error::Reason::Other,
@@ -359,7 +356,7 @@ TEST(Source, VectorTileFail) {
     tileset.tiles = { "tiles" };
 
     VectorSource source("source", tileset);
-    source.loadDescription(test.fileSource);
+    source.loadDescription(*test.fileSource);
 
     test.renderSourceObserver.tileError = [&] (RenderSource& source_, const OverscaledTileID& tileID, std::exception_ptr error) {
         EXPECT_EQ(SourceType::Vector, source_.baseImpl->type);
@@ -382,7 +379,7 @@ TEST(Source, VectorTileFail) {
 TEST(Source, RasterTileCorrupt) {
     SourceTest test;
 
-    test.fileSource.tileResponse = [&] (const Resource&) {
+    test.fileSource->tileResponse = [&] (const Resource&) {
         Response response;
         response.data = std::make_unique<std::string>("CORRUPTED");
         return response;
@@ -396,7 +393,7 @@ TEST(Source, RasterTileCorrupt) {
     tileset.tiles = { "tiles" };
 
     RasterSource source("source", tileset, 512);
-    source.loadDescription(test.fileSource);
+    source.loadDescription(*test.fileSource);
 
     test.renderSourceObserver.tileError = [&] (RenderSource& source_, const OverscaledTileID& tileID, std::exception_ptr error) {
         EXPECT_EQ(source_.baseImpl->type, SourceType::Raster);
@@ -420,7 +417,7 @@ TEST(Source, RasterTileCorrupt) {
 TEST(Source, RasterDEMTileCorrupt) {
     SourceTest test;
 
-    test.fileSource.tileResponse = [&] (const Resource&) {
+    test.fileSource->tileResponse = [&] (const Resource&) {
         Response response;
         response.data = std::make_unique<std::string>("CORRUPTED");
         return response;
@@ -434,7 +431,7 @@ TEST(Source, RasterDEMTileCorrupt) {
     tileset.tiles = { "tiles" };
 
     RasterDEMSource source("source", tileset, 512);
-    source.loadDescription(test.fileSource);
+    source.loadDescription(*test.fileSource);
 
     test.renderSourceObserver.tileError = [&] (RenderSource& source_, const OverscaledTileID& tileID, std::exception_ptr error) {
         EXPECT_EQ(source_.baseImpl->type, SourceType::RasterDEM);
@@ -458,7 +455,7 @@ TEST(Source, RasterDEMTileCorrupt) {
 TEST(Source, VectorTileCorrupt) {
     SourceTest test;
 
-    test.fileSource.tileResponse = [&] (const Resource&) {
+    test.fileSource->tileResponse = [&] (const Resource&) {
         Response response;
         response.data = std::make_unique<std::string>("CORRUPTED");
         return response;
@@ -474,7 +471,7 @@ TEST(Source, VectorTileCorrupt) {
     tileset.tiles = { "tiles" };
 
     VectorSource source("source", tileset);
-    source.loadDescription(test.fileSource);
+    source.loadDescription(*test.fileSource);
 
     test.renderSourceObserver.tileError = [&] (RenderSource& source_, const OverscaledTileID& tileID, std::exception_ptr error) {
         EXPECT_EQ(source_.baseImpl->type, SourceType::Vector);
@@ -497,7 +494,7 @@ TEST(Source, VectorTileCorrupt) {
 TEST(Source, RasterTileCancel) {
     SourceTest test;
 
-    test.fileSource.tileResponse = [&] (const Resource&) {
+    test.fileSource->tileResponse = [&] (const Resource&) {
         test.end();
         return optional<Response>();
     };
@@ -510,7 +507,7 @@ TEST(Source, RasterTileCancel) {
     tileset.tiles = { "tiles" };
 
     RasterSource source("source", tileset, 512);
-    source.loadDescription(test.fileSource);
+    source.loadDescription(*test.fileSource);
 
     test.renderSourceObserver.tileChanged = [&] (RenderSource&, const OverscaledTileID&) {
         FAIL() << "Should never be called";
@@ -534,7 +531,7 @@ TEST(Source, RasterTileCancel) {
 TEST(Source, RasterDEMTileCancel) {
     SourceTest test;
 
-    test.fileSource.tileResponse = [&] (const Resource&) {
+    test.fileSource->tileResponse = [&] (const Resource&) {
         test.end();
         return optional<Response>();
     };
@@ -547,7 +544,7 @@ TEST(Source, RasterDEMTileCancel) {
     tileset.tiles = { "tiles" };
 
     RasterDEMSource source("source", tileset, 512);
-    source.loadDescription(test.fileSource);
+    source.loadDescription(*test.fileSource);
 
     test.renderSourceObserver.tileChanged = [&] (RenderSource&, const OverscaledTileID&) {
         FAIL() << "Should never be called";
@@ -571,7 +568,7 @@ TEST(Source, RasterDEMTileCancel) {
 TEST(Source, VectorTileCancel) {
     SourceTest test;
 
-    test.fileSource.tileResponse = [&] (const Resource&) {
+    test.fileSource->tileResponse = [&] (const Resource&) {
         test.end();
         return optional<Response>();
     };
@@ -586,7 +583,7 @@ TEST(Source, VectorTileCancel) {
     tileset.tiles = { "tiles" };
 
     VectorSource source("source", tileset);
-    source.loadDescription(test.fileSource);
+    source.loadDescription(*test.fileSource);
 
     test.renderSourceObserver.tileChanged = [&] (RenderSource&, const OverscaledTileID&) {
         FAIL() << "Should never be called";
@@ -617,13 +614,13 @@ TEST(Source, RasterTileAttribution) {
     std::string mapboxOSM = ("<a href='https://www.mapbox.com/about/maps/' target='_blank'>&copy; Mapbox</a> "
                              "<a href='http://www.openstreetmap.org/about/' target='_blank'>©️ OpenStreetMap</a>");
 
-    test.fileSource.tileResponse = [&] (const Resource&) {
+    test.fileSource->tileResponse = [&] (const Resource&) {
         Response response;
         response.noContent = true;
         return response;
     };
 
-    test.fileSource.sourceResponse = [&] (const Resource& resource) {
+    test.fileSource->sourceResponse = [&] (const Resource& resource) {
         EXPECT_EQ("url", resource.url);
         Response response;
         response.data = std::make_unique<std::string>(R"TILEJSON({ "tilejson": "2.1.0", "attribution": ")TILEJSON" +
@@ -640,7 +637,7 @@ TEST(Source, RasterTileAttribution) {
 
     RasterSource source("source", "url", 512);
     source.setObserver(&test.styleObserver);
-    source.loadDescription(test.fileSource);
+    source.loadDescription(*test.fileSource);
 
     auto renderSource = RenderSource::create(source.baseImpl);
     renderSource->update(source.baseImpl,
@@ -661,13 +658,13 @@ TEST(Source, RasterDEMTileAttribution) {
 
     std::string mapbox = ("<a href='https://www.mapbox.com/about/maps/' target='_blank'>&copy; Mapbox</a> ");
 
-    test.fileSource.tileResponse = [&] (const Resource&) {
+    test.fileSource->tileResponse = [&] (const Resource&) {
         Response response;
         response.noContent = true;
         return response;
     };
 
-    test.fileSource.sourceResponse = [&] (const Resource& resource) {
+    test.fileSource->sourceResponse = [&] (const Resource& resource) {
         EXPECT_EQ("url", resource.url);
         Response response;
         response.data = std::make_unique<std::string>(R"TILEJSON({ "tilejson": "2.1.0", "attribution": ")TILEJSON" +
@@ -683,7 +680,7 @@ TEST(Source, RasterDEMTileAttribution) {
 
     RasterDEMSource source("source", "url", 512);
     source.setObserver(&test.styleObserver);
-    source.loadDescription(test.fileSource);
+    source.loadDescription(*test.fileSource);
 
     auto renderSource = RenderSource::create(source.baseImpl);
     renderSource->update(source.baseImpl,
@@ -698,7 +695,7 @@ TEST(Source, RasterDEMTileAttribution) {
 TEST(Source, GeoJSonSourceUrlUpdate) {
     SourceTest test;
 
-    test.fileSource.sourceResponse = [&] (const Resource& resource) {
+    test.fileSource->sourceResponse = [&] (const Resource& resource) {
         EXPECT_EQ("url", resource.url);
         Response response;
         response.data = std::make_unique<std::string>(R"({"geometry": {"type": "Point", "coordinates": [1.1, 1.1]}, "type": "Feature", "properties": {}})");
@@ -714,7 +711,7 @@ TEST(Source, GeoJSonSourceUrlUpdate) {
     source.setObserver(&test.styleObserver);
 
     // Load initial, so the source state will be loaded=true
-    source.loadDescription(test.fileSource);
+    source.loadDescription(*test.fileSource);
 
     // Schedule an update
     test.loop.invoke([&] () {
@@ -728,7 +725,7 @@ TEST(Source, GeoJSonSourceUrlUpdate) {
 TEST(Source, ImageSourceImageUpdate) {
     SourceTest test;
 
-    test.fileSource.response = [&] (const Resource& resource) {
+    test.fileSource->response = [&] (const Resource& resource) {
         EXPECT_EQ("http://url", resource.url);
         Response response;
         response.data = std::make_unique<std::string>(util::read_file("test/fixtures/image/no_profile.png"));
@@ -745,7 +742,7 @@ TEST(Source, ImageSourceImageUpdate) {
     source.setObserver(&test.styleObserver);
 
     // Load initial, so the source state will be loaded=true
-    source.loadDescription(test.fileSource);
+    source.loadDescription(*test.fileSource);
     PremultipliedImage rgba({ 1, 1 });
     rgba.data[0] = 255;
     rgba.data[1] = 254;
@@ -763,9 +760,8 @@ TEST(Source, ImageSourceImageUpdate) {
 
 TEST(Source, CustomGeometrySourceSetTileData) {
     SourceTest test;
-    std::shared_ptr<ThreadPool> threadPool = sharedThreadPool();
     CustomGeometrySource source("source", CustomGeometrySource::Options());
-    source.loadDescription(test.fileSource);
+    source.loadDescription(*test.fileSource);
 
     LineLayer layer("id", "source");
     layer.setSourceLayer("water");

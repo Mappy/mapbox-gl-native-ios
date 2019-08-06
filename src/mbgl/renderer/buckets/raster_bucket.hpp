@@ -18,7 +18,7 @@ public:
     RasterBucket(std::shared_ptr<PremultipliedImage>);
     ~RasterBucket() override;
 
-    void upload(gfx::Context&) override;
+    void upload(gfx::UploadPass&) override;
     bool hasData() const override;
     bool supportsLayer(const style::Layer::Impl&) const override;
 
@@ -38,6 +38,7 @@ public:
 
     optional<gfx::VertexBuffer<RasterLayoutVertex>> vertexBuffer;
     optional<gfx::IndexBuffer> indexBuffer;
+    const std::string drawScopeID;
 };
 
 } // namespace mbgl

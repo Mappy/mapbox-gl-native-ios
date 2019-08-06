@@ -10,7 +10,6 @@
 #include <mbgl/map/mode.hpp>
 #include <mbgl/util/platform.hpp>
 #include <mbgl/storage/reachability.h>
-#include <mbgl/util/default_thread_pool.hpp>
 #include <mbgl/storage/resource_options.hpp>
 #include <mbgl/storage/network_status.hpp>
 #include <mbgl/style/style.hpp>
@@ -29,7 +28,6 @@
 #include <mbgl/util/default_styles.hpp>
 #include <mbgl/util/chrono.hpp>
 #include <mbgl/util/run_loop.hpp>
-#include <mbgl/util/shared_thread_pool.hpp>
 #include <mbgl/util/string.hpp>
 #include <mbgl/util/projection.hpp>
 
@@ -280,8 +278,6 @@ public:
     MBGLView *_mbglView;
     std::unique_ptr<MGLRenderFrontend> _rendererFrontend;
     
-    std::shared_ptr<mbgl::ThreadPool> _mbglThreadPool;
-
     BOOL _opaque;
 
     MGLAnnotationTagContextMap _annotationContextsByAnnotationTag;
@@ -476,9 +472,8 @@ public:
 
     // setup mbgl map
     MGLRendererConfiguration *config = [MGLRendererConfiguration currentConfiguration];
-    _mbglThreadPool = mbgl::sharedThreadPool();
 
-    auto renderer = std::make_unique<mbgl::Renderer>(*_mbglView, config.scaleFactor, *_mbglThreadPool, config.cacheDir, config.localFontFamilyName);
+    auto renderer = std::make_unique<mbgl::Renderer>(*_mbglView, config.scaleFactor, config.cacheDir, config.localFontFamilyName);
     BOOL enableCrossSourceCollisions = !config.perSourceCollisions;
     _rendererFrontend = std::make_unique<MGLRenderFrontend>(std::move(renderer), self, *_mbglView);
 
@@ -495,7 +490,7 @@ public:
                    .withAssetPath([NSBundle mainBundle].resourceURL.path.UTF8String);
 
     NSAssert(!_mbglMap, @"_mbglMap should be NULL");
-    _mbglMap = new mbgl::Map(*_rendererFrontend, *_mbglView, *_mbglThreadPool, mapOptions, resourceOptions);
+    _mbglMap = new mbgl::Map(*_rendererFrontend, *_mbglView, mapOptions, resourceOptions);
 
     // start paused if in IB
     if (background) {
@@ -772,7 +767,6 @@ public:
     _mbglView = nullptr;
 
     _rendererFrontend.reset();
-    _mbglThreadPool.reset();
 }
 
 - (void)dealloc
@@ -1724,8 +1718,6 @@ public:
 
     if (pan.state == UIGestureRecognizerStateBegan)
     {
-        [self trackGestureEvent:MMEEventGesturePanStart forRecognizer:pan];
-
         self.userTrackingMode = MGLUserTrackingModeNone;
 
         [self notifyGestureDidBegin];
@@ -1766,17 +1758,6 @@ public:
         }
 
         [self notifyGestureDidEndWithDrift:drift];
-
-        // metrics: pan end
-        CGPoint pointInView = CGPointMake([pan locationInView:pan.view].x, [pan locationInView:pan.view].y);
-        CLLocationCoordinate2D panCoordinate = [self convertPoint:pointInView toCoordinateFromView:pan.view];
-        int zoom = round([self zoomLevel]);
-
-        [MGLMapboxEvents pushEvent:MMEEventTypeMapDragEnd withAttributes:@{
-            MMEEventKeyLatitude: @(panCoordinate.latitude),
-            MMEEventKeyLongitude: @(panCoordinate.longitude),
-            MMEEventKeyZoomLevel: @(zoom)
-        }];
     }
 
 }
@@ -1794,8 +1775,6 @@ public:
 
     if (pinch.state == UIGestureRecognizerStateBegan)
     {
-        [self trackGestureEvent:MMEEventGesturePinchStart forRecognizer:pinch];
-
         self.scale = powf(2, [self zoomLevel]);
 
         [self notifyGestureDidBegin];
@@ -1898,8 +1877,6 @@ public:
 
     if (rotate.state == UIGestureRecognizerStateBegan)
     {
-        [self trackGestureEvent:MMEEventGestureRotateStart forRecognizer:rotate];
-
         self.angle = MGLRadiansFromDegrees(*self.mbglMap.getCameraOptions().bearing) * -1;
 
         if (self.userTrackingMode != MGLUserTrackingModeNone)
@@ -1990,8 +1967,6 @@ public:
 - (void)handleSingleTapGesture:(UITapGestureRecognizer *)singleTap
 {
     if (singleTap.state != UIGestureRecognizerStateRecognized) return;
-
-    [self trackGestureEvent:MMEEventGestureSingleTap forRecognizer:singleTap];
 
     if (self.mapViewProxyAccessibilityElement.accessibilityElementIsFocused)
     {
@@ -2096,8 +2071,6 @@ public:
 
     if ([self _shouldChangeFromCamera:oldCamera toCamera:toCamera])
     {
-        [self trackGestureEvent:MMEEventGestureDoubleTap forRecognizer:doubleTap];
-
         mbgl::ScreenCoordinate center(gesturePoint.x, gesturePoint.y);
         self.mbglMap.easeTo(mbgl::CameraOptions().withZoom(newZoom).withAnchor(center), MGLDurationFromTimeInterval(MGLAnimationDuration));
 
@@ -2136,8 +2109,6 @@ public:
 
     if ([self _shouldChangeFromCamera:oldCamera toCamera:toCamera])
     {
-        [self trackGestureEvent:MMEEventGestureTwoFingerSingleTap forRecognizer:twoFingerTap];
-
         mbgl::ScreenCoordinate center(gesturePoint.x, gesturePoint.y);
         self.mbglMap.easeTo(mbgl::CameraOptions().withZoom(newZoom).withAnchor(center), MGLDurationFromTimeInterval(MGLAnimationDuration));
 
@@ -2160,8 +2131,6 @@ public:
 
     if (quickZoom.state == UIGestureRecognizerStateBegan)
     {
-        [self trackGestureEvent:MMEEventGestureQuickZoom forRecognizer:quickZoom];
-
         self.scale = powf(2, [self zoomLevel]);
 
         self.quickZoomStart = [quickZoom locationInView:quickZoom.view].y;
@@ -2207,7 +2176,6 @@ public:
     if (twoFingerDrag.state == UIGestureRecognizerStateBegan)
     {
         initialPitch = *self.mbglMap.getCameraOptions().pitch;
-        [self trackGestureEvent:MMEEventGesturePitchStart forRecognizer:twoFingerDrag];
         [self notifyGestureDidBegin];
     }
 
@@ -2410,20 +2378,6 @@ public:
     return degrees;
 }
 
-- (void)trackGestureEvent:(NSString *)gestureID forRecognizer:(UIGestureRecognizer *)recognizer
-{
-    CGPoint pointInView = CGPointMake([recognizer locationInView:recognizer.view].x, [recognizer locationInView:recognizer.view].y);
-    CLLocationCoordinate2D gestureCoordinate = [self convertPoint:pointInView toCoordinateFromView:recognizer.view];
-    int zoom = round([self zoomLevel]);
-
-    [MGLMapboxEvents pushEvent:MMEEventTypeMapTap withAttributes:@{
-        MMEEventKeyLatitude: @(gestureCoordinate.latitude),
-        MMEEventKeyLongitude: @(gestureCoordinate.longitude),
-        MMEEventKeyZoomLevel: @(zoom),
-        MMEEventKeyGestureID: gestureID
-    }];
-}
-
 #pragma mark - Attribution -
 
 - (void)showAttribution:(id)sender
@@ -2481,7 +2435,7 @@ public:
     }];
     [attributionController addAction:telemetryAction];
     
-    NSString *cancelTitle = NSLocalizedStringWithDefaultValue(@"CANCEL", nil, nil, @"Cancel", @"");
+    NSString *cancelTitle = NSLocalizedStringWithDefaultValue(@"CANCEL", nil, nil, @"Cancel", @"Title of button for dismissing attribution action sheet");
     UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:cancelTitle
                                                            style:UIAlertActionStyleCancel
                                                          handler:NULL];
@@ -3589,7 +3543,7 @@ public:
         latLngs.push_back({coordinates[i].latitude, coordinates[i].longitude});
     }
     
-    CLLocationDirection cameraDirection = direction >= 0 ? direction : 0;
+    CLLocationDirection cameraDirection = direction >= 0 ? direction : self.direction;
 
     mbgl::CameraOptions cameraOptions = self.mbglMap.cameraForLatLngs(latLngs, padding, cameraDirection);
 
@@ -3873,9 +3827,9 @@ public:
 {
     if (!_mbglMap)
     {
-        return nil;
+        return self.residualCamera;
     }
-    
+
     mbgl::EdgeInsets padding = MGLEdgeInsetsFromNSEdgeInsets(insets);
     padding += MGLEdgeInsetsFromNSEdgeInsets(self.contentInset);
     mbgl::CameraOptions cameraOptions = self.mbglMap.cameraForLatLngBounds(MGLLatLngBoundsFromCoordinateBounds(bounds), padding);
@@ -3886,7 +3840,7 @@ public:
 {
     if (!_mbglMap)
     {
-        return nil;
+        return self.residualCamera;
     }
 
     mbgl::EdgeInsets padding = MGLEdgeInsetsFromNSEdgeInsets(insets);
@@ -3903,7 +3857,7 @@ public:
 - (MGLMapCamera *)camera:(MGLMapCamera *)camera fittingShape:(MGLShape *)shape edgePadding:(UIEdgeInsets)insets {
     if (!_mbglMap)
     {
-        return nil;
+        return self.residualCamera;
     }
 
     mbgl::EdgeInsets padding = MGLEdgeInsetsFromNSEdgeInsets(insets);
@@ -3921,7 +3875,7 @@ public:
 - (MGLMapCamera *)cameraThatFitsShape:(MGLShape *)shape direction:(CLLocationDirection)direction edgePadding:(UIEdgeInsets)insets {
     if (!_mbglMap)
     {
-        return nil;
+        return self.residualCamera;
     }
 
     mbgl::EdgeInsets padding = MGLEdgeInsetsFromNSEdgeInsets(insets);
@@ -3936,7 +3890,7 @@ public:
 {
     if (!_mbglMap)
     {
-        return nil;
+        return self.residualCamera;
     }
 
     mbgl::CameraOptions mapCamera = self.mbglMap.getCameraOptions();

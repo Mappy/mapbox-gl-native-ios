@@ -5,7 +5,7 @@
 #include <mbgl/util/default_styles.hpp>
 #include <mbgl/util/logging.hpp>
 #include <mbgl/util/platform.hpp>
-#include <mbgl/util/default_thread_pool.hpp>
+#include <mbgl/util/string.hpp>
 #include <mbgl/storage/default_file_source.hpp>
 #include <mbgl/style/style.hpp>
 #include <mbgl/renderer/renderer.hpp>
@@ -108,10 +108,9 @@ int main(int argc, char *argv[]) {
         mbgl::Log::Warning(mbgl::Event::Setup, "Application is offline. Press `O` to toggle online status.");
     }
 
-    mbgl::ThreadPool threadPool(4);
-    GLFWRendererFrontend rendererFrontend { std::make_unique<mbgl::Renderer>(view->getRendererBackend(), view->getPixelRatio(), threadPool), *view };
+    GLFWRendererFrontend rendererFrontend { std::make_unique<mbgl::Renderer>(view->getRendererBackend(), view->getPixelRatio()), *view };
 
-    mbgl::Map map(rendererFrontend, *view, threadPool,
+    mbgl::Map map(rendererFrontend, *view,
                   mbgl::MapOptions().withSize(view->getSize()).withPixelRatio(view->getPixelRatio()), resourceOptions);
 
     backend.setMap(&map);
@@ -159,6 +158,14 @@ int main(int argc, char *argv[]) {
         isPaused = !isPaused;
     });
 
+    view->setResetCacheCallback([fileSource] () {
+        fileSource->resetCache([](std::exception_ptr ex) {
+            if (ex) {
+                mbgl::Log::Error(mbgl::Event::Database, "Failed to reset cache:: %s", mbgl::util::toString(ex).c_str());
+            }
+        });
+    });
+
     // Load style
     if (style.empty()) {
         const char *url = getenv("MAPBOX_STYLE_URL");
@@ -190,5 +197,6 @@ int main(int argc, char *argv[]) {
                     settings.latitude, settings.longitude, settings.zoom, settings.bearing);
 
     view = nullptr;
+
     return 0;
 }
