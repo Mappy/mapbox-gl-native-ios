@@ -18,7 +18,7 @@ private:
     bool hasTransition() const override;
     bool hasCrossfade() const override;
     bool is3D() const override;
-    void render(PaintParameters&, RenderSource*) override;
+    void render(PaintParameters&) override;
 
     bool queryIntersectsFeature(
         const GeometryCoordinates&,

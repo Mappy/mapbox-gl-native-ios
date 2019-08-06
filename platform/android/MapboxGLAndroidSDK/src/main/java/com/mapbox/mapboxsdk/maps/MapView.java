@@ -171,7 +171,9 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
     Transform transform = new Transform(this, nativeMapView, cameraDispatcher);
 
     // MapboxMap
-    mapboxMap = new MapboxMap(nativeMapView, transform, uiSettings, proj, registerTouchListener, cameraDispatcher);
+    List<MapboxMap.OnDeveloperAnimationListener> developerAnimationListeners = new ArrayList<>();
+    mapboxMap = new MapboxMap(nativeMapView, transform, uiSettings, proj, registerTouchListener, cameraDispatcher,
+      developerAnimationListeners);
     mapboxMap.injectAnnotationManager(annotationManager);
 
     // user input
@@ -184,7 +186,7 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
     compassView.setOnClickListener(createCompassClickListener(cameraDispatcher));
 
     // LocationComponent
-    mapboxMap.injectLocationComponent(new LocationComponent(mapboxMap));
+    mapboxMap.injectLocationComponent(new LocationComponent(mapboxMap, transform, developerAnimationListeners));
 
     // inject widgets with MapboxMap
     attrView.setOnClickListener(attributionClickListener = new AttributionClickListener(context, mapboxMap));
@@ -811,6 +813,36 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
   }
 
   /**
+   * Set a callback that's invoked when map needs to release unused image resources.
+   * <p>
+   * A callback will be called only for unused images that were provided by the client via
+   * {@link OnStyleImageMissingListener#onStyleImageMissing(String)} listener interface.
+   * </p>
+   * <p>
+   * By default, platform will remove unused images from the style. By adding listener, default
+   * behavior can be overridden and client can control whether to release unused resources.
+   * </p>
+   *
+   * @param listener The callback that's invoked when map needs to release unused image resources
+   */
+  public void addOnCanRemoveUnusedStyleImageListener(@NonNull OnCanRemoveUnusedStyleImageListener listener) {
+    mapChangeReceiver.addOnCanRemoveUnusedStyleImageListener(listener);
+  }
+
+  /**
+   * Removes a callback that's invoked when map needs to release unused image resources.
+   * <p>
+   * When all listeners are removed, platform will fallback to default behavior, which is to remove
+   * unused images from the style.
+   * </p>
+   *
+   * @param listener The callback that's invoked when map needs to release unused image resources
+   */
+  public void removeOnCanRemoveUnusedStyleImageListener(@NonNull OnCanRemoveUnusedStyleImageListener listener) {
+    mapChangeReceiver.removeOnCanRemoveUnusedStyleImageListener(listener);
+  }
+
+  /**
    * Interface definition for a callback to be invoked when the camera will change.
    * <p>
    * {@link MapView#addOnCameraWillChangeListener(OnCameraWillChangeListener)}
@@ -1005,6 +1037,22 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
      * @param id the id of the icon that is missing
      */
     void onStyleImageMissing(@NonNull String id);
+  }
+
+  /**
+   * Interface definition for a callback to be invoked with an unused image identifier.
+   * <p>
+   * {@link MapView#addOnCanRemoveUnusedStyleImageListener(OnCanRemoveUnusedStyleImageListener)}
+   * </p>
+   */
+  public interface OnCanRemoveUnusedStyleImageListener {
+    /**
+     * Called when the map needs to release unused image resources.
+     *
+     * @param id of an image that is not used by the map and can be removed from the style.
+     * @return true if image can be removed, false otherwise.
+     */
+    boolean onCanRemoveUnusedStyleImage(@NonNull String id);
   }
 
   /**

@@ -16,14 +16,28 @@ class PropertyEvaluationParameters;
 class UploadParameters;
 class PaintParameters;
 class RenderSource;
-class RenderLayerSymbolInterface;
 class RenderTile;
 class TransformState;
+class PatternAtlas;
 
 class LayerRenderData {
 public:
     std::shared_ptr<Bucket> bucket;
     Immutable<style::LayerProperties> layerProperties;
+};
+
+class LayerPlacementData {
+public:
+    std::reference_wrapper<Bucket> bucket;
+    std::reference_wrapper<RenderTile> tile;
+};
+
+class LayerPrepareParameters {
+public:
+    RenderSource* source;
+    ImageManager& imageManager;
+    PatternAtlas& patternAtlas;
+    const TransformState& state;
 };
 
 class RenderLayer {
@@ -49,8 +63,8 @@ public:
     // Returns true if the layer has a pattern property and is actively crossfading.
     virtual bool hasCrossfade() const = 0;
 
-    // Returns instance of RenderLayerSymbolInterface if RenderLayer supports it.
-    virtual const RenderLayerSymbolInterface* getSymbolInterface() const;
+    // Returns true is the layer is subject to placement.
+    bool needsPlacement() const;
 
     // Returns true if layer writes to depth buffer by drawing using PaintParameters::depthModeFor3D().
     virtual bool is3D() const { return false; }
@@ -67,7 +81,7 @@ public:
     bool supportsZoom(float zoom) const;
 
     virtual void upload(gfx::UploadPass&, UploadParameters&) {}
-    virtual void render(PaintParameters&, RenderSource*) = 0;
+    virtual void render(PaintParameters&) = 0;
 
     // Check wether the given geometry intersects
     // with the feature
@@ -79,8 +93,11 @@ public:
             const float,
             const mat4&) const { return false; };
 
-    using RenderTiles = std::vector<std::reference_wrapper<RenderTile>>;
-    virtual void setRenderTiles(RenderTiles, const TransformState&);
+    virtual void prepare(const LayerPrepareParameters&);
+
+    const std::vector<LayerPlacementData>& getPlacementData() const { 
+        return placementData; 
+    }
 
     // Latest evaluated properties.
     Immutable<style::LayerProperties> evaluatedProperties;
@@ -102,15 +119,19 @@ protected:
     const LayerRenderData* getRenderDataForPass(const RenderTile&, RenderPass) const;
 
 protected:
+    using RenderTiles = std::vector<std::reference_wrapper<RenderTile>>;
     // Stores current set of tiles to be rendered for this layer.
-    std::vector<std::reference_wrapper<RenderTile>> renderTiles;
+    RenderTiles renderTiles;
 
     // Stores what render passes this layer is currently enabled for. This depends on the
     // evaluated StyleProperties object and is updated accordingly.
     RenderPass passes = RenderPass::None;
 
-private:
+    std::vector<LayerPlacementData> placementData;
+
     RenderTiles filterRenderTiles(RenderTiles) const;
+
+private:
     // Some layers may not render correctly on some hardware when the vertex attribute limit of
     // that GPU is exceeded. More attributes are used when adding many data driven paint properties
     // to a layer.

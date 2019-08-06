@@ -4,7 +4,6 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.FloatRange;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 
 import com.mapbox.android.telemetry.AppUserTurnstile;
 import com.mapbox.android.telemetry.MapboxTelemetry;
@@ -21,9 +20,8 @@ import java.util.UUID;
 
 public class TelemetryImpl implements TelemetryDefinition {
 
-  @Nullable
-  private MapboxTelemetry telemetry;
-  private Context appContext;
+  private final MapboxTelemetry telemetry;
+  private final Context appContext;
 
   public TelemetryImpl() {
     appContext = Mapbox.getApplicationContext();

@@ -12,6 +12,7 @@ import android.support.annotation.Size;
 import android.support.annotation.UiThread;
 import android.text.TextUtils;
 import android.view.View;
+
 import com.mapbox.android.gestures.AndroidGesturesManager;
 import com.mapbox.android.gestures.MoveGestureDetector;
 import com.mapbox.android.gestures.RotateGestureDetector;
@@ -63,6 +64,7 @@ public final class MapboxMap {
   private final CameraChangeDispatcher cameraChangeDispatcher;
   private final OnGesturesManagerInteractionListener onGesturesManagerInteractionListener;
   private final List<Style.OnStyleLoaded> awaitingStyleGetters = new ArrayList<>();
+  private final List<OnDeveloperAnimationListener> developerAnimationStartedListeners;
 
   @Nullable
   private Style.OnStyleLoaded styleLoadedCallback;
@@ -79,13 +81,15 @@ public final class MapboxMap {
   private boolean debugActive;
 
   MapboxMap(NativeMap map, Transform transform, UiSettings ui, Projection projection,
-            OnGesturesManagerInteractionListener listener, CameraChangeDispatcher cameraChangeDispatcher) {
+            OnGesturesManagerInteractionListener listener, CameraChangeDispatcher cameraChangeDispatcher,
+            List<OnDeveloperAnimationListener> developerAnimationStartedListeners) {
     this.nativeMapView = map;
     this.uiSettings = ui;
     this.projection = projection;
     this.transform = transform;
     this.onGesturesManagerInteractionListener = listener;
     this.cameraChangeDispatcher = cameraChangeDispatcher;
+    this.developerAnimationStartedListeners = developerAnimationStartedListeners;
   }
 
   void initialise(@NonNull Context context, @NonNull MapboxMapOptions options) {
@@ -416,6 +420,7 @@ public final class MapboxMap {
    */
   public final void moveCamera(@NonNull final CameraUpdate update,
                                @Nullable final MapboxMap.CancelableCallback callback) {
+    notifyDeveloperAnimationListeners();
     transform.moveCamera(MapboxMap.this, update, callback);
   }
 
@@ -524,10 +529,10 @@ public final class MapboxMap {
                                final int durationMs,
                                final boolean easingInterpolator,
                                @Nullable final MapboxMap.CancelableCallback callback) {
-
     if (durationMs <= 0) {
       throw new IllegalArgumentException("Null duration passed into easeCamera");
     }
+    notifyDeveloperAnimationListeners();
     transform.easeCamera(MapboxMap.this, update, durationMs, easingInterpolator, callback);
   }
 
@@ -598,7 +603,7 @@ public final class MapboxMap {
     if (durationMs <= 0) {
       throw new IllegalArgumentException("Null duration passed into animateCamera");
     }
-
+    notifyDeveloperAnimationListeners();
     transform.animateCamera(MapboxMap.this, update, durationMs, callback);
   }
 
@@ -610,7 +615,7 @@ public final class MapboxMap {
    * @param y Amount of pixels to scroll to in y direction
    */
   public void scrollBy(float x, float y) {
-    nativeMapView.moveBy(x, y, 0);
+    scrollBy(x, y, 0);
   }
 
   /**
@@ -622,6 +627,7 @@ public final class MapboxMap {
    * @param duration Amount of time the scrolling should take
    */
   public void scrollBy(float x, float y, long duration) {
+    notifyDeveloperAnimationListeners();
     nativeMapView.moveBy(x, y, duration);
   }
 
@@ -633,6 +639,7 @@ public final class MapboxMap {
    * Resets the map view to face north.
    */
   public void resetNorth() {
+    notifyDeveloperAnimationListeners();
     transform.resetNorth();
   }
 
@@ -645,6 +652,7 @@ public final class MapboxMap {
    * @param duration The duration of the transformation
    */
   public void setFocalBearing(double bearing, float focalX, float focalY, long duration) {
+    notifyDeveloperAnimationListeners();
     transform.setBearing(bearing, focalX, focalY, duration);
   }
 
@@ -698,7 +706,7 @@ public final class MapboxMap {
     moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
     setMinZoomPreference(minZoom);
     setMaxZoomPreference(maxZoom);
-    setStyle(new Style.Builder().fromUrl(definition.getStyleURL()), callback);
+    setStyle(new Style.Builder().fromUri(definition.getStyleURL()), callback);
   }
 
   //
@@ -787,7 +795,7 @@ public final class MapboxMap {
    * @see Style
    */
   public void setStyle(@Style.StyleUrl String style, final Style.OnStyleLoaded callback) {
-    this.setStyle(new Style.Builder().fromUrl(style), callback);
+    this.setStyle(new Style.Builder().fromUri(style), callback);
   }
 
   /**
@@ -825,8 +833,8 @@ public final class MapboxMap {
     }
 
     style = builder.build(nativeMapView);
-    if (!TextUtils.isEmpty(builder.getUrl())) {
-      nativeMapView.setStyleUrl(builder.getUrl());
+    if (!TextUtils.isEmpty(builder.getUri())) {
+      nativeMapView.setStyleUri(builder.getUri());
     } else if (!TextUtils.isEmpty(builder.getJson())) {
       nativeMapView.setStyleJson(builder.getJson());
     } else {
@@ -2357,11 +2365,28 @@ public final class MapboxMap {
     void onSnapshotReady(@NonNull Bitmap snapshot);
   }
 
+  /**
+   * Internal use.
+   */
+  public interface OnDeveloperAnimationListener {
+
+    /**
+     * Notifies listener when a developer invoked animation is about to start.
+     */
+    void onDeveloperAnimationStarted();
+  }
+
   //
   // Used for instrumentation testing
   //
   @NonNull
   Transform getTransform() {
     return transform;
+  }
+
+  private void notifyDeveloperAnimationListeners() {
+    for (OnDeveloperAnimationListener listener : developerAnimationStartedListeners) {
+      listener.onDeveloperAnimationStarted();
+    }
   }
 }

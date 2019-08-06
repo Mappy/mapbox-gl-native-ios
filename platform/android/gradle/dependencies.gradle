@@ -9,10 +9,10 @@ ext {
 
     versions = [
             mapboxServices  : '4.8.0',
-            mapboxTelemetry : '4.4.1',
+            mapboxTelemetry : '4.5.1',
             mapboxCore      : '1.3.0',
             mapboxGestures  : '0.4.2',
-            mapboxAccounts  : '0.1.0',
+            mapboxAccounts  : '0.2.0',
             supportLib      : '28.0.0',
             constraintLayout: '1.1.2',
             uiAutomator     : '2.1.3',
@@ -37,10 +37,10 @@ ext {
     ]
 
     dependenciesList = [
-            mapboxJavaServices     : "com.mapbox.mapboxsdk:mapbox-sdk-services:${versions.mapboxServices}",
             mapboxJavaGeoJSON      : "com.mapbox.mapboxsdk:mapbox-sdk-geojson:${versions.mapboxServices}",
             mapboxAndroidTelemetry : "com.mapbox.mapboxsdk:mapbox-android-telemetry:${versions.mapboxTelemetry}",
             mapboxAndroidGestures  : "com.mapbox.mapboxsdk:mapbox-android-gestures:${versions.mapboxGestures}",
+            mapboxAndroidAccounts  : "com.mapbox.mapboxsdk:mapbox-android-accounts:${versions.mapboxAccounts}",
             mapboxJavaTurf         : "com.mapbox.mapboxsdk:mapbox-sdk-turf:${versions.mapboxServices}",
 
             junit                  : "junit:junit:${versions.junit}",

@@ -10,32 +10,8 @@
 
 namespace mbgl {
 
-PaintParameters::PaintParameters(gfx::Context& context_,
-                    float pixelRatio_,
-                    gfx::RendererBackend& backend_,
-                    const UpdateParameters& updateParameters,
-                    const EvaluatedLight& evaluatedLight_,
-                    RenderStaticData& staticData_,
-                    ImageManager& imageManager_,
-                    LineAtlas& lineAtlas_)
-    : context(context_),
-    backend(backend_),
-    encoder(context.createCommandEncoder()),
-    state(updateParameters.transformState),
-    evaluatedLight(evaluatedLight_),
-    staticData(staticData_),
-    imageManager(imageManager_),
-    lineAtlas(lineAtlas_),
-    mapMode(updateParameters.mode),
-    debugOptions(updateParameters.debugOptions),
-    timePoint(updateParameters.timePoint),
-    pixelRatio(pixelRatio_),
-#ifndef NDEBUG
-    programs((debugOptions & MapDebugOptions::Overdraw) ? staticData_.overdrawPrograms : staticData_.programs)
-#else
-    programs(staticData_.programs)
-#endif
-{
+TransformParameters::TransformParameters(const TransformState& state_)
+    : state(state_) {
     // Update the default matrices to the current viewport dimensions.
     state.getProjMatrix(projMatrix);
 
@@ -48,7 +24,36 @@ PaintParameters::PaintParameters(gfx::Context& context_,
     // very close empty space, for layer types (fill-extrusion) that use the
     // depth buffer to emulate real-world space.
     state.getProjMatrix(nearClippedProjMatrix, 0.1 * state.getCameraToCenterDistance());
+}
 
+PaintParameters::PaintParameters(gfx::Context& context_,
+                    float pixelRatio_,
+                    gfx::RendererBackend& backend_,
+                    const UpdateParameters& updateParameters,
+                    const EvaluatedLight& evaluatedLight_,
+                    const TransformParameters& transformParams_,
+                    RenderStaticData& staticData_,
+                    LineAtlas& lineAtlas_,
+                    PatternAtlas& patternAtlas_)
+    : context(context_),
+    backend(backend_),
+    encoder(context.createCommandEncoder()),
+    state(updateParameters.transformState),
+    evaluatedLight(evaluatedLight_),
+    transformParams(transformParams_),
+    staticData(staticData_),
+    lineAtlas(lineAtlas_),
+    patternAtlas(patternAtlas_),
+    mapMode(updateParameters.mode),
+    debugOptions(updateParameters.debugOptions),
+    timePoint(updateParameters.timePoint),
+    pixelRatio(pixelRatio_),
+#ifndef NDEBUG
+    programs((debugOptions & MapDebugOptions::Overdraw) ? staticData_.overdrawPrograms : staticData_.programs)
+#else
+    programs(staticData_.programs)
+#endif
+{
     pixelsToGLUnits = {{ 2.0f  / state.getSize().width, -2.0f / state.getSize().height }};
 
     if (state.getViewportMode() == ViewportMode::FlippedY) {
@@ -61,7 +66,7 @@ PaintParameters::~PaintParameters() = default;
 mat4 PaintParameters::matrixForTile(const UnwrappedTileID& tileID, bool aligned) const {
     mat4 matrix;
     state.matrixFor(matrix, tileID);
-    matrix::multiply(matrix, aligned ? alignedProjMatrix : projMatrix, matrix);
+    matrix::multiply(matrix, aligned ? transformParams.alignedProjMatrix : transformParams.projMatrix, matrix);
     return matrix;
 }
 
@@ -69,9 +74,8 @@ gfx::DepthMode PaintParameters::depthModeForSublayer(uint8_t n, gfx::DepthMaskTy
     if (currentLayer < opaquePassCutoff) {
         return gfx::DepthMode::disabled();
     }
-    float nearDepth = ((1 + currentLayer) * numSublayers + n) * depthEpsilon;
-    float farDepth = nearDepth + depthRangeSize;
-    return gfx::DepthMode { gfx::DepthFunctionType::LessEqual, mask, { nearDepth, farDepth } };
+    float depth = depthRangeSize + ((1 + currentLayer) * numSublayers + n) * depthEpsilon;
+    return gfx::DepthMode { gfx::DepthFunctionType::LessEqual, mask, { depth, depth } };
 }
 
 gfx::DepthMode PaintParameters::depthModeFor3D() const {

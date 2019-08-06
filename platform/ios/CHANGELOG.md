@@ -2,10 +2,43 @@
 
 Mapbox welcomes participation and contributions from everyone. Please read [CONTRIBUTING.md](../../CONTRIBUTING.md) to get started.
 
-## 5.0.2 - July 29, 2019
-* Fixed an issue where fill extrusion layers would be incorrectly rendered above other layers. ([#15065](https://github.com/mapbox/mapbox-gl-native/pull/15065))
-* Fixed a map update bug caused by the render tiles and the render passes becoming unsynchronized. ([#15092](https://github.com/mapbox/mapbox-gl-native/pull/15092))
-* Fixed a custom geometry source bug caused by using the outdated tiles after style update. ([#15112](https://github.com/mapbox/mapbox-gl-native/pull/15112))
+## 5.1.2 - July 25, 2019
+
+### Styles and rendering
+
+* Fixed a map update bug caused by the render tiles and the render passes becoming unsynchronized. (#15092)
+* Fixed a custom geometry source bug caused by using the outdated tiles after style update #15112
+* Fixed an issue where layers with fill extrusions would be incorrectly rendered above other layers. (#15065)
+
+### User interaction
+
+Fixed a bug where using the pinch gesture could result in an incorrect map center coordinate. (#15097)
+
+### Other changes
+
+* Fixed a crash during network access. ([#15113](https://github.com/mapbox/mapbox-gl-native/pull/15113))
+
+## 5.1.1 - July 18, 2019
+
+* Fixed a bug in telemetry collection. ([#15077](https://github.com/mapbox/mapbox-gl-native/pull/15077))
+
+## 5.1.0 - June 19, 2019
+
+This release contains a bug in telemetry collection and has been superseded by 5.1.1 — please update immediately.
+
+### Styles and rendering
+
+* Fixed a crash when a fill pattern in a style could not be found. ([#14696](https://github.com/mapbox/mapbox-gl-native/pull/14696))
+* Setting `MGLMapView.contentInset` now moves the map’s focal point to the center of the content frame after insetting. ([#14664](https://github.com/mapbox/mapbox-gl-native/pull/14664))
+* Fixed a rendering performance regression when rendering polylines. ([#14851](https://github.com/mapbox/mapbox-gl-native/pull/14851))
+* Fixed a rendering performance regression introduced in 4.11.0. ([#14907](https://github.com/mapbox/mapbox-gl-native/pull/14907))
+* Fixed an issue where symbols underneath opaque fill layers could be incorrectly drawn above such layers. ([#14839](https://github.com/mapbox/mapbox-gl-native/pull/14839))
+* Fixed an issue where `MGLFillExtrusionStyleLayer` vertical gradients might not be rendered. ([#14808](https://github.com/mapbox/mapbox-gl-native/pull/14808))
+
+### Other changes
+
+* The `-[MGLMapView setCamera:withDuration:animationTimingFunction:edgePadding:completionHandler:]` method now adds the current value of the `MGLMapView.contentInset` property to the `edgePadding` parameter. ([#14813](https://github.com/mapbox/mapbox-gl-native/pull/14813))
+* Fixed a feature querying bug caused by incorrect sort feature index calculation. ([#14884](https://github.com/mapbox/mapbox-gl-native/pull/14884))
 
 ## 5.0.1 - July 18, 2019
 
@@ -22,16 +55,24 @@ There are no breaking API changes in this release.
 ### Styles and rendering
 
 * Changed placement order of `MGLSymbolStyleLayer` to match the viewport-y order when `MGLSymbolStyleLayer.symbolZOrder` is set to `MGLSymbolZOrderViewportY`, allowing icons to overlap but not text. ([#14486](https://github.com/mapbox/mapbox-gl-native/pull/14486))
+* Added `MGLSymbolStyleLayer.symbolSortKey` and `MGLSymbolZOrderAuto` to allow customization of symbol z-ordering. ([#14386](https://github.com/mapbox/mapbox-gl-native/pull/14386))
 
 ### Other changes
 
 * Fixed an issue where `-[MGLMapView setVisibleCoordinates:count:edgePadding:direction:duration:animationTimingFunction:completionHandler:]` interpreted a negative `direction` as due north instead of maintaining the current direction. ([#14575](https://github.com/mapbox/mapbox-gl-native/pull/14575))
 
-## 4.11.0 - May 15, 2019
+## 4.11.1 - July 18, 2019
+
+ * Fixed a bug in telemetry collection. ([#15161](https://github.com/mapbox/mapbox-gl-native/pull/15161))
+
+ ## 4.11.0 - May 15, 2019
+
+ This release contains a bug in telemetry collection and has been superseded by 4.11.1 — please update immediately.
 
 ### Styles and rendering
 
 * Fixed a bug where some layers weren’t rendering correctly after panning. ([#14527](https://github.com/mapbox/mapbox-gl-native/pull/14527))
+* Speculatively fixed a rare background crash when receiving a memory warning. ([#14383](https://github.com/mapbox/mapbox-gl-native/pull/14383))
 
 ### Annotations
 
