@@ -159,7 +159,6 @@ public class OfflineManager {
 
   // Mappy modif
   public static synchronized boolean isAvailable() {
-    //Log.d("OffLineManager"," isAvailable="+(instance != null || FileSource.isAvailable()));
     return instance != null || FileSource.isAvailable();
   }
 
