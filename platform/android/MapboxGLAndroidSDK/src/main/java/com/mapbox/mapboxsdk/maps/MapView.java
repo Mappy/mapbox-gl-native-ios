@@ -290,7 +290,8 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
       this.savedInstanceState = savedInstanceState;
     }
 
-    Toast.makeText(getContext(), "Map displayed successfully !", Toast.LENGTH_LONG).show();
+    //mappy modif
+//    Toast.makeText(getContext(), "Map displayed successfully !", Toast.LENGTH_LONG).show();
   }
 
   private void initialiseDrawingSurface(MapboxMapOptions options) {
