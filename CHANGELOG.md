@@ -1,5 +1,13 @@
 # Changes to MapboxDirections.swift
 
+## v0.30.0
+
+* `Directions.fetchAvailableOfflineVersions(completionHandler:)` and `Directions.downloadTiles(in:version:completionHandler:)` now resumes the data task before returning it to conform to its naming conventions and avoid confusion. ([#353](https://github.com/mapbox/MapboxDirections.swift/pull/353))
+
+## v0.29.0
+
+* Added support for Swift Package Manager. ([#362](https://github.com/mapbox/MapboxDirections.swift/pull/362))
+
 ## v0.28.0
 
 * Added the `RouteOptions.alleyPriority`, `RouteOptions.walkwayPriority`, and `RouteOptions.speed` properties for fine-tuning walking directions. ([#370](https://github.com/mapbox/MapboxDirections.swift/pull/370))

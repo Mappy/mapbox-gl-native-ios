@@ -21,19 +21,37 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
-		29F7E94220E4E1B500A7B2A4 /* MBMappyRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F7E94120E4E1B500A7B2A4 /* MBMappyRoute.swift */; };
+		3556CE9D22649CF3009397B5 /* BridgingTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 3556CE9C22649CF3009397B5 /* BridgingTests.m */; };
+		3556CE9E22649CF3009397B5 /* BridgingTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 3556CE9C22649CF3009397B5 /* BridgingTests.m */; };
+		3556CE9F22649CF3009397B5 /* BridgingTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 3556CE9C22649CF3009397B5 /* BridgingTests.m */; };
+		3563928722AAA0AB004A377E /* CMapboxDirections.h in Headers */ = {isa = PBXBuildFile; fileRef = 3563928622AAA0AB004A377E /* CMapboxDirections.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		3563928822AAA0AB004A377E /* CMapboxDirections.h in Headers */ = {isa = PBXBuildFile; fileRef = 3563928622AAA0AB004A377E /* CMapboxDirections.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		3563928922AAA0AB004A377E /* CMapboxDirections.h in Headers */ = {isa = PBXBuildFile; fileRef = 3563928622AAA0AB004A377E /* CMapboxDirections.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		3563928A22AAA0AB004A377E /* CMapboxDirections.h in Headers */ = {isa = PBXBuildFile; fileRef = 3563928622AAA0AB004A377E /* CMapboxDirections.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		35828C9E217A003F00ED546E /* OfflineDirections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35828C9D217A003F00ED546E /* OfflineDirections.swift */; };
 		35828C9F217A003F00ED546E /* OfflineDirections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35828C9D217A003F00ED546E /* OfflineDirections.swift */; };
 		35828CA0217A003F00ED546E /* OfflineDirections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35828C9D217A003F00ED546E /* OfflineDirections.swift */; };
 		35828CA1217A003F00ED546E /* OfflineDirections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35828C9D217A003F00ED546E /* OfflineDirections.swift */; };
-		358D48811E2EAB2500F32A65 /* MBRouteOptions.h in Headers */ = {isa = PBXBuildFile; fileRef = 358D48801E2EAB2500F32A65 /* MBRouteOptions.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		358D48821E2EAB2500F32A65 /* MBRouteOptions.h in Headers */ = {isa = PBXBuildFile; fileRef = 358D48801E2EAB2500F32A65 /* MBRouteOptions.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		358D48831E2EAB2500F32A65 /* MBRouteOptions.h in Headers */ = {isa = PBXBuildFile; fileRef = 358D48801E2EAB2500F32A65 /* MBRouteOptions.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		358D48841E2EAB2500F32A65 /* MBRouteOptions.h in Headers */ = {isa = PBXBuildFile; fileRef = 358D48801E2EAB2500F32A65 /* MBRouteOptions.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		358D48861E2EAB4500F32A65 /* MBRouteOptions.m in Sources */ = {isa = PBXBuildFile; fileRef = 358D48851E2EAB4500F32A65 /* MBRouteOptions.m */; };
-		358D48871E2EAB4500F32A65 /* MBRouteOptions.m in Sources */ = {isa = PBXBuildFile; fileRef = 358D48851E2EAB4500F32A65 /* MBRouteOptions.m */; };
-		358D48881E2EAB4500F32A65 /* MBRouteOptions.m in Sources */ = {isa = PBXBuildFile; fileRef = 358D48851E2EAB4500F32A65 /* MBRouteOptions.m */; };
-		358D48891E2EAB4500F32A65 /* MBRouteOptions.m in Sources */ = {isa = PBXBuildFile; fileRef = 358D48851E2EAB4500F32A65 /* MBRouteOptions.m */; };
+		35C0D78F22563B2B005E05A5 /* MBRoadClasses.h in Headers */ = {isa = PBXBuildFile; fileRef = 35C0D78A22563B2A005E05A5 /* MBRoadClasses.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		35C0D79022563B2B005E05A5 /* MBRoadClasses.h in Headers */ = {isa = PBXBuildFile; fileRef = 35C0D78A22563B2A005E05A5 /* MBRoadClasses.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		35C0D79122563B2B005E05A5 /* MBRoadClasses.h in Headers */ = {isa = PBXBuildFile; fileRef = 35C0D78A22563B2A005E05A5 /* MBRoadClasses.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		35C0D79222563B2B005E05A5 /* MBRoadClasses.h in Headers */ = {isa = PBXBuildFile; fileRef = 35C0D78A22563B2A005E05A5 /* MBRoadClasses.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		35C0D79322563B2B005E05A5 /* MBRouteOptions.h in Headers */ = {isa = PBXBuildFile; fileRef = 35C0D78B22563B2A005E05A5 /* MBRouteOptions.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		35C0D79422563B2B005E05A5 /* MBRouteOptions.h in Headers */ = {isa = PBXBuildFile; fileRef = 35C0D78B22563B2A005E05A5 /* MBRouteOptions.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		35C0D79522563B2B005E05A5 /* MBRouteOptions.h in Headers */ = {isa = PBXBuildFile; fileRef = 35C0D78B22563B2A005E05A5 /* MBRouteOptions.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		35C0D79622563B2B005E05A5 /* MBRouteOptions.h in Headers */ = {isa = PBXBuildFile; fileRef = 35C0D78B22563B2A005E05A5 /* MBRouteOptions.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		35C0D79722563B2B005E05A5 /* MBLaneIndication.h in Headers */ = {isa = PBXBuildFile; fileRef = 35C0D78C22563B2B005E05A5 /* MBLaneIndication.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		35C0D79822563B2B005E05A5 /* MBLaneIndication.h in Headers */ = {isa = PBXBuildFile; fileRef = 35C0D78C22563B2B005E05A5 /* MBLaneIndication.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		35C0D79922563B2B005E05A5 /* MBLaneIndication.h in Headers */ = {isa = PBXBuildFile; fileRef = 35C0D78C22563B2B005E05A5 /* MBLaneIndication.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		35C0D79A22563B2B005E05A5 /* MBLaneIndication.h in Headers */ = {isa = PBXBuildFile; fileRef = 35C0D78C22563B2B005E05A5 /* MBLaneIndication.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		35C0D79B22563B2B005E05A5 /* MBRouteOptions.m in Sources */ = {isa = PBXBuildFile; fileRef = 35C0D78D22563B2B005E05A5 /* MBRouteOptions.m */; };
+		35C0D79C22563B2B005E05A5 /* MBRouteOptions.m in Sources */ = {isa = PBXBuildFile; fileRef = 35C0D78D22563B2B005E05A5 /* MBRouteOptions.m */; };
+		35C0D79D22563B2B005E05A5 /* MBRouteOptions.m in Sources */ = {isa = PBXBuildFile; fileRef = 35C0D78D22563B2B005E05A5 /* MBRouteOptions.m */; };
+		35C0D79E22563B2B005E05A5 /* MBRouteOptions.m in Sources */ = {isa = PBXBuildFile; fileRef = 35C0D78D22563B2B005E05A5 /* MBRouteOptions.m */; };
+		35C0D79F22563B2B005E05A5 /* MBAttribute.h in Headers */ = {isa = PBXBuildFile; fileRef = 35C0D78E22563B2B005E05A5 /* MBAttribute.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		35C0D7A022563B2B005E05A5 /* MBAttribute.h in Headers */ = {isa = PBXBuildFile; fileRef = 35C0D78E22563B2B005E05A5 /* MBAttribute.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		35C0D7A122563B2B005E05A5 /* MBAttribute.h in Headers */ = {isa = PBXBuildFile; fileRef = 35C0D78E22563B2B005E05A5 /* MBAttribute.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		35C0D7A222563B2B005E05A5 /* MBAttribute.h in Headers */ = {isa = PBXBuildFile; fileRef = 35C0D78E22563B2B005E05A5 /* MBAttribute.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		35CC310B2285739700EA1966 /* WalkingOptionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35CC310A2285739700EA1966 /* WalkingOptionsTests.swift */; };
 		35CC310C2285739700EA1966 /* WalkingOptionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35CC310A2285739700EA1966 /* WalkingOptionsTests.swift */; };
 		35CC310D2285739700EA1966 /* WalkingOptionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35CC310A2285739700EA1966 /* WalkingOptionsTests.swift */; };
@@ -73,12 +91,10 @@
 		36E1ADEF21A86508006A4896 /* MBMappyNavigationRouteOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3BAAC9620E0DEC4007B5D9A /* MBMappyNavigationRouteOptions.swift */; };
 		36E1ADF021A86509006A4896 /* MBMappyNavigationRouteOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3BAAC9620E0DEC4007B5D9A /* MBMappyNavigationRouteOptions.swift */; };
 		36E1ADF121A86509006A4896 /* MBMappyNavigationRouteOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3BAAC9620E0DEC4007B5D9A /* MBMappyNavigationRouteOptions.swift */; };
-		36E1ADF221A8650E006A4896 /* MBMappyRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F7E94120E4E1B500A7B2A4 /* MBMappyRoute.swift */; };
-		36E1ADF321A8650F006A4896 /* MBMappyRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F7E94120E4E1B500A7B2A4 /* MBMappyRoute.swift */; };
-		36E1ADF421A86510006A4896 /* MBMappyRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F7E94120E4E1B500A7B2A4 /* MBMappyRoute.swift */; };
+		36E1ADF221A8650E006A4896 /* (null) in Sources */ = {isa = PBXBuildFile; };
+		36E1ADF321A8650F006A4896 /* (null) in Sources */ = {isa = PBXBuildFile; };
+		36E1ADF421A86510006A4896 /* (null) in Sources */ = {isa = PBXBuildFile; };
 		36E1ADF521A86519006A4896 /* MappySpokenInstructionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DCBA6D2146AEA700BB6203 /* MappySpokenInstructionType.swift */; };
-		36E1ADF621A8651A006A4896 /* MappySpokenInstructionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DCBA6D2146AEA700BB6203 /* MappySpokenInstructionType.swift */; };
-		36E1ADF721A8651B006A4896 /* MappySpokenInstructionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DCBA6D2146AEA700BB6203 /* MappySpokenInstructionType.swift */; };
 		4E1A71BC20EF673800EF6422 /* MapboxDirections.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = DA6C9D881CAE442B00094FBC /* MapboxDirections.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4E1A71BE20EF674300EF6422 /* Mapbox.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = DADD27F21E5ABD4300D31FAD /* Mapbox.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		7A741DCA220C2E6C00FF8FBD /* MapboxDirections in Sources */ = {isa = PBXBuildFile; fileRef = 7A741DC9220C2E6C00FF8FBD /* MapboxDirections */; };
@@ -86,6 +102,16 @@
 		7A741DCC220C2E6C00FF8FBD /* MapboxDirections in Sources */ = {isa = PBXBuildFile; fileRef = 7A741DC9220C2E6C00FF8FBD /* MapboxDirections */; };
 		7A741DCD220C2E6C00FF8FBD /* MapboxDirections in Sources */ = {isa = PBXBuildFile; fileRef = 7A741DC9220C2E6C00FF8FBD /* MapboxDirections */; };
 		7C4942C8224D318E00280237 /* MBMaxSpeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C4942C7224D318E00280237 /* MBMaxSpeed.swift */; };
+		7C6A7D532319578A00158EA6 /* MBMappyRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C6A7D51231955FF00158EA6 /* MBMappyRoute.swift */; };
+		7C6A7D542319578A00158EA6 /* MBMappyControlZoneType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DCBA712146BCF500BB6203 /* MBMappyControlZoneType.swift */; };
+		7C6A7D552319578A00158EA6 /* MappySpokenInstructionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DCBA6D2146AEA700BB6203 /* MappySpokenInstructionType.swift */; };
+		7C6A7D562319578A00158EA6 /* MBMappyRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C6A7D51231955FF00158EA6 /* MBMappyRoute.swift */; };
+		7C6A7D572319578B00158EA6 /* MBMappyRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C6A7D51231955FF00158EA6 /* MBMappyRoute.swift */; };
+		7C6A7D582319578B00158EA6 /* MappySpokenInstructionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DCBA6D2146AEA700BB6203 /* MappySpokenInstructionType.swift */; };
+		7C6A7D592319578B00158EA6 /* MBMaxSpeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C4942C7224D318E00280237 /* MBMaxSpeed.swift */; };
+		7C6A7D5A2319578B00158EA6 /* MBMappyRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C6A7D51231955FF00158EA6 /* MBMappyRoute.swift */; };
+		7C6A7D5B2319578B00158EA6 /* MappySpokenInstructionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DCBA6D2146AEA700BB6203 /* MappySpokenInstructionType.swift */; };
+		7C6A7D5C2319578B00158EA6 /* MBMaxSpeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C4942C7224D318E00280237 /* MBMaxSpeed.swift */; };
 		8D381B611FD9F5B1008D5A58 /* noDestinationName.json in Resources */ = {isa = PBXBuildFile; fileRef = 8D381B601FD9F5B1008D5A58 /* noDestinationName.json */; };
 		8D381B631FDB01D1008D5A58 /* apiDestinationName.json in Resources */ = {isa = PBXBuildFile; fileRef = 8D381B621FDB01D1008D5A58 /* apiDestinationName.json */; };
 		8D381B641FDB0898008D5A58 /* noDestinationName.json in Resources */ = {isa = PBXBuildFile; fileRef = 8D381B601FD9F5B1008D5A58 /* noDestinationName.json */; };
@@ -101,9 +127,7 @@
 		8D43467B219E15C4008B7BF3 /* Double.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D434678219E1167008B7BF3 /* Double.swift */; };
 		8D43467C219E15C6008B7BF3 /* Double.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D434678219E1167008B7BF3 /* Double.swift */; };
 		A3BAAC9720E0DEC4007B5D9A /* MBMappyNavigationRouteOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3BAAC9620E0DEC4007B5D9A /* MBMappyNavigationRouteOptions.swift */; };
-		A3DCBA6E2146AEA700BB6203 /* MappySpokenInstructionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DCBA6D2146AEA700BB6203 /* MappySpokenInstructionType.swift */; };
 		A3DCBA702146BB7900BB6203 /* MBMappyControlZoneInstruction.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DCBA6F2146BB7800BB6203 /* MBMappyControlZoneInstruction.swift */; };
-		A3DCBA722146BCF500BB6203 /* MBMappyControlZoneType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DCBA712146BCF500BB6203 /* MBMappyControlZoneType.swift */; };
 		AEAB390D20D7F4F4008F4E54 /* subLaneInstructions.json in Resources */ = {isa = PBXBuildFile; fileRef = AEAB390C20D7F4F4008F4E54 /* subLaneInstructions.json */; };
 		AEAB390E20D7F508008F4E54 /* subLaneInstructions.json in Resources */ = {isa = PBXBuildFile; fileRef = AEAB390C20D7F4F4008F4E54 /* subLaneInstructions.json */; };
 		AEAB390F20D7F50A008F4E54 /* subLaneInstructions.json in Resources */ = {isa = PBXBuildFile; fileRef = AEAB390C20D7F4F4008F4E54 /* subLaneInstructions.json */; };
@@ -147,19 +171,11 @@
 		C547EC691DB59F8F009817F3 /* MBLane.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57D55071DB58C0200B94B74 /* MBLane.swift */; };
 		C547EC6A1DB59F90009817F3 /* MBLane.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57D55071DB58C0200B94B74 /* MBLane.swift */; };
 		C547EC6B1DB59F91009817F3 /* MBLane.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57D55071DB58C0200B94B74 /* MBLane.swift */; };
-		C558C58C1E94196100617B37 /* MBAttribute.h in Headers */ = {isa = PBXBuildFile; fileRef = C558C58B1E94181A00617B37 /* MBAttribute.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		C558C58D1E94196200617B37 /* MBAttribute.h in Headers */ = {isa = PBXBuildFile; fileRef = C558C58B1E94181A00617B37 /* MBAttribute.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		C558C58E1E94196200617B37 /* MBAttribute.h in Headers */ = {isa = PBXBuildFile; fileRef = C558C58B1E94181A00617B37 /* MBAttribute.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		C558C58F1E94196300617B37 /* MBAttribute.h in Headers */ = {isa = PBXBuildFile; fileRef = C558C58B1E94181A00617B37 /* MBAttribute.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C55FB44B1F6AEBF6006BD1E9 /* MBSpokenInstruction.swift in Sources */ = {isa = PBXBuildFile; fileRef = C55FB44A1F6AEBF6006BD1E9 /* MBSpokenInstruction.swift */; };
 		C56516841FE1A2DD00A0AD18 /* MBVisualInstructionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = C56516831FE1A2DD00A0AD18 /* MBVisualInstructionType.swift */; };
 		C56516851FE1AB8F00A0AD18 /* MBVisualInstructionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = C56516831FE1A2DD00A0AD18 /* MBVisualInstructionType.swift */; };
 		C56516861FE1AB9000A0AD18 /* MBVisualInstructionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = C56516831FE1A2DD00A0AD18 /* MBVisualInstructionType.swift */; };
 		C56516871FE1AB9100A0AD18 /* MBVisualInstructionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = C56516831FE1A2DD00A0AD18 /* MBVisualInstructionType.swift */; };
-		C57B2E961DB8171300E9123A /* MBLaneIndication.h in Headers */ = {isa = PBXBuildFile; fileRef = C57B2E951DB8171300E9123A /* MBLaneIndication.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		C57B2E971DB8171300E9123A /* MBLaneIndication.h in Headers */ = {isa = PBXBuildFile; fileRef = C57B2E951DB8171300E9123A /* MBLaneIndication.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		C57B2E981DB8171300E9123A /* MBLaneIndication.h in Headers */ = {isa = PBXBuildFile; fileRef = C57B2E951DB8171300E9123A /* MBLaneIndication.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		C57B2E991DB8171300E9123A /* MBLaneIndication.h in Headers */ = {isa = PBXBuildFile; fileRef = C57B2E951DB8171300E9123A /* MBLaneIndication.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C57D55011DB5669600B94B74 /* MBIntersection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57D55001DB5669600B94B74 /* MBIntersection.swift */; };
 		C57D55031DB566A700B94B74 /* MBIntersection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57D55001DB5669600B94B74 /* MBIntersection.swift */; };
 		C57D55041DB566A800B94B74 /* MBIntersection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57D55001DB5669600B94B74 /* MBIntersection.swift */; };
@@ -169,10 +185,6 @@
 		C584E3F71F201C7B00BBC9BB /* MBRoadClasses.swift in Sources */ = {isa = PBXBuildFile; fileRef = C59426061F1EA6C400C8E59C /* MBRoadClasses.swift */; };
 		C584E3F81F201C7C00BBC9BB /* MBRoadClasses.swift in Sources */ = {isa = PBXBuildFile; fileRef = C59426061F1EA6C400C8E59C /* MBRoadClasses.swift */; };
 		C584E3F91F201C7D00BBC9BB /* MBRoadClasses.swift in Sources */ = {isa = PBXBuildFile; fileRef = C59426061F1EA6C400C8E59C /* MBRoadClasses.swift */; };
-		C584E3FB1F20285E00BBC9BB /* MBRoadClasses.h in Headers */ = {isa = PBXBuildFile; fileRef = C584E3FA1F2027EE00BBC9BB /* MBRoadClasses.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		C584E3FC1F20286000BBC9BB /* MBRoadClasses.h in Headers */ = {isa = PBXBuildFile; fileRef = C584E3FA1F2027EE00BBC9BB /* MBRoadClasses.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		C584E3FD1F20286100BBC9BB /* MBRoadClasses.h in Headers */ = {isa = PBXBuildFile; fileRef = C584E3FA1F2027EE00BBC9BB /* MBRoadClasses.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		C584E3FE1F20286200BBC9BB /* MBRoadClasses.h in Headers */ = {isa = PBXBuildFile; fileRef = C584E3FA1F2027EE00BBC9BB /* MBRoadClasses.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C58EA7AA1E9D7EAD008F98CE /* MBCongestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58EA7A91E9D7EAD008F98CE /* MBCongestion.swift */; };
 		C58EA7AB1E9D7F73008F98CE /* MBCongestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58EA7A91E9D7EAD008F98CE /* MBCongestion.swift */; };
 		C58EA7AC1E9D7F74008F98CE /* MBCongestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58EA7A91E9D7EAD008F98CE /* MBCongestion.swift */; };
@@ -357,10 +369,15 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		29F7E94120E4E1B500A7B2A4 /* MBMappyRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MBMappyRoute.swift; sourceTree = "<group>"; };
+		3556CE9922649CF2009397B5 /* MapboxDirectionsTests-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "MapboxDirectionsTests-Bridging-Header.h"; path = "../objc/MapboxDirectionsTests-Bridging-Header.h"; sourceTree = "<group>"; };
+		3556CE9C22649CF3009397B5 /* BridgingTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = BridgingTests.m; path = ../objc/BridgingTests.m; sourceTree = "<group>"; };
+		3563928622AAA0AB004A377E /* CMapboxDirections.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CMapboxDirections.h; path = include/CMapboxDirections.h; sourceTree = "<group>"; };
 		35828C9D217A003F00ED546E /* OfflineDirections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineDirections.swift; sourceTree = "<group>"; };
-		358D48801E2EAB2500F32A65 /* MBRouteOptions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MBRouteOptions.h; sourceTree = "<group>"; };
-		358D48851E2EAB4500F32A65 /* MBRouteOptions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MBRouteOptions.m; sourceTree = "<group>"; };
+		35C0D78A22563B2A005E05A5 /* MBRoadClasses.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MBRoadClasses.h; path = Sources/CMapboxDirections/include/MBRoadClasses.h; sourceTree = SOURCE_ROOT; };
+		35C0D78B22563B2A005E05A5 /* MBRouteOptions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MBRouteOptions.h; path = Sources/CMapboxDirections/include/MBRouteOptions.h; sourceTree = SOURCE_ROOT; };
+		35C0D78C22563B2B005E05A5 /* MBLaneIndication.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MBLaneIndication.h; path = Sources/CMapboxDirections/include/MBLaneIndication.h; sourceTree = SOURCE_ROOT; };
+		35C0D78D22563B2B005E05A5 /* MBRouteOptions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = MBRouteOptions.m; path = Sources/CMapboxDirections/MBRouteOptions.m; sourceTree = SOURCE_ROOT; };
+		35C0D78E22563B2B005E05A5 /* MBAttribute.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MBAttribute.h; path = Sources/CMapboxDirections/include/MBAttribute.h; sourceTree = SOURCE_ROOT; };
 		35CC310A2285739700EA1966 /* WalkingOptionsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkingOptionsTests.swift; sourceTree = "<group>"; };
 		35D92FEF218203AA000C78CB /* 2018-10-16-Liechtenstein.tar */ = {isa = PBXFileReference; lastKnownFileType = archive.tar; path = "2018-10-16-Liechtenstein.tar"; sourceTree = "<group>"; };
 		35DBF004217DF0D90009D2AE /* MBCoordinateBounds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MBCoordinateBounds.swift; sourceTree = "<group>"; };
@@ -372,6 +389,7 @@
 		366049B9211447390005B369 /* MappyDirectionsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MappyDirectionsTests.swift; sourceTree = "<group>"; };
 		7A741DC9220C2E6C00FF8FBD /* MapboxDirections */ = {isa = PBXFileReference; lastKnownFileType = folder; path = MapboxDirections; sourceTree = SOURCE_ROOT; };
 		7C4942C7224D318E00280237 /* MBMaxSpeed.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MBMaxSpeed.swift; sourceTree = "<group>"; };
+		7C6A7D51231955FF00158EA6 /* MBMappyRoute.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MBMappyRoute.swift; sourceTree = "<group>"; };
 		8D381B601FD9F5B1008D5A58 /* noDestinationName.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = noDestinationName.json; sourceTree = "<group>"; };
 		8D381B621FDB01D1008D5A58 /* apiDestinationName.json */ = {isa = PBXFileReference; explicitFileType = text.json; path = apiDestinationName.json; sourceTree = "<group>"; };
 		8D381B691FDB101F008D5A58 /* String.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = String.swift; sourceTree = "<group>"; };
@@ -391,14 +409,11 @@
 		C52CE3921F6AF6E70069963D /* IntructionsTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IntructionsTests.swift; sourceTree = "<group>"; };
 		C5434B89200693D00069E887 /* MBTracepoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MBTracepoint.swift; sourceTree = "<group>"; };
 		C5434B8B200695A50069E887 /* MBMatchOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MBMatchOptions.swift; sourceTree = "<group>"; };
-		C558C58B1E94181A00617B37 /* MBAttribute.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MBAttribute.h; sourceTree = "<group>"; };
 		C55FB44A1F6AEBF6006BD1E9 /* MBSpokenInstruction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MBSpokenInstruction.swift; sourceTree = "<group>"; };
 		C56516831FE1A2DD00A0AD18 /* MBVisualInstructionType.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MBVisualInstructionType.swift; sourceTree = "<group>"; };
-		C57B2E951DB8171300E9123A /* MBLaneIndication.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MBLaneIndication.h; sourceTree = "<group>"; };
 		C57D55001DB5669600B94B74 /* MBIntersection.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MBIntersection.swift; sourceTree = "<group>"; };
 		C57D55071DB58C0200B94B74 /* MBLane.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MBLane.swift; sourceTree = "<group>"; };
 		C582BA2D2073ED6300647DAA /* Array.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Array.swift; sourceTree = "<group>"; };
-		C584E3FA1F2027EE00BBC9BB /* MBRoadClasses.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MBRoadClasses.h; sourceTree = "<group>"; };
 		C58EA7A91E9D7EAD008F98CE /* MBCongestion.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MBCongestion.swift; sourceTree = "<group>"; };
 		C59094B4203B5C7F00EB2417 /* MBDrawingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MBDrawingView.swift; sourceTree = "<group>"; };
 		C59094BE203B800300EB2417 /* MBDirectionsOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MBDirectionsOptions.swift; sourceTree = "<group>"; };
@@ -461,7 +476,7 @@
 		DADD27ED1E5AB0EB00D31FAD /* ViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		DADD27F21E5ABD4300D31FAD /* Mapbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Mapbox.framework; path = Carthage/Build/iOS/Mapbox.framework; sourceTree = "<group>"; };
 		DAE33A1A1F215DF600C06039 /* IntersectionTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IntersectionTests.swift; sourceTree = "<group>"; };
-		DAE9E0F31EB7DE2E001E8E8B /* RouteOptionsTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = RouteOptionsTests.swift; path = MapboxDirectionsTests/RouteOptionsTests.swift; sourceTree = SOURCE_ROOT; };
+		DAE9E0F31EB7DE2E001E8E8B /* RouteOptionsTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = RouteOptionsTests.swift; path = Tests/MapboxDirectionsTests/RouteOptionsTests.swift; sourceTree = SOURCE_ROOT; };
 		DD6254731AE70CB700017857 /* MBDirections.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MBDirections.swift; sourceTree = "<group>"; };
 		F448F82A1DDCC5B6000BC343 /* Polyline.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Polyline.framework; path = Carthage/Build/iOS/Polyline.framework; sourceTree = "<group>"; };
 		F448F8381DDCC6D7000BC343 /* OHHTTPStubs.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OHHTTPStubs.framework; path = Carthage/Build/iOS/OHHTTPStubs.framework; sourceTree = "<group>"; };
@@ -551,6 +566,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		35C0D78922563B1C005E05A5 /* CMapboxDirections */ = {
+			isa = PBXGroup;
+			children = (
+				3563928622AAA0AB004A377E /* CMapboxDirections.h */,
+				35C0D78E22563B2B005E05A5 /* MBAttribute.h */,
+				35C0D78C22563B2B005E05A5 /* MBLaneIndication.h */,
+				35C0D78A22563B2A005E05A5 /* MBRoadClasses.h */,
+				35C0D78B22563B2A005E05A5 /* MBRouteOptions.h */,
+				35C0D78D22563B2B005E05A5 /* MBRouteOptions.m */,
+			);
+			name = CMapboxDirections;
+			path = ../CMapboxDirections;
+			sourceTree = "<group>";
+		};
 		35DBF017217F387F0009D2AE /* Offline */ = {
 			isa = PBXGroup;
 			children = (
@@ -646,6 +675,7 @@
 		DA6C9D891CAE442B00094FBC /* MapboxDirections */ = {
 			isa = PBXGroup;
 			children = (
+				35C0D78922563B1C005E05A5 /* CMapboxDirections */,
 				8D381B681FDB1009008D5A58 /* Extensions */,
 				C5DAAC9E20191683001F9261 /* Match */,
 				DA6C9D8A1CAE442B00094FBC /* MapboxDirections.h */,
@@ -653,21 +683,16 @@
 				C59094C0203DE6BC00EB2417 /* MBDirectionsResult.swift */,
 				DAC05F171CFC075300FA0071 /* MBRoute.swift */,
 				DAC05F191CFC077C00FA0071 /* MBRouteLeg.swift */,
-				358D48801E2EAB2500F32A65 /* MBRouteOptions.h */,
-				358D48851E2EAB4500F32A65 /* MBRouteOptions.m */,
 				DA2E03EA1CB0E13D00D1269A /* MBRouteOptions.swift */,
 				C59094BE203B800300EB2417 /* MBDirectionsOptions.swift */,
 				DA2E03E81CB0E0B000D1269A /* MBRouteStep.swift */,
 				C57D55001DB5669600B94B74 /* MBIntersection.swift */,
 				C57D55071DB58C0200B94B74 /* MBLane.swift */,
-				C57B2E951DB8171300E9123A /* MBLaneIndication.h */,
 				DAA76D671DD127CB0015EC78 /* MBLaneIndication.swift */,
 				DAC05F151CFBFAC400FA0071 /* MBWaypoint.swift */,
-				C558C58B1E94181A00617B37 /* MBAttribute.h */,
 				C51538CB1E807FF00093FF3E /* MBAttribute.swift */,
 				C58EA7A91E9D7EAD008F98CE /* MBCongestion.swift */,
 				C59426061F1EA6C400C8E59C /* MBRoadClasses.swift */,
-				C584E3FA1F2027EE00BBC9BB /* MBRoadClasses.h */,
 				DA6C9D8C1CAE442B00094FBC /* Info.plist */,
 				C55FB44A1F6AEBF6006BD1E9 /* MBSpokenInstruction.swift */,
 				C52552B81FA15D5900B1545C /* MBVisualInstructionBanner.swift */,
@@ -676,17 +701,18 @@
 				AEDC211820B5DBDE0052DED8 /* MBLaneIndicationComponent.swift */,
 				C56516831FE1A2DD00A0AD18 /* MBVisualInstructionType.swift */,
 				35EFD00A207DFACA00BF3873 /* MBVisualInstruction.swift */,
+				7C6A7D51231955FF00158EA6 /* MBMappyRoute.swift */,
 				A3DCBA6F2146BB7800BB6203 /* MBMappyControlZoneInstruction.swift */,
 				A3DCBA712146BCF500BB6203 /* MBMappyControlZoneType.swift */,
 				A3BAAC9620E0DEC4007B5D9A /* MBMappyNavigationRouteOptions.swift */,
-				29F7E94120E4E1B500A7B2A4 /* MBMappyRoute.swift */,
 				A3DCBA6D2146AEA700BB6203 /* MappySpokenInstructionType.swift */,
 				7C4942C7224D318E00280237 /* MBMaxSpeed.swift */,
 				7A741DC9220C2E6C00FF8FBD /* MapboxDirections */,
 				35828C9D217A003F00ED546E /* OfflineDirections.swift */,
 				35DBF004217DF0D90009D2AE /* MBCoordinateBounds.swift */,
 			);
-			path = MapboxDirections;
+			name = MapboxDirections;
+			path = Sources/MapboxDirections;
 			sourceTree = "<group>";
 		};
 		DA6C9D971CAE442B00094FBC /* MapboxDirectionsTests */ = {
@@ -709,9 +735,12 @@
 				DA688B3D21B89ECD00C9BB25 /* VisualInstructionComponentTests.swift */,
 				DA6C9D9A1CAE442B00094FBC /* Info.plist */,
 				DA6C9DAD1CAEC93800094FBC /* Fixtures */,
+				3556CE9C22649CF3009397B5 /* BridgingTests.m */,
 				35CC310A2285739700EA1966 /* WalkingOptionsTests.swift */,
+				3556CE9922649CF2009397B5 /* MapboxDirectionsTests-Bridging-Header.h */,
 			);
-			path = MapboxDirectionsTests;
+			name = MapboxDirectionsTests;
+			path = Tests/MapboxDirectionsTests;
 			sourceTree = "<group>";
 		};
 		DA6C9DAD1CAEC93800094FBC /* Fixtures */ = {
@@ -856,11 +885,12 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				358D48821E2EAB2500F32A65 /* MBRouteOptions.h in Headers */,
+				35C0D79422563B2B005E05A5 /* MBRouteOptions.h in Headers */,
+				35C0D79822563B2B005E05A5 /* MBLaneIndication.h in Headers */,
+				35C0D79022563B2B005E05A5 /* MBRoadClasses.h in Headers */,
+				3563928822AAA0AB004A377E /* CMapboxDirections.h in Headers */,
+				35C0D7A022563B2B005E05A5 /* MBAttribute.h in Headers */,
 				DA1A10C61D00F969009F82FA /* MapboxDirections.h in Headers */,
-				C558C58D1E94196200617B37 /* MBAttribute.h in Headers */,
-				C584E3FC1F20286000BBC9BB /* MBRoadClasses.h in Headers */,
-				C57B2E971DB8171300E9123A /* MBLaneIndication.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -868,11 +898,12 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				358D48831E2EAB2500F32A65 /* MBRouteOptions.h in Headers */,
+				35C0D79522563B2B005E05A5 /* MBRouteOptions.h in Headers */,
+				35C0D79922563B2B005E05A5 /* MBLaneIndication.h in Headers */,
+				35C0D79122563B2B005E05A5 /* MBRoadClasses.h in Headers */,
+				3563928922AAA0AB004A377E /* CMapboxDirections.h in Headers */,
+				35C0D7A122563B2B005E05A5 /* MBAttribute.h in Headers */,
 				DA1A10EC1D010247009F82FA /* MapboxDirections.h in Headers */,
-				C558C58E1E94196200617B37 /* MBAttribute.h in Headers */,
-				C584E3FD1F20286100BBC9BB /* MBRoadClasses.h in Headers */,
-				C57B2E981DB8171300E9123A /* MBLaneIndication.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -880,11 +911,12 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				358D48841E2EAB2500F32A65 /* MBRouteOptions.h in Headers */,
+				35C0D79622563B2B005E05A5 /* MBRouteOptions.h in Headers */,
+				35C0D79A22563B2B005E05A5 /* MBLaneIndication.h in Headers */,
+				35C0D79222563B2B005E05A5 /* MBRoadClasses.h in Headers */,
+				3563928A22AAA0AB004A377E /* CMapboxDirections.h in Headers */,
+				35C0D7A222563B2B005E05A5 /* MBAttribute.h in Headers */,
 				DA1A11031D0103A3009F82FA /* MapboxDirections.h in Headers */,
-				C558C58F1E94196300617B37 /* MBAttribute.h in Headers */,
-				C584E3FE1F20286200BBC9BB /* MBRoadClasses.h in Headers */,
-				C57B2E991DB8171300E9123A /* MBLaneIndication.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -892,11 +924,12 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				358D48811E2EAB2500F32A65 /* MBRouteOptions.h in Headers */,
+				35C0D79322563B2B005E05A5 /* MBRouteOptions.h in Headers */,
+				35C0D79722563B2B005E05A5 /* MBLaneIndication.h in Headers */,
+				35C0D78F22563B2B005E05A5 /* MBRoadClasses.h in Headers */,
+				3563928722AAA0AB004A377E /* CMapboxDirections.h in Headers */,
+				35C0D79F22563B2B005E05A5 /* MBAttribute.h in Headers */,
 				DA6C9D8B1CAE442B00094FBC /* MapboxDirections.h in Headers */,
-				C558C58C1E94196100617B37 /* MBAttribute.h in Headers */,
-				C584E3FB1F20285E00BBC9BB /* MBRoadClasses.h in Headers */,
-				C57B2E961DB8171300E9123A /* MBLaneIndication.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1088,7 +1121,7 @@
 					};
 					DA1A10B71D00F8FF009F82FA = {
 						CreatedOnToolsVersion = 7.3.1;
-						LastSwiftMigration = 1010;
+						LastSwiftMigration = 1020;
 					};
 					DA1A10D41D0101ED009F82FA = {
 						CreatedOnToolsVersion = 7.3.1;
@@ -1096,7 +1129,7 @@
 					};
 					DA1A10DD1D0101ED009F82FA = {
 						CreatedOnToolsVersion = 7.3.1;
-						LastSwiftMigration = 0800;
+						LastSwiftMigration = 1020;
 					};
 					DA1A10FA1D010361009F82FA = {
 						CreatedOnToolsVersion = 7.3.1;
@@ -1317,6 +1350,7 @@
 			files = (
 				36E1ADEA21A864FB006A4896 /* MBMappyControlZoneType.swift in Sources */,
 				C5DAAC9B2019167C001F9261 /* MBMatch.swift in Sources */,
+				7C6A7D562319578A00158EA6 /* MBMappyRoute.swift in Sources */,
 				35DBF010217E17A30009D2AE /* HTTPURLResponse.swift in Sources */,
 				8D43467A219E15C3008B7BF3 /* Double.swift in Sources */,
 				C52552C61FA162F900B1545C /* MBVisualInstructionComponent.swift in Sources */,
@@ -1328,12 +1362,11 @@
 				35828C9F217A003F00ED546E /* OfflineDirections.swift in Sources */,
 				C5DAAC9F20195AAE001F9261 /* MBTracepoint.swift in Sources */,
 				C5990B4A2045E72800D7DFD4 /* MBDirectionsResult.swift in Sources */,
-				36E1ADF221A8650E006A4896 /* MBMappyRoute.swift in Sources */,
+				36E1ADF221A8650E006A4896 /* (null) in Sources */,
 				35EFD00C207DFACA00BF3873 /* MBVisualInstruction.swift in Sources */,
 				C584E3F71F201C7B00BBC9BB /* MBRoadClasses.swift in Sources */,
 				36E1ADF521A86519006A4896 /* MappySpokenInstructionType.swift in Sources */,
 				C5DAACA220195AB2001F9261 /* MBMatchOptions.swift in Sources */,
-				358D48871E2EAB4500F32A65 /* MBRouteOptions.m in Sources */,
 				DA1A10CC1D00F969009F82FA /* MBWaypoint.swift in Sources */,
 				35DBF006217DF0D90009D2AE /* MBCoordinateBounds.swift in Sources */,
 				DA1A10CA1D00F969009F82FA /* MBRouteOptions.swift in Sources */,
@@ -1342,6 +1375,7 @@
 				DAA76D691DD127CB0015EC78 /* MBLaneIndication.swift in Sources */,
 				AEDC211E20B612530052DED8 /* MBLaneIndicationComponent.swift in Sources */,
 				DA1A10CB1D00F969009F82FA /* MBRouteStep.swift in Sources */,
+				35C0D79C22563B2B005E05A5 /* MBRouteOptions.m in Sources */,
 				C57D55031DB566A700B94B74 /* MBIntersection.swift in Sources */,
 				C52CE38F1F6AF63C0069963D /* MBSpokenInstruction.swift in Sources */,
 				C58EA7AB1E9D7F73008F98CE /* MBCongestion.swift in Sources */,
@@ -1371,6 +1405,7 @@
 				DAE33A1C1F215DF600C06039 /* IntersectionTests.swift in Sources */,
 				C5DAACB0201AA92B001F9261 /* MatchTests.swift in Sources */,
 				DA1A10CE1D00F972009F82FA /* Fixture.swift in Sources */,
+				3556CE9E22649CF3009397B5 /* BridgingTests.m in Sources */,
 				DA1A110C1D01045E009F82FA /* DirectionsTests.swift in Sources */,
 				C5D1D7F31F6AFBD600A1C4F1 /* IntructionsTests.swift in Sources */,
 				DA4F84EE21C08BFB008A0434 /* WaypointTests.swift in Sources */,
@@ -1396,19 +1431,20 @@
 				36E1ADF021A86509006A4896 /* MBMappyNavigationRouteOptions.swift in Sources */,
 				C5990B4B2045E72900D7DFD4 /* MBDirectionsResult.swift in Sources */,
 				35EFD00D207DFACA00BF3873 /* MBVisualInstruction.swift in Sources */,
-				36E1ADF321A8650F006A4896 /* MBMappyRoute.swift in Sources */,
+				36E1ADF321A8650F006A4896 /* (null) in Sources */,
 				C584E3F81F201C7C00BBC9BB /* MBRoadClasses.swift in Sources */,
 				C5DAACA320195AB2001F9261 /* MBMatchOptions.swift in Sources */,
-				36E1ADF621A8651A006A4896 /* MappySpokenInstructionType.swift in Sources */,
-				358D48881E2EAB4500F32A65 /* MBRouteOptions.m in Sources */,
 				DA1A10F21D010247009F82FA /* MBWaypoint.swift in Sources */,
 				35DBF007217DF0D90009D2AE /* MBCoordinateBounds.swift in Sources */,
 				DA1A10F01D010247009F82FA /* MBRouteOptions.swift in Sources */,
+				7C6A7D582319578B00158EA6 /* MappySpokenInstructionType.swift in Sources */,
 				DA1A10EE1D010247009F82FA /* MBRoute.swift in Sources */,
 				C5990B4E2045E74900D7DFD4 /* MBDirectionsOptions.swift in Sources */,
 				DAA76D6A1DD127CB0015EC78 /* MBLaneIndication.swift in Sources */,
 				AEDC211F20B612540052DED8 /* MBLaneIndicationComponent.swift in Sources */,
 				DA1A10F11D010247009F82FA /* MBRouteStep.swift in Sources */,
+				7C6A7D592319578B00158EA6 /* MBMaxSpeed.swift in Sources */,
+				35C0D79D22563B2B005E05A5 /* MBRouteOptions.m in Sources */,
 				C57D55041DB566A800B94B74 /* MBIntersection.swift in Sources */,
 				36E1ADEB21A864FC006A4896 /* MBMappyControlZoneType.swift in Sources */,
 				C52CE3901F6AF63D0069963D /* MBSpokenInstruction.swift in Sources */,
@@ -1416,6 +1452,7 @@
 				35DBF00C217E172C0009D2AE /* CLLocationCoordinate2D.swift in Sources */,
 				8D381B6C1FDB3D8B008D5A58 /* String.swift in Sources */,
 				C56516861FE1AB9000A0AD18 /* MBVisualInstructionType.swift in Sources */,
+				7C6A7D572319578B00158EA6 /* MBMappyRoute.swift in Sources */,
 				36E1ADED21A86501006A4896 /* MBMappyControlZoneInstruction.swift in Sources */,
 				C54549FD2073F1F0002E273F /* Array.swift in Sources */,
 				C547EC6A1DB59F90009817F3 /* MBLane.swift in Sources */,
@@ -1438,6 +1475,7 @@
 				DAE33A1D1F215DF600C06039 /* IntersectionTests.swift in Sources */,
 				C5DAACB1201AA92B001F9261 /* MatchTests.swift in Sources */,
 				DA1A10F51D010251009F82FA /* Fixture.swift in Sources */,
+				3556CE9F22649CF3009397B5 /* BridgingTests.m in Sources */,
 				DA1A110D1D01045E009F82FA /* DirectionsTests.swift in Sources */,
 				C5D1D7F41F6AFBD600A1C4F1 /* IntructionsTests.swift in Sources */,
 				DA4F84EF21C08BFB008A0434 /* WaypointTests.swift in Sources */,
@@ -1463,19 +1501,20 @@
 				36E1ADF121A86509006A4896 /* MBMappyNavigationRouteOptions.swift in Sources */,
 				C5990B4C2045E72A00D7DFD4 /* MBDirectionsResult.swift in Sources */,
 				35EFD00E207DFACA00BF3873 /* MBVisualInstruction.swift in Sources */,
-				36E1ADF421A86510006A4896 /* MBMappyRoute.swift in Sources */,
+				36E1ADF421A86510006A4896 /* (null) in Sources */,
 				C584E3F91F201C7D00BBC9BB /* MBRoadClasses.swift in Sources */,
 				C5DAACA420195AB3001F9261 /* MBMatchOptions.swift in Sources */,
-				36E1ADF721A8651B006A4896 /* MappySpokenInstructionType.swift in Sources */,
-				358D48891E2EAB4500F32A65 /* MBRouteOptions.m in Sources */,
 				DA1A11091D0103A3009F82FA /* MBWaypoint.swift in Sources */,
 				35DBF008217DF0D90009D2AE /* MBCoordinateBounds.swift in Sources */,
 				DA1A11071D0103A3009F82FA /* MBRouteOptions.swift in Sources */,
+				7C6A7D5B2319578B00158EA6 /* MappySpokenInstructionType.swift in Sources */,
 				DA1A11051D0103A3009F82FA /* MBRoute.swift in Sources */,
 				C5990B4F2045E74A00D7DFD4 /* MBDirectionsOptions.swift in Sources */,
 				DAA76D6B1DD127CB0015EC78 /* MBLaneIndication.swift in Sources */,
 				AEDC212020B612560052DED8 /* MBLaneIndicationComponent.swift in Sources */,
 				DA1A11081D0103A3009F82FA /* MBRouteStep.swift in Sources */,
+				7C6A7D5C2319578B00158EA6 /* MBMaxSpeed.swift in Sources */,
+				35C0D79E22563B2B005E05A5 /* MBRouteOptions.m in Sources */,
 				C57D55051DB566A900B94B74 /* MBIntersection.swift in Sources */,
 				36E1ADEC21A864FD006A4896 /* MBMappyControlZoneType.swift in Sources */,
 				C52CE3911F6AF63E0069963D /* MBSpokenInstruction.swift in Sources */,
@@ -1483,6 +1522,7 @@
 				35DBF00D217E172C0009D2AE /* CLLocationCoordinate2D.swift in Sources */,
 				8D381B6D1FDB3D8B008D5A58 /* String.swift in Sources */,
 				C56516871FE1AB9100A0AD18 /* MBVisualInstructionType.swift in Sources */,
+				7C6A7D5A2319578B00158EA6 /* MBMappyRoute.swift in Sources */,
 				36E1ADEE21A86502006A4896 /* MBMappyControlZoneInstruction.swift in Sources */,
 				C54549FE2073F1F1002E273F /* Array.swift in Sources */,
 				C547EC6B1DB59F91009817F3 /* MBLane.swift in Sources */,
@@ -1507,9 +1547,6 @@
 				C52552C01FA1628A00B1545C /* MBVisualInstructionComponent.swift in Sources */,
 				35828C9E217A003F00ED546E /* OfflineDirections.swift in Sources */,
 				C59426071F1EA6C400C8E59C /* MBRoadClasses.swift in Sources */,
-				A3DCBA722146BCF500BB6203 /* MBMappyControlZoneType.swift in Sources */,
-				358D48861E2EAB4500F32A65 /* MBRouteOptions.m in Sources */,
-				A3DCBA6E2146AEA700BB6203 /* MappySpokenInstructionType.swift in Sources */,
 				35EFD00B207DFACA00BF3873 /* MBVisualInstruction.swift in Sources */,
 				DAC05F161CFBFAC400FA0071 /* MBWaypoint.swift in Sources */,
 				C57D55081DB58C0200B94B74 /* MBLane.swift in Sources */,
@@ -1517,13 +1554,15 @@
 				C59094BF203B800300EB2417 /* MBDirectionsOptions.swift in Sources */,
 				35DBF005217DF0D90009D2AE /* MBCoordinateBounds.swift in Sources */,
 				C5434B8C200695A50069E887 /* MBMatchOptions.swift in Sources */,
+				7C6A7D552319578A00158EA6 /* MappySpokenInstructionType.swift in Sources */,
 				DAA76D681DD127CB0015EC78 /* MBLaneIndication.swift in Sources */,
 				C59094C1203DE6BC00EB2417 /* MBDirectionsResult.swift in Sources */,
 				DAC05F1A1CFC077C00FA0071 /* MBRouteLeg.swift in Sources */,
 				AEDC211920B5DBDE0052DED8 /* MBLaneIndicationComponent.swift in Sources */,
 				C5434B8A200693D00069E887 /* MBTracepoint.swift in Sources */,
+				35C0D79B22563B2B005E05A5 /* MBRouteOptions.m in Sources */,
 				DA6C9DA61CAE462800094FBC /* MBDirections.swift in Sources */,
-				29F7E94220E4E1B500A7B2A4 /* MBMappyRoute.swift in Sources */,
+				7C6A7D542319578A00158EA6 /* MBMappyControlZoneType.swift in Sources */,
 				C55FB44B1F6AEBF6006BD1E9 /* MBSpokenInstruction.swift in Sources */,
 				C5DAAC9A20191675001F9261 /* MBMatch.swift in Sources */,
 				7C4942C8224D318E00280237 /* MBMaxSpeed.swift in Sources */,
@@ -1531,6 +1570,7 @@
 				C58EA7AA1E9D7EAD008F98CE /* MBCongestion.swift in Sources */,
 				8D381B6A1FDB101F008D5A58 /* String.swift in Sources */,
 				C56516841FE1A2DD00A0AD18 /* MBVisualInstructionType.swift in Sources */,
+				7C6A7D532319578A00158EA6 /* MBMappyRoute.swift in Sources */,
 				C57D55011DB5669600B94B74 /* MBIntersection.swift in Sources */,
 				AEDC211D20B6104B0052DED8 /* MBComponentRepresentable.swift in Sources */,
 				DA2E03E91CB0E0B000D1269A /* MBRouteStep.swift in Sources */,
@@ -1552,6 +1592,7 @@
 				DAE33A1B1F215DF600C06039 /* IntersectionTests.swift in Sources */,
 				C5DAACAF201AA92B001F9261 /* MatchTests.swift in Sources */,
 				DA6C9DB21CAECA0E00094FBC /* Fixture.swift in Sources */,
+				3556CE9D22649CF3009397B5 /* BridgingTests.m in Sources */,
 				DA1A110B1D01045E009F82FA /* DirectionsTests.swift in Sources */,
 				C52CE3931F6AF6E70069963D /* IntructionsTests.swift in Sources */,
 				DA4F84ED21C08BFB008A0434 /* WaypointTests.swift in Sources */,
@@ -1628,18 +1669,18 @@
 				CLANG_ANALYZER_NONNULL = YES;
 				CODE_SIGN_IDENTITY = "";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 43;
+				CURRENT_PROJECT_VERSION = 44;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 43;
+				DYLIB_CURRENT_VERSION = 44;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Carthage/Build/Mac",
 				);
 				FRAMEWORK_VERSION = A;
-				INFOPLIST_FILE = MapboxDirections/Info.plist;
+				INFOPLIST_FILE = "$(SRCROOT)/Sources/MapboxDirections/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.mapbox.MapboxDirections;
@@ -1657,17 +1698,17 @@
 				CLANG_ANALYZER_NONNULL = YES;
 				CODE_SIGN_IDENTITY = "";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 43;
+				CURRENT_PROJECT_VERSION = 44;
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 43;
+				DYLIB_CURRENT_VERSION = 44;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Carthage/Build/Mac",
 				);
 				FRAMEWORK_VERSION = A;
-				INFOPLIST_FILE = MapboxDirections/Info.plist;
+				INFOPLIST_FILE = "$(SRCROOT)/Sources/MapboxDirections/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.mapbox.MapboxDirections;
@@ -1683,6 +1724,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
@@ -1690,11 +1732,13 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Carthage/Build/Mac",
 				);
-				INFOPLIST_FILE = MapboxDirectionsTests/Info.plist;
+				INFOPLIST_FILE = Tests/MapboxDirectionsTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks $(PROJECT_DIR)/Carthage/Build/Mac";
 				PRODUCT_BUNDLE_IDENTIFIER = com.mapbox.MapboxDirectionsTests;
 				PRODUCT_NAME = MapboxDirectionsTests;
 				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "Tests/objc/MapboxDirectionsTests-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
 		};
@@ -1702,17 +1746,19 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Carthage/Build/Mac",
 				);
-				INFOPLIST_FILE = MapboxDirectionsTests/Info.plist;
+				INFOPLIST_FILE = Tests/MapboxDirectionsTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks $(PROJECT_DIR)/Carthage/Build/Mac";
 				PRODUCT_BUNDLE_IDENTIFIER = com.mapbox.MapboxDirectionsTests;
 				PRODUCT_NAME = MapboxDirectionsTests;
 				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "Tests/objc/MapboxDirectionsTests-Bridging-Header.h";
 			};
 			name = Release;
 		};
@@ -1721,17 +1767,17 @@
 			buildSettings = {
 				CLANG_ANALYZER_NONNULL = YES;
 				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "";
-				CURRENT_PROJECT_VERSION = 43;
+				CURRENT_PROJECT_VERSION = 44;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 43;
+				DYLIB_CURRENT_VERSION = 44;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Carthage/Build/tvOS",
 				);
-				INFOPLIST_FILE = MapboxDirections/Info.plist;
+				INFOPLIST_FILE = "$(SRCROOT)/Sources/MapboxDirections/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.mapbox.MapboxDirections;
@@ -1751,16 +1797,16 @@
 			buildSettings = {
 				CLANG_ANALYZER_NONNULL = YES;
 				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "";
-				CURRENT_PROJECT_VERSION = 43;
+				CURRENT_PROJECT_VERSION = 44;
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 43;
+				DYLIB_CURRENT_VERSION = 44;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Carthage/Build/tvOS",
 				);
-				INFOPLIST_FILE = MapboxDirections/Info.plist;
+				INFOPLIST_FILE = "$(SRCROOT)/Sources/MapboxDirections/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.mapbox.MapboxDirections;
@@ -1779,17 +1825,21 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Carthage/Build/tvOS",
 				);
-				INFOPLIST_FILE = MapboxDirectionsTests/Info.plist;
+				INFOPLIST_FILE = Tests/MapboxDirectionsTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks $(PROJECT_DIR)/Carthage/Build/tvOS";
 				PRODUCT_BUNDLE_IDENTIFIER = com.mapbox.MapboxDirectionsTests;
 				PRODUCT_NAME = MapboxDirectionsTests;
 				SDKROOT = appletvos;
+				SWIFT_OBJC_BRIDGING_HEADER = "Tests/objc/MapboxDirectionsTests-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_SWIFT3_OBJC_INFERENCE = Off;
+				TARGETED_DEVICE_FAMILY = "1,2,3";
 				TVOS_DEPLOYMENT_TARGET = 9.0;
 			};
 			name = Debug;
@@ -1798,16 +1848,19 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Carthage/Build/tvOS",
 				);
-				INFOPLIST_FILE = MapboxDirectionsTests/Info.plist;
+				INFOPLIST_FILE = Tests/MapboxDirectionsTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks $(PROJECT_DIR)/Carthage/Build/tvOS";
 				PRODUCT_BUNDLE_IDENTIFIER = com.mapbox.MapboxDirectionsTests;
 				PRODUCT_NAME = MapboxDirectionsTests;
 				SDKROOT = appletvos;
+				SWIFT_OBJC_BRIDGING_HEADER = "Tests/objc/MapboxDirectionsTests-Bridging-Header.h";
 				SWIFT_SWIFT3_OBJC_INFERENCE = Off;
+				TARGETED_DEVICE_FAMILY = "1,2,3";
 				TVOS_DEPLOYMENT_TARGET = 9.0;
 			};
 			name = Release;
@@ -1818,17 +1871,17 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "";
-				CURRENT_PROJECT_VERSION = 43;
+				CURRENT_PROJECT_VERSION = 44;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 43;
+				DYLIB_CURRENT_VERSION = 44;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Carthage/Build/watchOS",
 				);
-				INFOPLIST_FILE = MapboxDirections/Info.plist;
+				INFOPLIST_FILE = "$(SRCROOT)/Sources/MapboxDirections/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.mapbox.MapboxDirections;
@@ -1849,16 +1902,16 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "";
-				CURRENT_PROJECT_VERSION = 43;
+				CURRENT_PROJECT_VERSION = 44;
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 43;
+				DYLIB_CURRENT_VERSION = 44;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Carthage/Build/watchOS",
 				);
-				INFOPLIST_FILE = MapboxDirections/Info.plist;
+				INFOPLIST_FILE = "$(SRCROOT)/Sources/MapboxDirections/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.mapbox.MapboxDirections;
@@ -1878,18 +1931,18 @@
 			buildSettings = {
 				CLANG_ANALYZER_NONNULL = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
-				CURRENT_PROJECT_VERSION = 43;
+				CURRENT_PROJECT_VERSION = 44;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = 68X36QQGGD;
 				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 43;
+				DYLIB_CURRENT_VERSION = 44;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Carthage/Build/iOS",
 				);
-				INFOPLIST_FILE = MapboxDirections/Info.plist;
+				INFOPLIST_FILE = "$(SRCROOT)/Sources/MapboxDirections/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.mapbox.MapboxDirections;
@@ -1906,17 +1959,17 @@
 			buildSettings = {
 				CLANG_ANALYZER_NONNULL = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
-				CURRENT_PROJECT_VERSION = 43;
+				CURRENT_PROJECT_VERSION = 44;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = 68X36QQGGD;
 				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 43;
+				DYLIB_CURRENT_VERSION = 44;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Carthage/Build/iOS",
 				);
-				INFOPLIST_FILE = MapboxDirections/Info.plist;
+				INFOPLIST_FILE = "$(SRCROOT)/Sources/MapboxDirections/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.mapbox.MapboxDirections;
@@ -1932,16 +1985,19 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Carthage/Build/iOS",
 				);
-				INFOPLIST_FILE = MapboxDirectionsTests/Info.plist;
+				INFOPLIST_FILE = Tests/MapboxDirectionsTests/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/Carthage/Build/iOS @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.mapbox.MapboxDirectionsTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "Tests/objc/MapboxDirectionsTests-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
 		};
@@ -1949,15 +2005,17 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Carthage/Build/iOS",
 				);
-				INFOPLIST_FILE = MapboxDirectionsTests/Info.plist;
+				INFOPLIST_FILE = Tests/MapboxDirectionsTests/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/Carthage/Build/iOS @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.mapbox.MapboxDirectionsTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "Tests/objc/MapboxDirectionsTests-Bridging-Header.h";
 			};
 			name = Release;
 		};
