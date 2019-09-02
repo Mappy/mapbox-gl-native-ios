@@ -27,11 +27,13 @@ afterEvaluate { project ->
         }
         repositories {
             maven {
-		        if(project.VERSION_NAME.endsWith('last-alpha')) {
-                	url "file://${System.env.MAVEN_PRIVATE}"
-            	} else {
-                	url "file://${System.env.MAVEN}"
-            	}
+                if (project.VERSION_NAME == 'last-alpha-SNAPSHOT') {
+                        url "file://${System.env.MAVEN_PRIVATE}"
+                        println "uploading to 'MAVEN_PRIVATE' repository"
+                } else {
+                        url "file://${System.env.MAVEN}"
+                        println "uploading to 'MAVEN' repository"
+                }
             }
         }
     }

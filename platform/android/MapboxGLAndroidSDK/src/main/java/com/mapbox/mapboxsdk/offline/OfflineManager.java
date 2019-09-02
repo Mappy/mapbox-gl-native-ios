@@ -8,6 +8,7 @@ import android.support.annotation.AnyThread;
 import android.support.annotation.Keep;
 import android.support.annotation.NonNull;
 import android.support.annotation.UiThread;
+import android.support.annotation.VisibleForTesting;
 
 import com.mapbox.mapboxsdk.LibraryLoader;
 import com.mapbox.mapboxsdk.Mapbox;
@@ -58,7 +59,8 @@ public class OfflineManager {
 
   // This object is implemented as a singleton
   @SuppressLint("StaticFieldLeak")
-  private static OfflineManager instance;
+  @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE) // Mappy modif
+  static OfflineManager instance;
 
   // The application context
   private Context context;
@@ -129,7 +131,8 @@ public class OfflineManager {
   /*
    * Constructor
    */
-  private OfflineManager(Context context) {
+  @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE) // Mappy modif
+  OfflineManager(Context context) {
     this.context = context.getApplicationContext();
     this.fileSource = FileSource.getInstance(this.context);
     initialize(fileSource);
