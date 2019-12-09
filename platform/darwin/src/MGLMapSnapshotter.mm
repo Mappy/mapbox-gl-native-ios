@@ -621,9 +621,9 @@ const CGFloat MGLSnapshotterMinimumPixelSize = 64;
 {
     MGLImage *logoImage;
 #if TARGET_OS_IPHONE
-    logoImage =[UIImage imageNamed:@"mapbox" inBundle:[NSBundle mgl_frameworkBundle] compatibleWithTraitCollection:nil];
+    logoImage =[UIImage imageNamed:@"mappy" inBundle:[NSBundle mgl_frameworkBundle] compatibleWithTraitCollection:nil];
 #else
-    logoImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mgl_frameworkBundle] pathForResource:@"mapbox" ofType:@"pdf"]];
+    logoImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mgl_frameworkBundle] pathForResource:@"mappy" ofType:@"pdf"]];
 #endif
     return logoImage;
 }
@@ -736,6 +736,10 @@ const CGFloat MGLSnapshotterMinimumPixelSize = 64;
     mbgl::optional<mbgl::LatLngBounds> coordinateBounds;
     if (!MGLCoordinateBoundsIsEmpty(options.coordinateBounds)) {
         coordinateBounds = MGLLatLngBoundsFromCoordinateBounds(options.coordinateBounds);
+    }
+    
+    if (! UIEdgeInsetsEqualToEdgeInsets(options.insets, UIEdgeInsetsZero)) {
+        cameraOptions.padding = MGLEdgeInsetsFromNSEdgeInsets(options.insets);
     }
     
     // App-global configuration

@@ -90,8 +90,12 @@ public:
         @autoreleasepool {
             NSURLSessionConfiguration *sessionConfig = [MGLNetworkConfiguration sharedManager].sessionConfiguration;
             session = [NSURLSession sessionWithConfiguration:sessionConfig];
-
-            userAgent = getUserAgent();
+            
+            if ([NSString respondsToSelector:@selector(userAgentWithBundle:)]) {
+                userAgent = [NSString performSelector:@selector(userAgentWithBundle:) withObject:[NSBundle mainBundle]];
+            } else {
+                userAgent = getUserAgent();
+            }
 
 #if TARGET_OS_IPHONE || TARGET_OS_SIMULATOR
             accountType = [[NSUserDefaults standardUserDefaults] integerForKey:MGLMapboxAccountTypeKey];
