@@ -245,5 +245,5 @@ cp ${README} "${OUTPUT}"
 
 if [ ${BUILD_DOCS} == true ]; then
     step "Generating API documentation for ${BUILDTYPE} Build…"
-    make idocument OUTPUT="${OUTPUT}/documentation"
+    #make idocument OUTPUT="${OUTPUT}/documentation"
 fi
