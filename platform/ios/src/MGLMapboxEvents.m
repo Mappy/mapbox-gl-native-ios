@@ -172,7 +172,7 @@ static NSString * const MGLAPIClientUserAgentBase = @"mapbox-maps-ios";
     if (!metricsEnabledSettingShownInAppFlag &&
         [[NSUserDefaults standardUserDefaults] integerForKey:MGLMapboxAccountTypeKey] == 0) {
         // Opt-out is not configured in UI, so check for Settings.bundle
-        id defaultEnabledValue;
+        id defaultEnabledValue = @(NO);
         NSString *appSettingsBundle = [[NSBundle mainBundle] pathForResource:@"Settings" ofType:@"bundle"];
         
         if (appSettingsBundle) {
