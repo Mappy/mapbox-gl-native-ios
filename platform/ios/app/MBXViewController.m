@@ -441,15 +441,12 @@ CLLocationCoordinate2D randomWorldCoordinate() {
                 @"Ornaments Placement",
             ]];
             
-            if (self.currentState.debugLoggingEnabled)
-            {
-                [settingsTitles addObjectsFromArray:@[
-                    @"Print Telemetry Logfile",
-                    @"Delete Telemetry Logfile",
-                    @"Show / hide Mappy logs",
-                    @"Delete Mappy logs"
-                ]];
-            };
+            [settingsTitles addObjectsFromArray:@[
+                @"Print Telemetry Logfile",
+                @"Delete Telemetry Logfile",
+                @"Show / hide Mappy logs",
+                @"Delete Mappy logs"
+            ]];
 
             break;
         default:
