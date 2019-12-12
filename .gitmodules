@@ -15,4 +15,6 @@
 	url = https://github.com/mapbox/jazzy-theme.git
 [submodule "vendor/mapbox-gl-native"]
 	path = vendor/mapbox-gl-native
-	url = https://github.com/mapbox/mapbox-gl-native.git
+	url = https://github.com/mappy/mapbox-gl-native.git
+	branch = mappy_v3
+
