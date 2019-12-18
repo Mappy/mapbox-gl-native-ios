@@ -23,4 +23,8 @@ if [[ $1 == "debug" ]]; then
 fi
 git push origin master
 git push --tags
-git checkout -
+
+echo "Back to mappy branch"
+git checkout mappy 
+git submodule update --init
+git reset --hard --recurse-submodules
