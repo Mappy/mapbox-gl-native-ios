@@ -10,7 +10,11 @@ echo "Fetching upstream master"
 git fetch upstream master
 
 echo "Updating local master"
-git checkout master --recurse-submodules
+git checkout master
+
+git submodule sync --recursive
+git submodule update --init --recursive
+
 git pull origin master --rebase
 
 echo "Merging remote master with local one"
@@ -25,6 +29,9 @@ git push origin master
 git push --tags
 
 echo "Back to mappy branch"
-git checkout mappy 
+git checkout mappy
 git submodule update --init
-git reset --hard --recurse-submodules
+git reset --hard
+
+git submodule sync --recursive
+git submodule update --init --recursive
