@@ -68,7 +68,7 @@
 #import "MGLMapAccessibilityElement.h"
 #import "MGLLocationManager_Private.h"
 #import "MGLLoggingConfiguration_Private.h"
-#import "MMEConstants.h"
+#import <MapboxMobileEvents/MapboxMobileEvents.h>
 
 #include <algorithm>
 #include <cstdlib>
@@ -893,8 +893,11 @@ public:
     }
 
     if (!CGSizeEqualToSize(size, CGSizeZero)) {
-        [updatedConstraints addObject:[view.widthAnchor constraintEqualToConstant:size.width]];
-        [updatedConstraints addObject:[view.heightAnchor constraintEqualToConstant:size.height]];
+        NSLayoutConstraint *widthConstraint = [view.widthAnchor constraintEqualToConstant:size.width];
+        widthConstraint.identifier = @"width";
+        NSLayoutConstraint *heightConstraint = [view.heightAnchor constraintEqualToConstant:size.height];
+        heightConstraint.identifier = @"height";
+        [updatedConstraints addObjectsFromArray:@[widthConstraint,heightConstraint]];
     }
     
     [NSLayoutConstraint deactivateConstraints:constraints];
@@ -916,7 +919,7 @@ public:
     [self updateConstraintsForOrnament:self.compassView
                            constraints:self.compassViewConstraints
                               position:self.compassViewPosition
-                                  size:self.compassView.bounds.size
+                                  size:[self sizeForOrnament:self.compassView constraints:self.compassViewConstraints]
                                margins:self.compassViewMargins];
 }
 
@@ -934,7 +937,7 @@ public:
     [self updateConstraintsForOrnament:self.logoView
                            constraints:self.logoViewConstraints
                               position:self.logoViewPosition
-                                  size:self.logoView.bounds.size
+                                  size:[self sizeForOrnament:self.logoView constraints:self.logoViewConstraints]
                                margins:self.logoViewMargins];
 }
 
@@ -943,8 +946,29 @@ public:
     [self updateConstraintsForOrnament:self.attributionButton
                            constraints:self.attributionButtonConstraints
                               position:self.attributionButtonPosition
-                                  size:self.attributionButton.bounds.size
+                                  size:[self sizeForOrnament:self.attributionButton constraints:self.attributionButtonConstraints]
                                margins:self.attributionButtonMargins];
+}
+
+- (CGSize)sizeForOrnament:(UIView *)view
+              constraints:(NSMutableArray *)constraints {
+    // avoid regenerating size constraints
+    CGSize size;
+    if(constraints && constraints.count > 0) {
+        for (NSLayoutConstraint * constraint in constraints) {
+            if([constraint.identifier isEqualToString:@"width"]) {
+                size.width = constraint.constant;
+            }
+            else if ([constraint.identifier isEqualToString:@"height"]) {
+                size.height = constraint.constant;
+            }
+        }
+    }
+    else {
+        size = view.bounds.size;
+    }
+    
+    return size;
 }
 
 - (BOOL)isOpaque

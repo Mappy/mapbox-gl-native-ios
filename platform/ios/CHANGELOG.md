@@ -2,6 +2,32 @@
 
 Mapbox welcomes participation and contributions from everyone. Please read [CONTRIBUTING.md](../../CONTRIBUTING.md) to get started.
 
+## 5.6.1 - January 9, 2020
+* Fixed a crash that could occur when `MGLShapeSource` destroys its underlying data. ([#16106](https://github.com/mapbox/mapbox-gl-native/pull/16106))
+
+## 5.6.0 - December 19, 2019
+This release includes a known issue where the binary size has increased. ([#63](https://github.com/mapbox/mapbox-gl-native-ios/issues/63))
+
+### Packaging
+* Integrates [`MapboxMobileEvents`](https://github.com/mapbox/mapbox-events-ios) as a dependency ([#60](https://github.com/mapbox/mapbox-gl-native-ios/pull/60)). As a result, the following installation processes have changed:
+    - CocoaPods: You now must include `use frameworks!` in your Podfile.
+    - Carthage: Specify `github "mapbox/mapbox-events-ios" == 0.10.2` in your Cartfile. Additionally, please note that if you are using `--no-use-binaries`, the `MapboxMobileEvents.framework` will still be installed as a dynamic framework.
+    - Manual installation: New Github release artifact (`mapbox-ios-sdk-5.6.0-beta.1-dynamic-with-events.zip`) contains the `MapboxMobileEvents.framework`; please install this along with `Mapbox.framework`
+
+### Networking and storage
+* Make network requests for expired resources lower priority than requests for new resources. ([#15950](https://github.com/mapbox/mapbox-gl-native/pull/15950))
+
+### Bug fixes
+* Fixed the rendering bug caused by redundant pending requests for already requested images [#15864](https://github.com/mapbox/mapbox-gl-native/pull/15864)
+* Enable incremental vacuum for the offline database in order to make data removal requests faster and to avoid the excessive disk space usage (creating a backup file on VACUUM call). ([#15837](https://github.com/mapbox/mapbox-gl-native/pull/15837))
+* Fix ornaments' view constraints bug when devices change to bold-text mode. ([#57](https://github.com/mapbox/mapbox-gl-native-ios/pull/57))
+* Fixed `MGLShapeSource` source flickering on style transition. ([#15907](https://github.com/mapbox/mapbox-gl-native/pull/15907))
+* Fixed flickering caused by unnecessary removing and re-adding of the render sources when the order of their corresponding style objects was changed in the updated style ([#15941](https://github.com/mapbox/mapbox-gl-native/pull/15941))
+* Fixed a crash when `MGLSymbolStyleLayer.textFontSize` is set to an expression that evaluates to `0`. ([#16080](https://github.com/mapbox/mapbox-gl-native/pull/16080))
+
+### Other changes
+* Convert GeoJSON features to tiles for the loaded source description in a background thread and thus unblock the UI thread ([#15885](https://github.com/mapbox/mapbox-gl-native/pull/15885))
+
 ## 5.5.0 - November 5, 2019
 
 ### Performance improvements
