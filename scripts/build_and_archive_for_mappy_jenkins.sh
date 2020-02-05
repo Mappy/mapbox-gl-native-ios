@@ -13,9 +13,13 @@ elif [[ $1 != "static" && $1 != "dynamic" ]]; then
     exit
 fi
 
+BUILD_FORMAT="dynamic-with-events"
+if [ $1 == "static" ]; then
+	BUILD_FORMAT=$1
+fi
 git submodule update --init --recursive
 make clean && make distclean
-make iframework FORMAT=$1 BUILDTYPE=Release SYMBOLS=NO
+make iframework FORMAT=$BUILD_FORMAT BUILDTYPE=Release SYMBOLS=NO
 
 if [[ $1 = "static" ]]; then
 	cd build/ios/pkg
