@@ -14,8 +14,10 @@ build_mapbox_gl:
   stage: build
   script:
     - sh scripts/build_and_archive_for_mappy_jenkins.sh dynamic
+    - mkdir -p pkg/
+    - mv build/ios/mapbox-ios-sdk-dynamic.zip pkg/
   rules: *mappy_branch_rules
   artifacts:
     paths:
-      - build/ios/mapbox-ios-sdk-dynamic.zip
+      - pkg/mapbox-ios-sdk-dynamic.zip
     expire_in: 2 months
