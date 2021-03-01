@@ -31,30 +31,7 @@
     for (MGLAnnotationView *view in subviews)
     {
         [self addSubview:view];
-    }
-    [self.annotationViews addObjectsFromArray:subviews];
-    [self reorderSubviews];
-}
-
-- (void)reorderSubviews
-{
-    NSArray *sortedAnnotationViews = [self.annotationViews sortedArrayUsingComparator:^NSComparisonResult(MGLAnnotationView *  _Nonnull obj1, MGLAnnotationView *  _Nonnull obj2) {
-        if (obj1.zOrder == obj2.zOrder) {
-            return NSOrderedSame;
-        }
-        else if (obj1.zOrder < obj2.zOrder) {
-            return NSOrderedAscending;
-        }
-        else {
-            return NSOrderedDescending;
-        }
-    }];
-    [self.annotationViews removeAllObjects];
-    [self.annotationViews addObjectsFromArray:sortedAnnotationViews];
-
-    for (UIView *view in self.annotationViews)
-    {
-        [self bringSubviewToFront:view];
+        [self.annotationViews addObject:view];
     }
 }
 

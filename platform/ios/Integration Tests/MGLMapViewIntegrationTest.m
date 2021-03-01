@@ -1,68 +1,25 @@
 #import "MGLMapViewIntegrationTest.h"
 
 @interface MGLMapView (MGLMapViewIntegrationTest)
+@property (nonatomic, weak) CADisplayLink *displayLink;
 - (void)updateFromDisplayLink:(CADisplayLink *)displayLink;
 - (void)setNeedsRerender;
 @end
 
 @implementation MGLMapViewIntegrationTest
 
-+ (XCTestSuite*)defaultTestSuite {
-    
-    XCTestSuite *defaultTestSuite = [super defaultTestSuite];
-    
-    NSArray *tests = defaultTestSuite.tests;
- 
-    XCTestSuite *newTestSuite = [XCTestSuite testSuiteWithName:defaultTestSuite.name];
-    
-    BOOL runPendingTests = [[[NSProcessInfo processInfo] environment][@"MAPBOX_RUN_PENDING_TESTS"] boolValue];
-    NSString *accessToken = [[NSProcessInfo processInfo] environment][@"MAPBOX_ACCESS_TOKEN"];
-        
-    for (XCTest *test in tests) {
-        
-        // Check for pending tests
-        if ([test.name containsString:@"PENDING"] ||
-            [test.name containsString:@"🙁"]) {
-            if (!runPendingTests) {
-                printf("warning: '%s' is a pending test - skipping\n", test.name.UTF8String);
-                continue;
-            }
-        }
-        
-        // Check for tests that require a valid access token
-        if ([test.name containsString:@"🔒"]) {
-            if (!accessToken) {
-                printf("warning: MAPBOX_ACCESS_TOKEN env var is required for test '%s' - skipping.\n", test.name.UTF8String);
-                continue;
-            }
-        }
-
-        [newTestSuite addTest:test];
-    }
-    
-    return newTestSuite;
-}
-
 - (MGLMapView *)mapViewForTestWithFrame:(CGRect)rect styleURL:(NSURL *)styleURL {
     return [[MGLMapView alloc] initWithFrame:UIScreen.mainScreen.bounds styleURL:styleURL];
 }
 
+- (NSURL*)styleURL {
+    return [[NSBundle bundleForClass:[self class]] URLForResource:@"one-liner" withExtension:@"json"];
+}
+
 - (void)setUp {
     [super setUp];
-
-    NSString *accessToken;
     
-    if ([self.name containsString:@"🔒"]) {
-        accessToken = [[NSProcessInfo processInfo] environment][@"MAPBOX_ACCESS_TOKEN"];
-        
-        if (!accessToken) {
-            printf("warning: MAPBOX_ACCESS_TOKEN env var is required for test '%s' - trying anyway.\n", self.name.UTF8String);
-        }
-    }
-
-    [MGLAccountManager setAccessToken:accessToken ?: @"pk.feedcafedeadbeefbadebede"];
-    
-    NSURL *styleURL = [[NSBundle bundleForClass:[self class]] URLForResource:@"one-liner" withExtension:@"json"];
+    NSURL *styleURL = [self styleURL];
 
     self.mapView = [self mapViewForTestWithFrame:UIScreen.mainScreen.bounds styleURL:styleURL];
     self.mapView.delegate = self;
@@ -70,11 +27,34 @@
     UIView *superView = [[UIView alloc] initWithFrame:UIScreen.mainScreen.bounds];
     [superView addSubview:self.mapView];
     self.window = [[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
-    [self.window addSubview:superView];
+
+    UIViewController *controller = [[UIViewController alloc] init];
+    self.window.rootViewController = controller;
+
+    [controller.view addSubview:superView];
+
     [self.window makeKeyAndVisible];
+
+
+
+    // Wait for the application to be active. If testing with AirPlay, tests
+    // can start in `UIApplicationStateInactive`
+    if (UIApplication.sharedApplication.applicationState != UIApplicationStateActive) {
+        XCTNSNotificationExpectation *notificationExpectation = [[XCTNSNotificationExpectation alloc] initWithName:UIApplicationDidBecomeActiveNotification
+                                                                                                            object:nil
+                                                                                                notificationCenter:[NSNotificationCenter defaultCenter]];
+        notificationExpectation.handler = ^BOOL(NSNotification * _Nonnull notification) {
+            NSLog(@"Test launched in inactive state. Received active: %@", notification);
+            return YES;
+        };
+
+        [self waitForExpectations:@[notificationExpectation] timeout:30.0];
+        XCTAssert(UIApplication.sharedApplication.applicationState == UIApplicationStateActive);
+    }
 
     if (!self.mapView.style) {
         [self waitForMapViewToFinishLoadingStyleWithTimeout:10];
+        [self waitForMapViewToIdleWithTimeout:10];
     }
 }
 
@@ -104,12 +84,19 @@
     XCTAssertEqual(mapView.style, style);
 
     [self.styleLoadingExpectation fulfill];
+    self.styleLoadingExpectation = nil;
 }
 
 - (void)mapViewDidFinishRenderingFrame:(MGLMapView *)mapView fullyRendered:(__unused BOOL)fullyRendered {
     [self.renderFinishedExpectation fulfill];
     self.renderFinishedExpectation = nil;
 }
+
+- (void)mapViewDidBecomeIdle:(MGLMapView *)mapView {
+    [self.idleExpectation fulfill];
+    self.idleExpectation = nil;
+}
+
 
 - (void)mapView:(MGLMapView *)mapView regionWillChangeAnimated:(BOOL)animated {
     if (self.regionWillChange) {
@@ -154,6 +141,11 @@
 
 - (void)waitForMapViewToFinishLoadingStyleWithTimeout:(NSTimeInterval)timeout {
     XCTAssertNil(self.styleLoadingExpectation);
+    XCTAssertNotNil(self.mapView.displayLink);
+    XCTAssert(!self.mapView.displayLink.paused);
+
+    [self.mapView setNeedsRerender];
+
     self.styleLoadingExpectation = [self expectationWithDescription:@"Map view should finish loading style."];
     [self waitForExpectations:@[self.styleLoadingExpectation] timeout:timeout];
     self.styleLoadingExpectation = nil;
@@ -167,17 +159,17 @@
     self.renderFinishedExpectation = nil;
 }
 
-- (void)waitForExpectations:(NSArray<XCTestExpectation *> *)expectations timeout:(NSTimeInterval)seconds {
+- (void)waitForMapViewToIdleWithTimeout:(NSTimeInterval)timeout {
+    XCTAssertNil(self.renderFinishedExpectation);
+    [self.mapView setNeedsRerender];
+    self.idleExpectation = [self expectationWithDescription:@"Map view should idle"];
+    [self waitForExpectations:@[self.idleExpectation] timeout:timeout];
+}
 
+- (void)waitForExpectations:(NSArray<XCTestExpectation *> *)expectations timeout:(NSTimeInterval)seconds {
     NSTimer *timer;
 
-    if (@available(iOS 10.0, *)) {
-        // We're good.
-    }
-    else if (self.mapView) {
-        // Before iOS 10 it seems that the display link is not called during the
-        // waitForExpectations below
-        
+    if (self.mapView) {
         timer = [NSTimer scheduledTimerWithTimeInterval:1.0/30.0
                                                  target:self
                                                selector:@selector(updateMapViewDisplayLinkFromTimer:)
@@ -190,7 +182,15 @@
 }
 
 - (void)updateMapViewDisplayLinkFromTimer:(NSTimer *)timer {
-    [self.mapView updateFromDisplayLink:nil];
+    if (@available(iOS 10.0, *)) {
+        // This is required for iOS 13.?, where dispatch blocks were not being
+        // called - after being issued with
+        // dispatch_async(dispatch_get_main_queue(), ...)
+    } else {
+        // Before iOS 10 it seems that the display link is not called during the
+        // waitForExpectations below
+        [self.mapView updateFromDisplayLink:nil];
+    }
 }
 
 - (MGLStyle *)style {

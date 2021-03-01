@@ -1,14 +1,8 @@
 #import <Mapbox/Mapbox.h>
 #import <XCTest/XCTest.h>
-#import "MGLRendererConfiguration.h"
+#import "MGLRendererConfiguration_Private.h"
 
 static NSString * const MGLRendererConfigurationTests_collisionBehaviorKey = @"MGLCollisionBehaviorPre4_0";
-
-@interface MGLRendererConfiguration (Tests)
-- (instancetype)initWithPropertyDictionary:(nonnull NSDictionary*)bundle;
-- (mbgl::optional<std::string>)_localFontFamilyNameWithPropertyDictionary:(nonnull NSDictionary *)properties;
-@end
-
 
 @interface MGLRendererConfigurationTests : XCTestCase
 @end
@@ -23,22 +17,14 @@ static NSString * const MGLRendererConfigurationTests_collisionBehaviorKey = @"M
 }
 
 // Emulate what would happen with an Info.plist.
-- (void)testSettingMGLCollisionBehaviorPre40WithEmptyDictionary
+- (void)testSettingMGLCollisionBehaviorPre40
 {
-    MGLRendererConfiguration *config = [[MGLRendererConfiguration alloc] initWithPropertyDictionary:@{}];
-    XCTAssertFalse(config.perSourceCollisions);
-}
-
-- (void)testSettingMGLCollisionBehaviorPre40WithYESDictionary
-{
-    MGLRendererConfiguration *config = [[MGLRendererConfiguration alloc] initWithPropertyDictionary:@{MGLRendererConfigurationTests_collisionBehaviorKey:@(NO)}];
-    XCTAssertFalse(config.perSourceCollisions);
-}
-
-- (void)testSettingMGLCollisionBehaviorPre40WithNODictionary
-{
-    MGLRendererConfiguration *config = [[MGLRendererConfiguration alloc] initWithPropertyDictionary:@{MGLRendererConfigurationTests_collisionBehaviorKey:@(YES)}];
-    XCTAssert(config.perSourceCollisions);
+    MGLRendererConfiguration *config = [[MGLRendererConfiguration alloc] init];
+    XCTAssertFalse([config perSourceCollisionsWithInfoDictionaryObject:nil]);
+    XCTAssertFalse([config perSourceCollisionsWithInfoDictionaryObject:@(NO)]);
+    XCTAssertTrue([config perSourceCollisionsWithInfoDictionaryObject:@(YES)]);
+    XCTAssertFalse([config perSourceCollisionsWithInfoDictionaryObject:@"NO"]);
+    XCTAssertTrue([config perSourceCollisionsWithInfoDictionaryObject:@"YES"]);
 }
 
 - (void)testSettingMGLCollisionBehaviorPre40InNSUserDefaults {
@@ -46,6 +32,7 @@ static NSString * const MGLRendererConfigurationTests_collisionBehaviorKey = @"M
         XCTAssertNil([[NSUserDefaults standardUserDefaults] objectForKey:MGLRendererConfigurationTests_collisionBehaviorKey]);
         MGLRendererConfiguration *config = [MGLRendererConfiguration currentConfiguration];
         XCTAssertFalse(config.perSourceCollisions);
+        XCTAssertFalse([config perSourceCollisionsWithInfoDictionaryObject:nil]);
     }
     
     [[NSUserDefaults standardUserDefaults] setObject:@(NO) forKey:MGLRendererConfigurationTests_collisionBehaviorKey];
@@ -53,6 +40,8 @@ static NSString * const MGLRendererConfigurationTests_collisionBehaviorKey = @"M
         XCTAssertNotNil([[NSUserDefaults standardUserDefaults] objectForKey:MGLRendererConfigurationTests_collisionBehaviorKey]);
         MGLRendererConfiguration *config = [MGLRendererConfiguration currentConfiguration];
         XCTAssertFalse(config.perSourceCollisions);
+        XCTAssertFalse([config perSourceCollisionsWithInfoDictionaryObject:@(NO)]);
+        XCTAssertFalse([config perSourceCollisionsWithInfoDictionaryObject:@(YES)]);
     }
     
     [[NSUserDefaults standardUserDefaults] setObject:@(YES) forKey:MGLRendererConfigurationTests_collisionBehaviorKey];
@@ -60,20 +49,8 @@ static NSString * const MGLRendererConfigurationTests_collisionBehaviorKey = @"M
         XCTAssertNotNil([[NSUserDefaults standardUserDefaults] objectForKey:MGLRendererConfigurationTests_collisionBehaviorKey]);
         MGLRendererConfiguration *config = [MGLRendererConfiguration currentConfiguration];
         XCTAssert(config.perSourceCollisions);
-    }
-}
-
-- (void)testSettingMGLCollisionBehaviorPre40PListValueUsingString {
-    // Dictionary = "NO"
-    {
-        MGLRendererConfiguration *config = [[MGLRendererConfiguration alloc] initWithPropertyDictionary:@{MGLRendererConfigurationTests_collisionBehaviorKey:@"NO"}];
-        XCTAssertFalse(config.perSourceCollisions);
-    }
-    
-    // Dictionary = "YES"
-    {
-        MGLRendererConfiguration *config = [[MGLRendererConfiguration alloc] initWithPropertyDictionary:@{MGLRendererConfigurationTests_collisionBehaviorKey:@"YES"}];
-        XCTAssert(config.perSourceCollisions);
+        XCTAssertTrue([config perSourceCollisionsWithInfoDictionaryObject:@(NO)]);
+        XCTAssertTrue([config perSourceCollisionsWithInfoDictionaryObject:@(YES)]);
     }
 }
 
@@ -81,117 +58,196 @@ static NSString * const MGLRendererConfigurationTests_collisionBehaviorKey = @"M
     // Dictionary = NO, NSUserDefaults = YES
     {
         [[NSUserDefaults standardUserDefaults] setObject:@(YES) forKey:MGLRendererConfigurationTests_collisionBehaviorKey];
-        MGLRendererConfiguration *config = [[MGLRendererConfiguration alloc] initWithPropertyDictionary:@{MGLRendererConfigurationTests_collisionBehaviorKey:@(NO)}];
-        XCTAssert(config.perSourceCollisions);
+        MGLRendererConfiguration *config = [[MGLRendererConfiguration alloc] init];
+        XCTAssert([config perSourceCollisionsWithInfoDictionaryObject:@(NO)]);
     }
     // Dictionary = YES, NSUserDefaults = NO
     {
         [[NSUserDefaults standardUserDefaults] setObject:@(NO) forKey:MGLRendererConfigurationTests_collisionBehaviorKey];
-        MGLRendererConfiguration *config = [[MGLRendererConfiguration alloc] initWithPropertyDictionary:@{MGLRendererConfigurationTests_collisionBehaviorKey:@(YES)}];
-        XCTAssertFalse(config.perSourceCollisions);
+        MGLRendererConfiguration *config = [[MGLRendererConfiguration alloc] init];
+        XCTAssertFalse([config perSourceCollisionsWithInfoDictionaryObject:@(YES)]);
     }
 }
 
 - (void)testDefaultLocalFontFamilyName {
     
     MGLRendererConfiguration *config = [[MGLRendererConfiguration alloc] init];
-    std::string localFontFamilyName = config.localFontFamilyName.value();
+    NSString *localFontFamilyName = config.localFontFamilyName;
     
-    std::string systemFontFamilyName;
+    NSString *systemFontFamilyName;
 #if TARGET_OS_IPHONE
-    systemFontFamilyName = std::string([[UIFont systemFontOfSize:0 weight:UIFontWeightRegular].familyName UTF8String]);
+    systemFontFamilyName = [UIFont systemFontOfSize:0 weight:UIFontWeightRegular].familyName;
 #else
-    systemFontFamilyName = std::string([[NSFont systemFontOfSize:0 weight:NSFontWeightRegular].familyName UTF8String]);
+    systemFontFamilyName = [NSFont systemFontOfSize:0 weight:NSFontWeightRegular].familyName;
 #endif
     
-    XCTAssertEqual(localFontFamilyName, systemFontFamilyName, @"Default local font family name should match default system font");
+    XCTAssertEqualObjects(localFontFamilyName, systemFontFamilyName, @"Default local font family name should match default system font");
 }
 
 - (void)testSettingMGLIdeographicFontFamilyNameWithPlistValue {
     
     MGLRendererConfiguration *config = [[MGLRendererConfiguration alloc] init];
-    NSDictionary *dic;
     
     // `MGLIdeographicFontFamilyName` set to bool value `YES`
     {
-        dic = @{@"MGLIdeographicFontFamilyName": @(YES)};
-        std::string localFontFamilyName = ([config _localFontFamilyNameWithPropertyDictionary:dic]).value();
+        NSString *localFontFamilyName = [config localFontFamilyNameWithInfoDictionaryObject:@(YES)];
         
-        std::string systemFontFamilyName;
+        NSString *systemFontFamilyName;
 #if TARGET_OS_IPHONE
-        systemFontFamilyName = std::string([[UIFont systemFontOfSize:0 weight:UIFontWeightRegular].familyName UTF8String]);
+        systemFontFamilyName = [UIFont systemFontOfSize:0 weight:UIFontWeightRegular].familyName;
 #else
-        systemFontFamilyName = std::string([[NSFont systemFontOfSize:0 weight:NSFontWeightRegular].familyName UTF8String]);
+        systemFontFamilyName = [NSFont systemFontOfSize:0 weight:NSFontWeightRegular].familyName;
 #endif
-        XCTAssertEqual(localFontFamilyName, systemFontFamilyName, @"Local font family name should match default system font name when setting `YES`");
+        XCTAssertEqualObjects(localFontFamilyName, systemFontFamilyName, @"Local font family name should match default system font name when setting `YES`");
     }
     
     // `MGLIdeographicFontFamilyName` set to bool value `NO`
     {
-        dic = @{@"MGLIdeographicFontFamilyName": @(NO)};
-        mbgl::optional<std::string> localFontFamilyName = [config _localFontFamilyNameWithPropertyDictionary:dic];
-        XCTAssertFalse(localFontFamilyName.has_value(), @"Client rendering font should use remote font when setting `NO`");
+        NSString *localFontFamilyName = [config localFontFamilyNameWithInfoDictionaryObject:@(NO)];
+        XCTAssertNil(localFontFamilyName, @"Client rendering font should use remote font when setting `NO`");
     }
     
     // `MGLIdeographicFontFamilyName` set to a valid font string value
     {
-        dic = @{@"MGLIdeographicFontFamilyName": @"PingFang TC"};
-        std::string localFontFamilyName = ([config _localFontFamilyNameWithPropertyDictionary:dic]).value();
-        std::string targetFontFamilyName = std::string([@"PingFang TC" UTF8String]);
-        XCTAssertEqual(localFontFamilyName, targetFontFamilyName, @"Local font family name should match a custom valid font name");
+        NSString *localFontFamilyName = [config localFontFamilyNameWithInfoDictionaryObject:@"PingFang TC"];
+        XCTAssertEqualObjects(localFontFamilyName, @"PingFang TC", @"Local font family name should match a custom valid font name");
     }
     
     // `MGLIdeographicFontFamilyName` set to an invalid font string value
     {
-        dic = @{@"MGLIdeographicFontFamilyName": @"test font"};
-        std::string localFontFamilyName = ([config _localFontFamilyNameWithPropertyDictionary:dic]).value();
+        NSString *localFontFamilyName = [config localFontFamilyNameWithInfoDictionaryObject:@"test font"];
         
-        std::string systemFontFamilyName;
+        NSString *systemFontFamilyName;
 #if TARGET_OS_IPHONE
-        systemFontFamilyName = std::string([[UIFont systemFontOfSize:0 weight:UIFontWeightRegular].familyName UTF8String]);
+        systemFontFamilyName = [UIFont systemFontOfSize:0 weight:UIFontWeightRegular].familyName;
 #else
-        systemFontFamilyName = std::string([[NSFont systemFontOfSize:0 weight:NSFontWeightRegular].familyName UTF8String]);
+        systemFontFamilyName = [NSFont systemFontOfSize:0 weight:NSFontWeightRegular].familyName;
 #endif
-        XCTAssertEqual(localFontFamilyName, systemFontFamilyName, @"Local font family name should match default system font name when setting an invalid font string");
+        XCTAssertNotEqualObjects(localFontFamilyName, systemFontFamilyName, @"Local font family name should not be validated by MGLRenderConfiguration");
     }
     
     // `MGLIdeographicFontFamilyName` set to a valid font family names array value
     {
-        dic = @{@"MGLIdeographicFontFamilyName": @[@"test font 1", @"PingFang TC", @"test font 2"]};
-        std::string localFontFamilyName = ([config _localFontFamilyNameWithPropertyDictionary:dic]).value();
-        std::string targetFontFamilyName = std::string([@"PingFang TC" UTF8String]);
-        XCTAssertEqual(localFontFamilyName, targetFontFamilyName, @"Local font family name should match a custom valid font name in a font family names array");
+        NSString *localFontFamilyName = [config localFontFamilyNameWithInfoDictionaryObject:@[@"test font 1", @"PingFang TC", @"test font 2"]];
+        XCTAssertEqualObjects(localFontFamilyName, @"test font 1\nPingFang TC\ntest font 2");
     }
     
     // `MGLIdeographicFontFamilyName` set to an invalid font family names array value
     {
-        dic = @{@"MGLIdeographicFontFamilyName": @[@"test font 1", @"test font 2", @"test font 3"]};
-        std::string localFontFamilyName = ([config _localFontFamilyNameWithPropertyDictionary:dic]).value();
+        NSString *localFontFamilyName = [config localFontFamilyNameWithInfoDictionaryObject:@[@"test font 1", @"test font 2", @"test font 3"]];
         
-        std::string systemFontFamilyName;
+        NSString *systemFontFamilyName;
 #if TARGET_OS_IPHONE
-        systemFontFamilyName = std::string([[UIFont systemFontOfSize:0 weight:UIFontWeightRegular].familyName UTF8String]);
+        systemFontFamilyName = [UIFont systemFontOfSize:0 weight:UIFontWeightRegular].familyName;
 #else
-        systemFontFamilyName = std::string([[NSFont systemFontOfSize:0 weight:NSFontWeightRegular].familyName UTF8String]);
+        systemFontFamilyName = [NSFont systemFontOfSize:0 weight:NSFontWeightRegular].familyName;
 #endif
-        XCTAssertEqual(localFontFamilyName, systemFontFamilyName, @"Local font family name should match default system font name when setting an invalid font family names array");
+        XCTAssertEqualObjects(localFontFamilyName, @"test font 1\ntest font 2\ntest font 3", @"Local font family name should not be validated by MGLRendererConfiguration");
     }
     
     // `MGLIdeographicFontFamilyName` set to an invalid value type: NSDictionary, NSNumber, NSData, etc.
     {
-        dic = @{@"MGLIdeographicFontFamilyName": [@"test font 1" dataUsingEncoding:NSUTF8StringEncoding]};
-        std::string localFontFamilyName = ([config _localFontFamilyNameWithPropertyDictionary:dic]).value();
+        NSString *localFontFamilyName = [config localFontFamilyNameWithInfoDictionaryObject:[@"test font 1" dataUsingEncoding:NSUTF8StringEncoding]];
         
-        std::string systemFontFamilyName;
+        NSString *systemFontFamilyName;
 #if TARGET_OS_IPHONE
-        systemFontFamilyName = std::string([[UIFont systemFontOfSize:0 weight:UIFontWeightRegular].familyName UTF8String]);
+        systemFontFamilyName = [UIFont systemFontOfSize:0 weight:UIFontWeightRegular].familyName;
 #else
-        systemFontFamilyName = std::string([[NSFont systemFontOfSize:0 weight:NSFontWeightRegular].familyName UTF8String]);
+        systemFontFamilyName = [NSFont systemFontOfSize:0 weight:NSFontWeightRegular].familyName;
 #endif
-        XCTAssertEqual(localFontFamilyName, systemFontFamilyName, @"Local font family name should match default system font name when setting an invalid value type");
+        XCTAssertEqualObjects(localFontFamilyName, systemFontFamilyName, @"Local font family name should match default system font name when setting an invalid value type");
     }
 }
 
+- (void)testMGLGlyphsRasterizationModeWithPlistValue {
+    MGLRendererConfiguration *config = [[MGLRendererConfiguration alloc] init];
 
+    // `MGLGlyphsRasterizationMode` set to nil or not set.
+    {
+        MGLGlyphsRasterizationMode mode = [config glyphsRasterizationModeWithInfoDictionaryObject:nil];
+
+        XCTAssertEqual(mode, MGLGlyphsRasterizationModeNone, @"Glyphs rasterization mode should be `MGLGlyphsRasterizationModeNone` when it setting to nil or not set");
+    }
+
+    // `MGLGlyphsRasterizationMode` set to invalid value.
+    {
+        MGLGlyphsRasterizationMode mode = [config glyphsRasterizationModeWithInfoDictionaryObject:@"invalide option value"];
+
+        XCTAssertEqual(mode, MGLGlyphsRasterizationModeNone, @"Glyphs rasterization mode should be `MGLGlyphsRasterizationModeNone` when it setting to invalid value.");
+    }
+
+    // `MGLGlyphsRasterizationMode` set to "MGLNoGlyphsRasterizedLocally".
+    {
+        MGLGlyphsRasterizationMode mode = [config glyphsRasterizationModeWithInfoDictionaryObject:@"MGLNoGlyphsRasterizedLocally"];
+
+        XCTAssertEqual(mode, MGLGlyphsRasterizationModeNoGlyphsRasterizedLocally, @"Glyphs rasterization mode should be `MGLGlyphsRasterizationModeNoGlyphsRasterizedLocally`.");
+    }
+
+    // `MGLGlyphsRasterizationMode` set to "MGLGlyphsRasterizationModeIdeographsRasterizedLocally".
+    {
+        MGLGlyphsRasterizationMode mode = [config glyphsRasterizationModeWithInfoDictionaryObject:@"MGLIdeographsRasterizedLocally"];
+
+        XCTAssertEqual(mode, MGLGlyphsRasterizationModeIdeographsRasterizedLocally, @"Glyphs rasterization mode should be `MGLGlyphsRasterizationModeIdeographsRasterizedLocally`.");
+    }
+
+    // `MGLGlyphsRasterizationMode` set to "MGLAllGlyphsRasterizedLocally".
+    {
+        MGLGlyphsRasterizationMode mode = [config glyphsRasterizationModeWithInfoDictionaryObject:@"MGLAllGlyphsRasterizedLocally"];
+
+        XCTAssertEqual(mode, MGLGlyphsRasterizationModeAllGlyphsRasterizedLocally, @"Glyphs rasterization mode should be `MGLAllGlyphsRasterizedLocally`.");
+    }
+}
+
+- (void)testGlyphsRasterizationOptions {
+    MGLRendererConfiguration *config = [[MGLRendererConfiguration alloc] init];
+
+    // `MGLIdeographicFontFamilyName` unset, MGLGlyphsRasterizationMode set to AllGlyphsRasterizedLocally.
+    {
+        mbgl::GlyphsRasterizationOptions options = [config glyphsRasterizationOptionsWithLocalFontFamilyName:nil rasterizationMode:MGLGlyphsRasterizationModeAllGlyphsRasterizedLocally];
+
+        XCTAssertEqual(options.fontFamily, mbgl::nullopt, @"Font family name should be `nullptr`");
+        XCTAssertEqual(options.rasterizationMode, mbgl::GlyphsRasterizationMode::NoGlyphsRasterizedLocally, @"Glyphs rasterization mode should be `NoGlyphsRasterizedLocally`");
+    }
+    
+    // `MGLIdeographicFontFamilyName` unset, MGLGlyphsRasterizationMode set to NoGlyphsRasterizedLocally.
+    {
+        mbgl::GlyphsRasterizationOptions options = [config glyphsRasterizationOptionsWithLocalFontFamilyName:nil rasterizationMode:MGLGlyphsRasterizationModeNoGlyphsRasterizedLocally];
+
+        XCTAssertEqual(options.fontFamily, mbgl::nullopt, @"Font family name should be `nullptr`");
+        XCTAssertEqual(options.rasterizationMode, mbgl::GlyphsRasterizationMode::NoGlyphsRasterizedLocally, @"Glyphs rasterization mode should be `NoGlyphsRasterizedLocally`");
+    }
+    
+    // `MGLIdeographicFontFamilyName` set to "Ping Fang", MGLGlyphsRasterizationMode set to IdeographsRasterizedLocally.
+    {
+        mbgl::GlyphsRasterizationOptions options = [config glyphsRasterizationOptionsWithLocalFontFamilyName:@"Ping Fang" rasterizationMode:MGLGlyphsRasterizationModeIdeographsRasterizedLocally];
+
+        XCTAssertEqual(options.fontFamily, std::string(@"Ping Fang".UTF8String), @"Font family name should be `Ping Fang`");
+        XCTAssertEqual(options.rasterizationMode, mbgl::GlyphsRasterizationMode::IdeographsRasterizedLocally, @"Glyphs rasterization mode should be `IdeographsRasterizedLocally`");
+    }
+    
+    // `MGLIdeographicFontFamilyName` set to "Ping Fang", MGLGlyphsRasterizationMode set to NoGlyphsRasterizedLocally.
+    {
+        mbgl::GlyphsRasterizationOptions options = [config glyphsRasterizationOptionsWithLocalFontFamilyName:@"Ping Fang" rasterizationMode:MGLGlyphsRasterizationModeNoGlyphsRasterizedLocally];
+
+        XCTAssertEqual(options.fontFamily, std::string(@"Ping Fang".UTF8String), @"Font family name should be `Ping Fang`");
+        XCTAssertEqual(options.rasterizationMode, mbgl::GlyphsRasterizationMode::NoGlyphsRasterizedLocally, @"Glyphs rasterization mode should be `NoGlyphsRasterizedLocally`");
+    }
+    
+    // `MGLIdeographicFontFamilyName` set to "Ping Fang", MGLGlyphsRasterizationMode set to AllGlyphsRasterizedLocally.
+    {
+        mbgl::GlyphsRasterizationOptions options = [config glyphsRasterizationOptionsWithLocalFontFamilyName:@"Ping Fang" rasterizationMode:MGLGlyphsRasterizationModeAllGlyphsRasterizedLocally];
+
+        XCTAssertEqual(options.fontFamily, std::string(@"Ping Fang".UTF8String), @"Font family name should be `Ping Fang`");
+        XCTAssertEqual(options.rasterizationMode, mbgl::GlyphsRasterizationMode::AllGlyphsRasterizedLocally, @"Glyphs rasterization mode should be `AllGlyphsRasterizedLocally`");
+    }
+    
+    // `MGLIdeographicFontFamilyName` set to "Ping Fang", MGLGlyphsRasterizationMode unset.
+    {
+        mbgl::GlyphsRasterizationOptions options = [config glyphsRasterizationOptionsWithLocalFontFamilyName:@"Ping Fang" rasterizationMode:MGLGlyphsRasterizationModeNone];
+
+        XCTAssertEqual(options.fontFamily, std::string(@"Ping Fang".UTF8String), @"Font family name should be `Ping Fang`");
+        XCTAssertEqual(options.rasterizationMode, mbgl::GlyphsRasterizationMode::NoGlyphsRasterizedLocally, @"Glyphs rasterization mode should be `NoGlyphsRasterizedLocally`");
+    }
+}
 
 @end

@@ -4,12 +4,12 @@
 #import "MGLFoundation.h"
 #import "MGLTypes.h"
 #import "MGLGeometry.h"
+#import "MGLStyle.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 @class MGLAnnotationImage;
 @class MGLMapCamera;
-@class MGLStyle;
 @class MGLShape;
 
 @protocol MGLAnnotation;
@@ -65,7 +65,7 @@ NS_ASSUME_NONNULL_BEGIN
     ensuring that your use adheres to the relevant terms of use.
  */
 MGL_EXPORT IB_DESIGNABLE
-@interface MGLMapView : NSView
+@interface MGLMapView : NSView <MGLStylable>
 
 #pragma mark Creating Instances
 
@@ -304,6 +304,29 @@ MGL_EXPORT IB_DESIGNABLE
     immediately.
  */
 - (void)setDirection:(CLLocationDirection)direction animated:(BOOL)animated;
+
+/**
+ The minimum pitch of the map’s camera toward the horizon measured in degrees.
+
+ If the value of this property is greater than that of the `maximumPitch`
+ property, the behavior is undefined. The pitch may not be less than 0
+ regardless of this property.
+
+ The default value of this property is 0 degrees, allowing the map to appear
+ two-dimensional.
+ */
+@property (nonatomic) CGFloat minimumPitch;
+
+/**
+ The maximum pitch of the map’s camera toward the horizon measured in degrees.
+
+ If the value of this property is smaller than that of the `minimumPitch`
+ property, the behavior is undefined. The pitch may not exceed 60 degrees
+ regardless of this property.
+
+ The default value of this property is 60 degrees.
+ */
+@property (nonatomic) CGFloat maximumPitch;
 
 /**
  A camera representing the current viewpoint of the map.

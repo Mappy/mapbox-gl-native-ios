@@ -26,12 +26,15 @@
 
 + (instancetype)mgl_predicateWithFilter:(mbgl::style::Filter)filter
 {
-    if (filter.expression) {
-        id jsonObject = MGLJSONObjectFromMBGLExpression(**filter.expression);
-        return [NSPredicate predicateWithMGLJSONObject:jsonObject];
-    } else {
+    // Should this use filter.serialize(), so that it uses serializedLegacyFilter?
+    const auto expression = filter.getExpression();
+
+    if (!expression) {
         return nil;
     }
+    
+    id jsonObject = MGLJSONObjectFromMBGLExpression(*expression);
+    return [NSPredicate predicateWithMGLJSONObject:jsonObject];
 }
 
 @end
@@ -54,6 +57,7 @@ static NSDictionary * const MGLPredicateOperatorTypesByJSONOperator = @{
     @"<=": @(NSLessThanOrEqualToPredicateOperatorType),
     @">": @(NSGreaterThanPredicateOperatorType),
     @">=": @(NSGreaterThanOrEqualToPredicateOperatorType),
+    @"in": @(NSInPredicateOperatorType),
 };
 
 + (instancetype)predicateWithMGLJSONObject:(id)object {
@@ -153,6 +157,14 @@ static NSDictionary * const MGLPredicateOperatorTypesByJSONOperator = @{
     if ([op isEqualToString:@"any"]) {
         NSArray *subpredicates = MGLSubpredicatesWithJSONObjects([objects subarrayWithRange:NSMakeRange(1, objects.count - 1)]);
         return [NSCompoundPredicate orPredicateWithSubpredicates:subpredicates];
+    }
+    if ([op isEqualToString:@"within"]) {
+        NSArray *subexpressions = MGLSubexpressionsWithJSONObjects([objects subarrayWithRange:NSMakeRange(1, objects.count - 1)]);
+        return [NSComparisonPredicate predicateWithLeftExpression:[NSExpression expressionForEvaluatedObject]
+                                                  rightExpression:subexpressions[0]
+                                                         modifier:NSDirectPredicateModifier
+                                                             type:NSInPredicateOperatorType
+                                                          options:0];
     }
     
     NSExpression *expression = [NSExpression expressionWithMGLJSONObject:object];

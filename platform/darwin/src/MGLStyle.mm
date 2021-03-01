@@ -34,10 +34,15 @@
 #include <mbgl/style/image.hpp>
 #include <mbgl/style/light.hpp>
 #include <mbgl/style/sources/geojson_source.hpp>
+#include <mbgl/style/sources/geojson_source_impl.hpp>
 #include <mbgl/style/sources/vector_source.hpp>
+#include <mbgl/style/sources/vector_source_impl.hpp>
 #include <mbgl/style/sources/raster_source.hpp>
+#include <mbgl/style/sources/raster_source_impl.hpp>
 #include <mbgl/style/sources/raster_dem_source.hpp>
+#include <mbgl/style/sources/raster_dem_source_impl.hpp>
 #include <mbgl/style/sources/image_source.hpp>
+#include <mbgl/style/sources/image_source_impl.hpp>
 
 #import "NSDate+MGLAdditions.h"
 
@@ -77,7 +82,7 @@ const MGLExceptionName MGLRedundantSourceIdentifierException = @"MGLRedundantSou
 
 @interface MGLStyle()
 
-@property (nonatomic, readonly, weak) MGLMapView *mapView;
+@property (nonatomic, readonly, weak) id <MGLStylable> stylable;
 @property (nonatomic, readonly) mbgl::style::Style *rawStyle;
 @property (readonly, copy, nullable) NSURL *URL;
 @property (nonatomic, readwrite, strong) NSMutableDictionary<NSString *, MGLOpenGLStyleLayer *> *openGLLayers;
@@ -119,14 +124,14 @@ static_assert(6 == mbgl::util::default_styles::numOrderedStyles,
 
 #pragma mark -
 
-- (instancetype)initWithRawStyle:(mbgl::style::Style *)rawStyle mapView:(MGLMapView *)mapView {
-    MGLLogInfo(@"Initializing %@ with mapView: %@", NSStringFromClass([self class]), mapView);
+- (instancetype)initWithRawStyle:(mbgl::style::Style *)rawStyle stylable:(id <MGLStylable>)stylable {
+    MGLLogInfo(@"Initializing %@ with stylable: %@", NSStringFromClass([self class]), stylable);
     if (self = [super init]) {
-        _mapView = mapView;
+        _stylable = stylable;
         _rawStyle = rawStyle;
         _openGLLayers = [NSMutableDictionary dictionary];
         _localizedLayersByIdentifier = [NSMutableDictionary dictionary];
-        MGLLogDebug(@"Initializing with style name: %@ mapView: %@", self.name, mapView);
+        MGLLogDebug(@"Initializing with style name: %@ stylable: %@", self.name, stylable);
     }
     return self;
 }
@@ -182,21 +187,28 @@ static_assert(6 == mbgl::util::default_styles::numOrderedStyles,
     if (MGLSource *source = rawSource->peer.has_value() ? rawSource->peer.get<SourceWrapper>().source : nil) {
         return source;
     }
-
+    
     // TODO: Fill in options specific to the respective source classes
     // https://github.com/mapbox/mapbox-gl-native/issues/6584
-    if (auto vectorSource = rawSource->as<mbgl::style::VectorSource>()) {
-        return [[MGLVectorTileSource alloc] initWithRawSource:vectorSource mapView:self.mapView];
-    } else if (auto geoJSONSource = rawSource->as<mbgl::style::GeoJSONSource>()) {
-        return [[MGLShapeSource alloc] initWithRawSource:geoJSONSource mapView:self.mapView];
-    } else if (auto rasterSource = rawSource->as<mbgl::style::RasterSource>()) {
-        return [[MGLRasterTileSource alloc] initWithRawSource:rasterSource mapView:self.mapView];
-    } else if (auto rasterDEMSource = rawSource->as<mbgl::style::RasterDEMSource>()) {
-        return [[MGLRasterDEMSource alloc] initWithRawSource:rasterDEMSource mapView:self.mapView];
-    } else if (auto imageSource = rawSource->as<mbgl::style::ImageSource>()) {
-        return [[MGLImageSource alloc] initWithRawSource:imageSource mapView:self.mapView];
-    } else {
-        return [[MGLSource alloc] initWithRawSource:rawSource mapView:self.mapView];
+    
+    const mbgl::style::SourceTypeInfo* typeInfo = rawSource->getTypeInfo();
+    if (typeInfo == mbgl::style::VectorSource::Impl::staticTypeInfo()) {
+        return [[MGLVectorTileSource alloc] initWithRawSource:rawSource stylable:self.stylable];
+    }
+    else if (typeInfo == mbgl::style::GeoJSONSource::Impl::staticTypeInfo()) {
+        return [[MGLShapeSource alloc] initWithRawSource:rawSource stylable:self.stylable];
+    }
+    else if (typeInfo == mbgl::style::RasterSource::Impl::staticTypeInfo()) {
+        return [[MGLRasterTileSource alloc] initWithRawSource:rawSource stylable:self.stylable];
+    }
+    else if (typeInfo == mbgl::style::RasterDEMSource::Impl::staticTypeInfo()) {
+        return [[MGLRasterDEMSource alloc] initWithRawSource:rawSource stylable:self.stylable];
+    }
+    else if (typeInfo == mbgl::style::ImageSource::Impl::staticTypeInfo()) {
+        return [[MGLImageSource alloc] initWithRawSource:rawSource stylable:self.stylable];
+    }
+    else {
+        return [[MGLSource alloc] initWithRawSource:rawSource stylable:self.stylable];
     }
 }
 
@@ -211,7 +223,7 @@ static_assert(6 == mbgl::util::default_styles::numOrderedStyles,
     }
 
     try {
-        [source addToMapView:self.mapView];
+        [source addToStylable:self.stylable];
     } catch (std::runtime_error & err) {
         [NSException raise:MGLRedundantSourceIdentifierException format:@"%s", err.what()];
     }
@@ -243,7 +255,7 @@ static_assert(6 == mbgl::util::default_styles::numOrderedStyles,
         }
     }
     
-    return [source removeFromMapView:self.mapView error:outError];
+    return [source removeFromStylable:self.stylable error:outError];
 }
 
 
@@ -528,7 +540,7 @@ static_assert(6 == mbgl::util::default_styles::numOrderedStyles,
     }
 
     auto styleImage = self.rawStyle->getImage([name UTF8String]);
-    return styleImage ? [[MGLImage alloc] initWithMGLStyleImage:styleImage] : nil;
+    return styleImage ? [[MGLImage alloc] initWithMGLStyleImage:*styleImage] : nil;
 }
 
 #pragma mark Style transitions
@@ -615,10 +627,14 @@ static_assert(6 == mbgl::util::default_styles::numOrderedStyles,
 
 - (NSArray<MGLStyleLayer *> *)placeStyleLayers {
     NSSet *streetsSourceIdentifiers = [self.mapboxStreetsSources valueForKey:@"identifier"];
-    
+
     NSSet *placeSourceLayerIdentifiers = [NSSet setWithObjects:@"marine_label", @"country_label", @"state_label", @"place_label", @"water_label", @"poi_label", @"rail_station_label", @"mountain_peak_label", @"natural_label", @"transit_stop_label", nil];
+    if (self.accessiblePlaceSourceLayerIdentifiers == nil) {
+        _accessiblePlaceSourceLayerIdentifiers = [NSMutableSet set];
+    }
+
     NSPredicate *isPlacePredicate = [NSPredicate predicateWithBlock:^BOOL (MGLVectorStyleLayer * _Nullable layer, NSDictionary<NSString *, id> * _Nullable bindings) {
-        return [layer isKindOfClass:[MGLVectorStyleLayer class]] && [streetsSourceIdentifiers containsObject:layer.sourceIdentifier] && [placeSourceLayerIdentifiers containsObject:layer.sourceLayerIdentifier];
+        return [layer isKindOfClass:[MGLVectorStyleLayer class]] && (([streetsSourceIdentifiers containsObject:layer.sourceIdentifier] && [placeSourceLayerIdentifiers containsObject:layer.sourceLayerIdentifier]) || [self.accessiblePlaceSourceLayerIdentifiers containsObject:layer.sourceLayerIdentifier]);
     }];
     return [self.layers filteredArrayUsingPredicate:isPlacePredicate];
 }

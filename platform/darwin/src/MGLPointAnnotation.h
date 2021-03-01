@@ -50,9 +50,6 @@ MGL_EXPORT
  */
 @property (nonatomic, assign) CLLocationCoordinate2D coordinate;
 
-@property (nonatomic, assign) NSInteger zOrder;
-@property (nonatomic, assign) NSUInteger magnitude;
-
 @end
 
 NS_ASSUME_NONNULL_END

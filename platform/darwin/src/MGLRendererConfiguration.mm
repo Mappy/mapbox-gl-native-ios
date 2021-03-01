@@ -1,6 +1,5 @@
-#import "MGLRendererConfiguration.h"
-#import "MGLOfflineStorage_Private.h"
-#import "MGLFoundation_Private.h"
+#import "MGLRendererConfiguration_Private.h"
+#import "MGLLoggingConfiguration_Private.h"
 
 #if TARGET_OS_IPHONE
 #import <UIKit/UIKit.h>
@@ -10,52 +9,12 @@
 
 static NSString * const MGLCollisionBehaviorPre4_0Key = @"MGLCollisionBehaviorPre4_0";
 static NSString * const MGLIdeographicFontFamilyNameKey = @"MGLIdeographicFontFamilyName";
-
-@interface MGLRendererConfiguration ()
-@property (nonatomic, readwrite) BOOL perSourceCollisions;
-@end
-
+static NSString * const MGLGlyphsRasterizationModeKey = @"MGLGlyphsRasterizationMode";
 
 @implementation MGLRendererConfiguration
 
 + (instancetype)currentConfiguration {
     return [[self alloc] init];
-}
-
-- (instancetype)init {
-    return [self initWithPropertyDictionary:[[NSBundle mainBundle] infoDictionary]];
-}
-
-- (instancetype)initWithPropertyDictionary:(nonnull NSDictionary *)properties {
-    self = [super init];
-    
-    if (self) {
-        // Set the collision behaviour. A value set in `NSUserDefaults.standardUserDefaults`
-        // should override anything in the application's info.plist
-        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-
-        if ([defaults objectForKey:MGLCollisionBehaviorPre4_0Key]) {
-            _perSourceCollisions = [defaults boolForKey:MGLCollisionBehaviorPre4_0Key];
-        }
-        else {
-            id collisionBehaviourValue = properties[MGLCollisionBehaviorPre4_0Key];
-            
-            NSNumber *collisionBehaviourNumber = MGL_OBJC_DYNAMIC_CAST(collisionBehaviourValue, NSNumber);
-            
-            if (collisionBehaviourNumber) {
-                _perSourceCollisions = collisionBehaviourNumber.boolValue;
-            } else {
-                // Also support NSString to correspond with the behavior of `-[NSUserDefaults boolForKey:]`
-                NSString *collisionBehaviourString = MGL_OBJC_DYNAMIC_CAST(collisionBehaviourValue, NSString);
-
-                if (collisionBehaviourString) {
-                    _perSourceCollisions = collisionBehaviourString.boolValue;
-                }
-            }
-        }
-    }
-    
-    return self;
 }
 
 - (const float)scaleFactor {
@@ -66,54 +25,96 @@ static NSString * const MGLIdeographicFontFamilyNameKey = @"MGLIdeographicFontFa
 #endif
 }
 
-- (mbgl::optional<std::string>)localFontFamilyName {
-    return [self _localFontFamilyNameWithPropertyDictionary:[[NSBundle mainBundle] infoDictionary]];
+- (nullable NSString *)localFontFamilyName {
+    id infoDictionaryObject = [NSBundle.mainBundle objectForInfoDictionaryKey:MGLIdeographicFontFamilyNameKey];
+    return [self localFontFamilyNameWithInfoDictionaryObject:infoDictionaryObject];
 }
 
-- (mbgl::optional<std::string>)_localFontFamilyNameWithPropertyDictionary:(nonnull NSDictionary *)properties {
-    
-    std::string systemFontFamilyName;
-#if TARGET_OS_IPHONE
-    systemFontFamilyName = std::string([[UIFont systemFontOfSize:0 weight:UIFontWeightRegular].familyName UTF8String]);
-#else
-    systemFontFamilyName = std::string([[NSFont systemFontOfSize:0 weight:NSFontWeightRegular].familyName UTF8String]);
-#endif
-    
-    id fontFamilyName = properties[MGLIdeographicFontFamilyNameKey];
-    
-    if([fontFamilyName isKindOfClass:[NSNumber class]] && ![fontFamilyName boolValue])
-    {
-        return mbgl::optional<std::string>();
+- (nullable NSString *)localFontFamilyNameWithInfoDictionaryObject:(nullable id)infoDictionaryObject {
+    if ([infoDictionaryObject isKindOfClass:[NSNumber class]] && ![infoDictionaryObject boolValue]) {
+        // NO means don’t use local fonts.
+        return nil;
+    } else if ([infoDictionaryObject isKindOfClass:[NSString class]]) {
+        return infoDictionaryObject;
+    } else if ([infoDictionaryObject isKindOfClass:[NSArray class]]) {
+        // mbgl::LocalGlyphRasterizer::Impl accepts only a single string, but form a cascade list with one font on each line.
+        return [infoDictionaryObject componentsJoinedByString:@"\n"];
     }
-    else if([fontFamilyName isKindOfClass:[NSString class]])
-    {
-        BOOL isValidFont = NO;
+    
 #if TARGET_OS_IPHONE
-        if([[UIFont familyNames] containsObject:fontFamilyName]){
-            isValidFont = YES;
-        }
+    return [UIFont systemFontOfSize:0 weight:UIFontWeightRegular].familyName;
 #else
-        if([[[NSFontManager sharedFontManager] availableFontFamilies] containsObject:fontFamilyName]){
-            isValidFont = YES;
-        }
+    return [NSFont systemFontOfSize:0 weight:NSFontWeightRegular].familyName;
 #endif
-        return (fontFamilyName && isValidFont) ? std::string([fontFamilyName UTF8String]) : systemFontFamilyName;
-    }
-    // Ability to specify an array of fonts for fallbacks for `localIdeographicFontFamily`
-    else if ([fontFamilyName isKindOfClass:[NSArray class]]){
-        for(NSString *name in fontFamilyName){
-#if TARGET_OS_IPHONE
-            if([[UIFont familyNames] containsObject:name]){
-                return std::string([name UTF8String]);
-            }
-#else
-            if([[[NSFontManager sharedFontManager] availableFontFamilies] containsObject:name]){
-                return std::string([name UTF8String]);
-            }
-#endif
-        }
-    }
-    return systemFontFamilyName;
 }
+
+- (BOOL)perSourceCollisions {
+    id infoDictionaryObject = [NSBundle.mainBundle objectForInfoDictionaryKey:MGLCollisionBehaviorPre4_0Key];
+    return [self perSourceCollisionsWithInfoDictionaryObject:infoDictionaryObject];
+}
+
+- (BOOL)perSourceCollisionsWithInfoDictionaryObject:(nullable id)infoDictionaryObject {
+    // Set the collision behaviour. A value set in `NSUserDefaults.standardUserDefaults`
+    // should override anything in the application's info.plist
+    if ([NSUserDefaults.standardUserDefaults objectForKey:MGLCollisionBehaviorPre4_0Key]) {
+        return [NSUserDefaults.standardUserDefaults boolForKey:MGLCollisionBehaviorPre4_0Key];
+    } else if ([infoDictionaryObject isKindOfClass:[NSNumber class]] || [infoDictionaryObject isKindOfClass:[NSString class]]) {
+        // Also support NSString to correspond with the behavior of `-[NSUserDefaults boolForKey:]`
+        return [infoDictionaryObject boolValue];
+    }
+    return NO;
+}
+
+- (MGLGlyphsRasterizationMode)glyphsRasterizationMode {
+    id infoDictionaryObject = [NSBundle.mainBundle objectForInfoDictionaryKey:MGLGlyphsRasterizationModeKey];
+    return [self glyphsRasterizationModeWithInfoDictionaryObject:infoDictionaryObject];
+}
+
+- (MGLGlyphsRasterizationMode)glyphsRasterizationModeWithInfoDictionaryObject:(id)infoDictionaryObject {
+    if (!infoDictionaryObject || ![infoDictionaryObject isKindOfClass:[NSString class]]) {
+        return MGLGlyphsRasterizationModeNone;
+    }
+    NSDictionary *nameOptionMap = @{@"MGLNoGlyphsRasterizedLocally":@(MGLGlyphsRasterizationModeNoGlyphsRasterizedLocally),
+                                    @"MGLIdeographsRasterizedLocally":@(MGLGlyphsRasterizationModeIdeographsRasterizedLocally),
+                                    @"MGLAllGlyphsRasterizedLocally":@(MGLGlyphsRasterizationModeAllGlyphsRasterizedLocally)};
+
+    return (MGLGlyphsRasterizationMode)[nameOptionMap[infoDictionaryObject] integerValue];
+}
+
+- (mbgl::GlyphsRasterizationOptions)glyphsRasterizationOptions {
+    return [self glyphsRasterizationOptionsWithLocalFontFamilyName:self.localFontFamilyName rasterizationMode:self.glyphsRasterizationMode];
+}
+
+- (mbgl::GlyphsRasterizationOptions)glyphsRasterizationOptionsWithLocalFontFamilyName:(nullable NSString *)fontFamilyName
+                                                                    rasterizationMode:(MGLGlyphsRasterizationMode)rasterizationMode {
+    mbgl::GlyphsRasterizationOptions options;
+    if (fontFamilyName == nil) {
+        if (rasterizationMode != MGLGlyphsRasterizationModeNoGlyphsRasterizedLocally && rasterizationMode != MGLGlyphsRasterizationModeNone) {
+            MGLLogWarning(@"The `MGLIdeographicFontFamilyName` is set to `NO`, this will make `MGLGlyphsRasterizationMode` always be `MGLNoGlyphsRasterizedLocally`.");
+        }
+        options.rasterizationMode = mbgl::GlyphsRasterizationMode::NoGlyphsRasterizedLocally;
+        return options;
+    }
+    
+    options.fontFamily = std::string(fontFamilyName.UTF8String);
+    switch (rasterizationMode) {
+        case MGLGlyphsRasterizationModeIdeographsRasterizedLocally:
+            options.rasterizationMode = mbgl::GlyphsRasterizationMode::IdeographsRasterizedLocally;
+            break;
+        case MGLGlyphsRasterizationModeNoGlyphsRasterizedLocally:
+            options.rasterizationMode = mbgl::GlyphsRasterizationMode::NoGlyphsRasterizedLocally;
+            break;
+        case MGLGlyphsRasterizationModeAllGlyphsRasterizedLocally:
+            options.rasterizationMode = mbgl::GlyphsRasterizationMode::AllGlyphsRasterizedLocally;
+            break;
+        case MGLGlyphsRasterizationModeNone:
+            MGLLogWarning(@"Falling back to MGLIdeographsRasterizedLocally because  MGLIdeographicFontFamilies are specified.")
+            options.rasterizationMode = mbgl::GlyphsRasterizationMode::NoGlyphsRasterizedLocally;
+            break;
+    }
+
+    return options;
+}
+
 
 @end

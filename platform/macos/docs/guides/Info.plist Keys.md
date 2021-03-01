@@ -18,15 +18,23 @@ The default value is `https://api.mapbox.com`.
 
 ## MGLIdeographicFontFamilyName
 
-The name of the font family to use for client-side text rendering of CJK ideographs.
+This key configures a global fallback font or fonts for [client-side text rendering](customizing-fonts.html#client-side-fonts) of Chinese hanzi, Japanese kana, and Korean hangul characters (CJK) that appear in text labels.
 
-Set `MGLIdeographicFontFamilyName` in your containing application's Info.plist to font family name(s) that will be available at run time, such as “PingFang TC” or “Marker Felt”. This plist key accepts:
+If the fonts you specify in the `MGLSymbolStyleLayer.textFontNames` property are all unavailable or lack a glyph for rendering a given CJK character, the map uses the contents of this key to choose a [system font](https://developer.apple.com/fonts/system-fonts/) or a font [bundled with your application](https://developer.apple.com/documentation/bundleresources/information_property_list/atsapplicationfontspath). This key specifies a fallback for all style layers in all map views and map snapshots. If you do not specify this key or none of the font names matches, the map applies a font from the system’s font cascade list, which may vary based on the system language and other installed applications.
 
-- A string value of a single font family name.
+This key can either be set to a single string or an array of strings, which the map tries to apply in order from most preferred to least preferred. Each string can be a family name (for example, “PingFang TC”), display name (“PingFang TC Ultralight”), or PostScript name (“PingFangTC-Ultralight”).
 
-- An array of font family names. Fonts will be used in the defined order, eventually falling back to default system font if none are available.
+To disable client-side rendering of CJK characters in favor of [server-side rendering](customizing-fonts.html#server-side-fonts), set this key to the Boolean value `NO`.
 
-- A boolean value `NO` to disable client-side rendering of CJK glyphs — remote fonts specified in your style will be used instead.
+## MGLOfflineStorageDatabasePath
+
+This key customizes the file path at which `MGLOfflineStorage` keeps the offline map database, which contains any offline packs as well as the ambient cache. Most applications should not need to customize this path; however, you could customize it to implement a migration path between different versions of your application.
+
+The key is interpreted as either an absolute file path or a file path relative to the main bundle’s resource folder, resolving any tilde or symbolic link. The path must be writable. If a database does not exist at the path you specify, one will be created automatically.
+
+An offline map database can consume a significant amount of the user’s bandwidth and iCloud storage due to iCloud backups. To exclude the database from backups, set the containing directory’s `NSURLIsExcludedFromBackupKey` resource property to the Boolean value `YES` using the `-[NSURL setResourceValue:forKey:error:]` method. The entire directory will be affected, not just the database file. If the user restores the application from a backup, your application will need to restore any offline packs that had been previously downloaded.
+
+At runtime, you can obtain the value of this key using the `MGLOfflineStorage.databasePath` and `MGLOfflineStorage.databaseURL` properties.
 
 ## MGLCollisionBehaviorPre4_0
 
