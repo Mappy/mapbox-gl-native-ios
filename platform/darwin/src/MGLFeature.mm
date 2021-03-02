@@ -512,7 +512,10 @@ id <MGLFeature> MGLFeatureFromMBGLFeature(const mbgl::GeoJSONFeature &feature) {
     for (auto &pair : feature.properties) {
         auto &value = pair.second;
         ValueEvaluator evaluator;
-        attributes[@(pair.first.c_str())] = mbgl::Value::visit(value, evaluator);
+        NSString *key = @(pair.first.c_str());
+        if (key.length > 0) {
+            attributes[key] = mbgl::Value::visit(value, evaluator);
+        }
     }
     GeometryEvaluator<double> evaluator(&feature.properties, true);
     MGLShape <MGLFeature> *shape = (MGLShape <MGLFeature> *)mapbox::geometry::geometry<double>::visit(feature.geometry, evaluator);

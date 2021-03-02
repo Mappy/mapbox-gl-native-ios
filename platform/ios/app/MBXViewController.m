@@ -113,7 +113,9 @@ typedef NS_ENUM(NSInteger, MBXSettingsMiscellaneousRows) {
     MBXSettingsMiscellaneousShowCustomLocationManager,
     MBXSettingsMiscellaneousOrnamentsPlacement,
     MBXSettingsMiscellaneousPrintLogFile,
-    MBXSettingsMiscellaneousDeleteLogFile
+    MBXSettingsMiscellaneousDeleteLogFile,
+    MBXSettingsMiscellaneousShowMappyLogFile,
+    MBXSettingsMiscellaneousDeleteMappyLogFile
 };
 
 // Utility methods
@@ -461,7 +463,13 @@ CLLocationCoordinate2D randomWorldCoordinate() {
                 @"View Route Simulation",
                 @"Ornaments Placement",
             ]];
-
+            
+            [settingsTitles addObjectsFromArray:@[
+                @"Print Telemetry Logfile",
+                @"Delete Telemetry Logfile",
+                @"Show / hide Mappy logs",
+                @"Delete Mappy logs"
+            ]];
             break;
         default:
             NSAssert(NO, @"All settings sections should be implemented");
@@ -693,6 +701,18 @@ CLLocationCoordinate2D randomWorldCoordinate() {
                 case MBXSettingsMiscellaneousRandomTour:
                     [self randomWorldTour];
                     break;
+                case MBXSettingsMiscellaneousPrintLogFile:
+                    [self printTelemetryLogFile];
+                    break;
+                case MBXSettingsMiscellaneousDeleteLogFile:
+                    [self deleteTelemetryLogFile];
+                    break;
+                case MBXSettingsMiscellaneousShowMappyLogFile:
+                    [self showMappyLogFile];
+                    break;
+                case MBXSettingsMiscellaneousDeleteMappyLogFile:
+                    [self deleteMappyLogFile];
+                    break;
                 case MBXSettingsMiscellaneousScrollView:
                 {
                     UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
@@ -846,6 +866,7 @@ CLLocationCoordinate2D randomWorldCoordinate() {
                                                       options:0
                                                         error:nil];
 
+        int zOrder = 0;
         if ([features isKindOfClass:[NSDictionary class]])
         {
             NSMutableArray *annotations = [NSMutableArray array];
@@ -860,7 +881,8 @@ CLLocationCoordinate2D randomWorldCoordinate() {
 
                 annotation.coordinate = coordinate;
                 annotation.title = title;
-
+                annotation.zOrder = zOrder++;
+                annotation.magnitude = featuresCount;
                 [annotations addObject:annotation];
 
                 if (annotations.count == featuresCount) break;
@@ -1754,6 +1776,78 @@ CLLocationCoordinate2D randomWorldCoordinate() {
     return backupImage;
 }
 
+- (void)printTelemetryLogFile
+{
+    NSString *fileContents = [NSString stringWithContentsOfFile:[self telemetryDebugLogFilePath] encoding:NSUTF8StringEncoding error:nil];
+    NSLog(@"%@", fileContents);
+}
+
+- (void)deleteTelemetryLogFile
+{
+    NSString *filePath = [self telemetryDebugLogFilePath];
+    if ([[NSFileManager defaultManager] isDeletableFileAtPath:filePath])
+    {
+        NSError *error;
+        BOOL success = [[NSFileManager defaultManager] removeItemAtPath:filePath error:&error];
+        if (success) {
+            NSLog(@"Deleted telemetry log.");
+        } else {
+            NSLog(@"Error deleting telemetry log: %@", error.localizedDescription);
+        }
+    }
+}
+
+- (NSString *)telemetryDebugLogFilePath
+{
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    [dateFormatter setDateFormat:@"yyyy'-'MM'-'dd"];
+    [dateFormatter setTimeZone:[NSTimeZone systemTimeZone]];
+    NSString *filePath = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:[NSString stringWithFormat:@"telemetry_log-%@.json", [dateFormatter stringFromDate:[NSDate date]]]];
+
+    return filePath;
+}
+
+- (void)showMappyLogFile
+{
+    UIView *logView = [self.view viewWithTag:123];
+    if (logView == nil) {
+        NSString *fileContents = [NSString stringWithContentsOfFile:[self mappyLogFilePath] encoding:NSUTF8StringEncoding error:nil];
+        UITextView *textView = [[UITextView alloc] initWithFrame:self.view.bounds];
+        textView.translatesAutoresizingMaskIntoConstraints = NO;
+        [self.view addSubview:textView];
+        [textView.topAnchor constraintEqualToAnchor:self.topLayoutGuide.bottomAnchor].active = YES;
+        [textView.leftAnchor constraintEqualToAnchor:self.view.leftAnchor].active = YES;
+        [textView.rightAnchor constraintEqualToAnchor:self.view.rightAnchor].active = YES;
+        [textView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor].active = YES;
+        textView.tag = 123;
+        textView.text = fileContents;
+    }
+    else {
+        [logView removeFromSuperview];
+    }
+}
+
+- (void)deleteMappyLogFile
+{
+    NSString *filePath = [self mappyLogFilePath];
+    if ([[NSFileManager defaultManager] isDeletableFileAtPath:filePath])
+    {
+        NSError *error;
+        BOOL success = [[NSFileManager defaultManager] removeItemAtPath:filePath error:&error];
+        if (success) {
+            NSLog(@"Deleted mappy log.");
+        } else {
+            NSLog(@"Error deleting mappy log: %@", error.localizedDescription);
+        }
+    }
+}
+
+- (NSString *)mappyLogFilePath
+{
+    NSString *filePath = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"mappy_log.txt"];
+    return filePath;
+}
+
 #pragma mark - Random World Tour
 
 - (void)addAnnotations:(NSInteger)numAnnotations aroundCoordinate:(CLLocationCoordinate2D)coordinate radius:(CLLocationDistance)radius {
@@ -1948,6 +2042,9 @@ CLLocationCoordinate2D randomWorldCoordinate() {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         styleNames = @[
+            @"Mappy r7",
+            @"Mappy qt",
+            @"Mappy prod",
             @"Streets",
             @"Outdoors",
             @"Light",
@@ -1957,6 +2054,9 @@ CLLocationCoordinate2D randomWorldCoordinate() {
             @"Green"
         ];
         styleURLs = @[
+            [NSURL URLWithString:@"https://map.mappyrecette.net/map/1.0/vector/maplight_v1.json"],
+            [NSURL URLWithString:@"http://qt-tornik-vecto-001.th2.prod/map/1.0/vector/maplight_v1.json"],
+            [NSURL URLWithString:@"https://map.mappy.net/map/1.0/vector/maplight_v1.json"],
             [MGLStyle streetsStyleURL],
             [MGLStyle outdoorsStyleURL],
             [MGLStyle lightStyleURL],
@@ -1982,9 +2082,9 @@ CLLocationCoordinate2D randomWorldCoordinate() {
             }
         }
         free(methods);
-        NSAssert(numStyleURLMethods == styleNames.count - 1,
+        NSAssert(numStyleURLMethods == styleNames.count - 4,
                  @"MGLStyle provides %u default styles but iosapp only knows about %lu of them.",
-                 numStyleURLMethods, (unsigned long)styleNames.count - 1);
+                 numStyleURLMethods, (unsigned long)styleNames.count);
     });
 
     self.styleIndex = (self.styleIndex + 1) % styleNames.count;
@@ -2062,13 +2162,21 @@ CLLocationCoordinate2D randomWorldCoordinate() {
     {
         return nil;
     }
-
+    
+    NSInteger zOrder = 0;
+    CGFloat magnitude = 0;
+    if ([annotation isKindOfClass:[MGLPointAnnotation class]])
+    {
+        zOrder = [(MGLPointAnnotation *)annotation zOrder];
+        magnitude = [(MGLPointAnnotation *)annotation magnitude];
+    }
     MBXAnnotationView *annotationView = (MBXAnnotationView *)[mapView dequeueReusableAnnotationViewWithIdentifier:MBXViewControllerAnnotationViewReuseIdentifier];
     if (!annotationView)
     {
         annotationView = [[MBXAnnotationView alloc] initWithReuseIdentifier:MBXViewControllerAnnotationViewReuseIdentifier];
         annotationView.frame = CGRectMake(0, 0, 10, 10);
         annotationView.backgroundColor = [UIColor whiteColor];
+        annotationView.zOrder = zOrder;
 
         // Note that having two long press gesture recognizers on overlapping
         // views (`self.view` & `annotationView`) will cause weird behavior.
@@ -2078,6 +2186,14 @@ CLLocationCoordinate2D randomWorldCoordinate() {
     } else {
         // orange indicates that the annotation view was reused
         annotationView.backgroundColor = [UIColor orangeColor];
+    }
+    
+    if (magnitude > 0)
+    {
+        annotationView.backgroundColor = [UIColor colorWithRed:(annotationView.zOrder / magnitude)
+                                                         green:0
+                                                          blue:1. - (annotationView.zOrder / magnitude)
+                                                         alpha:1];
     }
     return annotationView;
 }

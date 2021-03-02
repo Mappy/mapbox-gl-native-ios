@@ -12,6 +12,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)addSubviews:(NSArray<MGLAnnotationView *> *)subviews;
 
+- (void)reorderSubviews;
+
 @end
 
 NS_ASSUME_NONNULL_END

@@ -683,9 +683,13 @@ public:
     [self addGestureRecognizer:_rotate];
     _rotateEnabled = YES;
     _rotationThresholdWhileZooming = 3;
+    
+    UILongPressGestureRecognizer *mappyLongPressGestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:nil];
+    [self addGestureRecognizer:mappyLongPressGestureRecognizer];
 
     _doubleTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleDoubleTapGesture:)];
     _doubleTap.numberOfTapsRequired = 2;
+    [_doubleTap requireGestureRecognizerToFail:mappyLongPressGestureRecognizer];
     [self addGestureRecognizer:_doubleTap];
 
     _twoFingerDrag = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleTwoFingerDragGesture:)];
@@ -2817,6 +2821,24 @@ public:
     // TODO: Add sibling disappear method
 }
 
+- (void)addGestureRecognizer:(UIGestureRecognizer *)gestureRecognizer
+{
+    if ([gestureRecognizer isMemberOfClass:[UITapGestureRecognizer class]])
+    {
+        UITapGestureRecognizer *tapGesture = (UITapGestureRecognizer *)gestureRecognizer;
+        if (tapGesture.numberOfTapsRequired == 1
+            && tapGesture.numberOfTouchesRequired == 1)
+        {
+            if ( ! [tapGesture isEqual:_singleTapGestureRecognizer])
+            {
+                [tapGesture requireGestureRecognizerToFail:_singleTapGestureRecognizer];
+            }
+        }
+    }
+    
+    [super addGestureRecognizer:gestureRecognizer];
+}
+
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
 {
     if (gestureRecognizer == _twoFingerDrag)
@@ -3061,6 +3083,10 @@ static void *windowScreenContext = &windowScreenContext;
             self.mbglMap.updateAnnotation(annotationTag, [annotation annotationObjectWithDelegate:self]);
             [self updateCalloutView];
         }
+    }
+    else if ([keyPath isEqualToString:@"zOrder"] && [object isKindOfClass:[MGLAnnotationView class]])
+    {
+        [self.annotationContainerView reorderSubviews];
     }
     else if (context == windowScreenContext)
     {
@@ -4882,6 +4908,8 @@ static void *windowScreenContext = &windowScreenContext;
 
         _unionedAnnotationRepresentationSize = CGSizeMake(MAX(_unionedAnnotationRepresentationSize.width, _largestAnnotationViewSize.width),
                                                           MAX(_unionedAnnotationRepresentationSize.height, _largestAnnotationViewSize.height));
+        
+        [annotationView addObserver:self forKeyPath:@"zOrder" options:0 context:nil];
     }
 
     return annotationView;
@@ -4997,6 +5025,7 @@ static void *windowScreenContext = &windowScreenContext;
 
         annotationView.annotation = nil;
         [annotationView removeFromSuperview];
+        [annotationView removeObserver:self forKeyPath:@"zOrder"];
         [self.annotationContainerView.annotationViews removeObject:annotationView];
 
         if (annotationTag == _selectedAnnotationTag)
@@ -6945,6 +6974,9 @@ static void *windowScreenContext = &windowScreenContext;
     {
         [self.delegate mapView:self didFinishLoadingStyle:self.style];
     }
+#if DEBUG
+    _mbglMap->dumpDebugLogs();
+#endif
 }
 
 - (void)sourceDidChange:(MGLSource *)source {
@@ -7170,6 +7202,7 @@ static void *windowScreenContext = &windowScreenContext;
         if (![annotationViewReuseQueue containsObject:annotationView])
         {
             [annotationViewReuseQueue addObject:annotationView];
+            [annotationView removeObserver:self forKeyPath:@"zOrder"];
             annotationContext.annotationView = nil;
         }
     }

@@ -54,6 +54,7 @@
     _annotation = annotation;
     _reuseIdentifier = [reuseIdentifier copy];
     _enabled = YES;
+    _zOrder = 0;
 }
 
 - (instancetype)initWithCoder:(NSCoder *)decoder {
@@ -67,6 +68,7 @@
         _selected = [decoder decodeBoolForKey:@"selected"];
         _enabled = [decoder decodeBoolForKey:@"enabled"];
         self.draggable = [decoder decodeBoolForKey:@"draggable"];
+        _zOrder = [decoder decodeIntegerForKey:@"zOrder"];
     }
     return self;
 }
@@ -81,6 +83,7 @@
     [coder encodeBool:_selected forKey:@"selected"];
     [coder encodeBool:_enabled forKey:@"enabled"];
     [coder encodeBool:_draggable forKey:@"draggable"];
+    [coder encodeInteger:_zOrder forKey:@"zOrder"];
 }
 
 - (void)prepareForReuse

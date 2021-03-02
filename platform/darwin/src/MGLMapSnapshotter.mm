@@ -655,9 +655,9 @@ NSArray<MGLAttributionInfo *> *MGLAttributionInfosFromAttributions(mbgl::MapSnap
 {
     MGLImage *logoImage;
 #if TARGET_OS_IPHONE
-    logoImage =[UIImage imageNamed:@"mapbox" inBundle:[NSBundle mgl_frameworkBundle] compatibleWithTraitCollection:nil];
+    logoImage =[UIImage imageNamed:@"mappy" inBundle:[NSBundle mgl_frameworkBundle] compatibleWithTraitCollection:nil];
 #else
-    logoImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mgl_frameworkBundle] pathForResource:@"mapbox" ofType:@"pdf"]];
+    logoImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mgl_frameworkBundle] pathForResource:@"mappy" ofType:@"pdf"]];
 #endif
     return logoImage;
 }

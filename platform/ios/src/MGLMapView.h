@@ -67,45 +67,6 @@ typedef NS_ENUM(NSUInteger, MGLOrnamentPosition) {
     MGLOrnamentPositionBottomRight,
 };
 
-/**
- The mode used to track the user location on the map. Used with
- `MGLMapView.userTrackingMode`.
-
- #### Related examples
- See the <a href="https://docs.mapbox.com/ios/maps/examples/user-tracking-mode/">
- Switch between user tracking modes</a> example to learn how to toggle modes and
- how each mode behaves.
- */
-typedef NS_ENUM(NSUInteger, MGLUserTrackingMode) {
-    /** The map does not follow the user location. */
-    MGLUserTrackingModeNone              = 0,
-    /** The map follows the user location. This tracking mode falls back
-        to `MGLUserTrackingModeNone` if the user pans the map view. */
-    MGLUserTrackingModeFollow,
-    /**
-        The map follows the user location and rotates when the heading changes.
-        The default user location annotation displays a fan-shaped indicator with
-        the current heading. The heading indicator represents the direction the
-        device is facing, which is sized according to the reported accuracy.
-
-        This tracking mode is disabled if the user pans the map view, but
-        remains enabled if the user zooms in. If the user rotates the map
-        view, this tracking mode will fall back to `MGLUserTrackingModeFollow`.
-     */
-    MGLUserTrackingModeFollowWithHeading,
-    /**
-        The map follows the user location and rotates when the course changes.
-        Course represents the direction in which the device is traveling.
-        The default user location annotation shows a puck-shaped indicator
-        that rotates as the course changes.
-
-        This tracking mode is disabled if the user pans the map view, but
-        remains enabled if the user zooms in. If the user rotates the map view,
-        this tracking mode will fall back to `MGLUserTrackingModeFollow`.
-     */
-    MGLUserTrackingModeFollowWithCourse,
-};
-
 typedef NS_ENUM(NSUInteger, MGLPanScrollingMode) {
     /** The map allows the user to only scroll horizontally. */
     MGLPanScrollingModeHorizontal               = 0,
