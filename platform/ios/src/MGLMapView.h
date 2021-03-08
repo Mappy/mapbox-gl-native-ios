@@ -5,6 +5,8 @@
 #import "MGLGeometry.h"
 #import "MGLMapCamera.h"
 #import "MGLTypes.h"
+#import "MGLStyle.h"
+#import "MGLObserver.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -14,7 +16,6 @@ NS_ASSUME_NONNULL_BEGIN
 @class MGLPolyline;
 @class MGLPolygon;
 @class MGLShape;
-@class MGLStyle;
 
 @protocol MGLMapViewDelegate;
 @protocol MGLAnnotation;
@@ -64,6 +65,15 @@ typedef NS_ENUM(NSUInteger, MGLOrnamentPosition) {
     MGLOrnamentPositionBottomLeft,
     /** Place the ornament in the bottom right of the map view. */
     MGLOrnamentPositionBottomRight,
+};
+
+typedef NS_ENUM(NSUInteger, MGLPanScrollingMode) {
+    /** The map allows the user to only scroll horizontally. */
+    MGLPanScrollingModeHorizontal               = 0,
+    /** The map allows the user to only scroll vertically. */
+    MGLPanScrollingModeVertical,
+    /** The map allows the user to scroll both horizontally and vertically. */
+    MGLPanScrollingModeDefault
 };
 
 /** Options for `MGLMapView.preferredFramesPerSecond`. */
@@ -140,7 +150,7 @@ FOUNDATION_EXTERN MGL_EXPORT MGLExceptionName const MGLUserLocationAnnotationTyp
  Simple map view</a> example to learn how to initialize a basic `MGLMapView`.
  */
 MGL_EXPORT
-@interface MGLMapView : UIView
+@interface MGLMapView : UIView <MGLStylable, MGLObservable>
 
 #pragma mark Creating Instances
 
@@ -307,12 +317,12 @@ MGL_EXPORT
 @property (nonatomic, assign) CGPoint compassViewMargins;
 
 /**
- The Mapbox logo, positioned in the lower-left corner.
+ The Mapbox wordmark, positioned in the lower-left corner.
 
  @note The Mapbox terms of service, which governs the use of Mapbox-hosted
     vector tiles and styles,
     <a href="https://docs.mapbox.com/help/how-mapbox-works/attribution/">requires</a> most Mapbox
-    customers to display the Mapbox logo. If this applies to you, do not
+    customers to display the Mapbox wordmark. If this applies to you, do not
     hide this view or change its contents.
  */
 @property (nonatomic, readonly) UIImageView *logoView;
@@ -386,6 +396,21 @@ MGL_EXPORT
  @see `CADisplayLink.preferredFramesPerSecond`
  */
 @property (nonatomic, assign) MGLMapViewPreferredFramesPerSecond preferredFramesPerSecond;
+
+
+/**
+ :nodoc:
+ Whether map rendering should occur during the `UIApplicationStateInactive` state.
+
+ The default value of this property is `YES`. This matches the behavior of SDKs
+ pre 6.2.0.
+
+ This property is ignored for map views where background rendering is permitted.
+
+ This property should be considered undocumented, and prone to change.
+ */
+@property (nonatomic, assign) BOOL renderingInInactiveStateEnabled;
+
 
 /**
  A Boolean value indicating whether the map should prefetch tiles.
@@ -651,6 +676,20 @@ MGL_EXPORT
 @property(nonatomic, getter=isScrollEnabled) BOOL scrollEnabled;
 
 /**
+ The scrolling mode the user is allowed to use to interact with the map.
+
+`MGLPanScrollingModeHorizontal` only allows the user to scroll horizontally on the map,
+ restricting a user's ability to scroll vertically.
+`MGLPanScrollingModeVertical` only allows the user to scroll vertically on the map,
+ restricting a user's ability to scroll horizontally.
+ `MGLPanScrollingModeDefault` allows the user to scroll both horizontally and vertically
+ on the map.
+
+ By default, this property is set to `MGLPanScrollingModeDefault`.
+ */
+@property (nonatomic, assign) MGLPanScrollingMode panScrollingMode;
+
+/**
  A Boolean value that determines whether the user may rotate the map,
  changing the direction.
 
@@ -678,6 +717,11 @@ MGL_EXPORT
  */
 @property(nonatomic, getter=isPitchEnabled) BOOL pitchEnabled;
 
+/**
+ A Boolean value that determines whether gestures are anchored to the center coordinate of the map while rotating or zooming.
+ Default value is set to NO.
+ */
+@property(nonatomic) BOOL anchorRotateOrZoomGesturesToCenterCoordinate;
 /**
  A Boolean value that determines whether the user will receive haptic feedback
  for certain interactions with the map.
@@ -862,6 +906,29 @@ MGL_EXPORT
  coordinate or zoom level.
  */
 - (void)setDirection:(CLLocationDirection)direction animated:(BOOL)animated;
+
+/**
+ The minimum pitch of the map’s camera toward the horizon measured in degrees.
+
+ If the value of this property is greater than that of the `maximumPitch`
+ property, the behavior is undefined. The pitch may not be less than 0
+ regardless of this property.
+
+ The default value of this property is 0 degrees, allowing the map to appear
+ two-dimensional.
+ */
+@property (nonatomic) CGFloat minimumPitch;
+
+/**
+ The maximum pitch of the map’s camera toward the horizon measured in degrees.
+
+ If the value of this property is smaller than that of the `minimumPitch`
+ property, the behavior is undefined. The pitch may not exceed 60 degrees
+ regardless of this property.
+
+ The default value of this property is 60 degrees.
+ */
+@property (nonatomic) CGFloat maximumPitch;
 
 /**
  Resets the map rotation to a northern heading — a `direction` of `0` degrees.
@@ -1795,7 +1862,7 @@ MGL_EXPORT
     the style URL to an explicitly versioned style using a convenience method
     like `+[MGLStyle outdoorsStyleURLWithVersion:]`, `MGLMapView`’s “Style URL”
     inspectable in Interface Builder, or a manually constructed `NSURL`. This
-    approach also avoids layer identifer name changes that will occur in the
+    approach also avoids layer identifier name changes that will occur in the
     default style’s layers over time.
 
  @param point A point expressed in the map view’s coordinate system.
@@ -1893,7 +1960,7 @@ MGL_EXPORT
  style URL to an explicitly versioned style using a convenience method like
  `+[MGLStyle outdoorsStyleURLWithVersion:]`, `MGLMapView`’s “Style URL”
  inspectable in Interface Builder, or a manually constructed `NSURL`. This
- approach also avoids layer identifer name changes that will occur in the
+ approach also avoids layer identifier name changes that will occur in the
  default style’s layers over time.
 
  @note Layer identifiers are not guaranteed to exist across styles or different
@@ -1901,7 +1968,7 @@ MGL_EXPORT
     the style URL to an explicitly versioned style using a convenience method
     like `+[MGLStyle outdoorsStyleURLWithVersion:]`, `MGLMapView`’s “Style URL”
     inspectable in Interface Builder, or a manually constructed `NSURL`. This
-    approach also avoids layer identifer name changes that will occur in the
+    approach also avoids layer identifier name changes that will occur in the
     default style’s layers over time.
 
  @param rect A rectangle expressed in the map view’s coordinate system.
@@ -1924,6 +1991,13 @@ MGL_EXPORT
  */
 @property (nonatomic) MGLMapDebugMaskOptions debugMask;
 
+/**
+ :nodoc:
+ Convenience method for subscribing to a single event. See `-[MGLObservable
+ subscribeForObserver:events:]`.
+ */
+- (void)subscribeForObserver:(nonnull MGLObserver *)observer
+                       event:(nonnull MGLEventType)event;
 @end
 
 NS_ASSUME_NONNULL_END

@@ -5,20 +5,43 @@
 
 const MGLExceptionName MGLResourceNotFoundException = @"MGLResourceNotFoundException";
 
+BOOL MGLEdgeInsetsIsZero(UIEdgeInsets edgeInsets) {
+    return edgeInsets.left == 0 && edgeInsets.top == 0 && edgeInsets.right == 0 && edgeInsets.bottom == 0;
+}
+
 @implementation UIImage (MGLAdditions)
 
-- (nullable instancetype)initWithMGLStyleImage:(const mbgl::style::Image *)styleImage
+- (nullable instancetype)initWithMGLStyleImage:(const mbgl::style::Image &)styleImage
 {
-    CGImageRef image = CGImageCreateWithMGLPremultipliedImage(styleImage->getImage().clone());
+    CGImageRef image = CGImageCreateWithMGLPremultipliedImage(styleImage.getImage().clone());
     if (!image) {
         return nil;
     }
 
-    if (self = [self initWithCGImage:image scale:styleImage->getPixelRatio() orientation:UIImageOrientationUp])
+    CGFloat scale = styleImage.getPixelRatio();
+    if (self = [self initWithCGImage:image scale:scale orientation:UIImageOrientationUp])
     {
-        if (styleImage->isSdf())
+        if (styleImage.isSdf())
         {
             self = [self imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+        }
+        
+        if (auto content = styleImage.getContent())
+        {
+            UIEdgeInsets capInsets = UIEdgeInsetsMake(content->top / scale,
+                                                      content->left / scale,
+                                                      self.size.height - content->bottom / scale,
+                                                      self.size.width - content->right / scale);
+            UIImageResizingMode resizingMode = UIImageResizingModeTile;
+            if (!styleImage.getStretchX().empty() || !styleImage.getStretchY().empty())
+            {
+                resizingMode = UIImageResizingModeStretch;
+            }
+            self = [self resizableImageWithCapInsets:capInsets resizingMode:resizingMode];
+        }
+        if (!styleImage.getStretchX().empty() || !styleImage.getStretchY().empty())
+        {
+            self = [self resizableImageWithCapInsets:self.capInsets resizingMode:UIImageResizingModeStretch];
         }
     }
     CGImageRelease(image);
@@ -39,10 +62,35 @@ const MGLExceptionName MGLResourceNotFoundException = @"MGLResourceNotFoundExcep
 }
 
 - (std::unique_ptr<mbgl::style::Image>)mgl_styleImageWithIdentifier:(NSString *)identifier {
+    mbgl::style::ImageStretches stretchX, stretchY;
+    if (self.resizingMode == UIImageResizingModeStretch)
+    {
+        stretchX.push_back({
+            self.capInsets.left * self.scale, (self.size.width - self.capInsets.right) * self.scale,
+        });
+        stretchY.push_back({
+            self.capInsets.top * self.scale, (self.size.height - self.capInsets.bottom) * self.scale,
+        });
+    }
+    
+    mbgl::optional<mbgl::style::ImageContent> imageContent;
+    if (!MGLEdgeInsetsIsZero(self.capInsets))
+    {
+        imageContent = (mbgl::style::ImageContent){
+            .left = static_cast<float>(self.capInsets.left * self.scale),
+            .top = static_cast<float>(self.capInsets.top * self.scale),
+            .right = static_cast<float>((self.size.width - self.capInsets.right) * self.scale),
+            .bottom = static_cast<float>((self.size.height - self.capInsets.bottom) * self.scale),
+        };
+    }
+    
     BOOL isTemplate = self.renderingMode == UIImageRenderingModeAlwaysTemplate;
     return std::make_unique<mbgl::style::Image>([identifier UTF8String],
                                                 self.mgl_premultipliedImage,
-                                                float(self.scale), isTemplate);
+                                                static_cast<float>(self.scale),
+                                                isTemplate,
+                                                stretchX, stretchY,
+                                                imageContent);
 }
 
 - (mbgl::PremultipliedImage)mgl_premultipliedImage {

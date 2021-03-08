@@ -1,6 +1,6 @@
 Pod::Spec.new do |m|
 
-  version = '5.6.1'
+  version = '6.3.0'
 
   m.name    = 'Mapbox-iOS-SDK-stripped'
   m.version = "#{version}-stripped"
@@ -10,12 +10,12 @@ Pod::Spec.new do |m|
   m.homepage          = 'https://docs.mapbox.com/ios/maps/'
   m.license           = { :type => 'BSD', :file => 'LICENSE.md' }
   m.author            = { 'Mapbox' => 'mobile@mapbox.com' }
-  m.screenshot        = "https://docs.mapbox.com/ios/api/maps/#{version}/img/screenshot.png"
+  m.screenshot        = "https://docs.mapbox.com/ios/maps/api/#{version}/img/screenshot.png"
   m.social_media_url  = 'https://twitter.com/mapbox'
-  m.documentation_url = 'https://docs.mapbox.com/ios/api/maps/'
+  m.documentation_url = 'https://docs.mapbox.com/ios/maps/api/'
 
-  m.source = {
-    :http => "https://mapbox.s3.amazonaws.com/mapbox-gl-native/ios/builds/mapbox-ios-sdk-#{m.version.to_s}-dynamic.zip",
+  m.source = {    
+    :http => "https://api.mapbox.com/downloads/v2/mobile-maps/releases/ios/packages/#{version.to_s}/mapbox-ios-sdk-stripped-dynamic.zip",
     :flatten => true
   }
 
@@ -29,6 +29,6 @@ Pod::Spec.new do |m|
 
   m.preserve_path = '**/*.bcsymbolmap'
 
-  m.dependency "MapboxMobileEvents", "0.10.2"
+  m.dependency "MapboxMobileEvents", "~> 0.10.4"
 
 end

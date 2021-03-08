@@ -1,5 +1,7 @@
 ALWAYS_SEARCH_USER_PATHS = NO
 
+BUILD_DIR = ../../build/ios/Build/Products
+
 CLANG_ANALYZER_GCD_PERFORMANCE = YES
 CLANG_ANALYZER_LOCALIZABILITY_EMPTY_CONTEXT = YES
 CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES
@@ -56,21 +58,29 @@ GCC_WARN_UNUSED_FUNCTION = YES
 GCC_WARN_UNUSED_LABEL = YES
 GCC_WARN_UNUSED_VARIABLE = YES
 
-HEADER_SEARCH_PATHS = $(inherited) "$(PROJECT_DIR)/../../vendor/mapbox-gl-native/include" "$(PROJECT_DIR)/../../vendor/mapbox-gl-native/platform/default/include" "$(PROJECT_DIR)/../../vendor/mapbox-gl-native/vendor/mapbox-base/mapbox/variant/include" "$(PROJECT_DIR)/../../vendor/mapbox-gl-native/vendor/mapbox-base/mapbox/geometry.hpp/include" "$(PROJECT_DIR)/../../vendor/mapbox-gl-native/vendor/mapbox-base/mapbox/value/include" "$(PROJECT_DIR)/../../vendor/mapbox-gl-native/vendor/mapbox-base/mapbox/geojson.hpp/include" "$(PROJECT_DIR)/../../vendor/mapbox-gl-native/vendor/mapbox-base/mapbox/optional" "$(PROJECT_DIR)/../../vendor/mapbox-gl-native/vendor/mapbox-base/mapbox/typewrapper/include" "$(PROJECT_DIR)/../../vendor/mapbox-gl-native/vendor/mapbox-base/mapbox/weak/include" "$(PROJECT_DIR)/../../vendor/mapbox-gl-native/vendor/mapbox-base/extras/rapidjson/include" "$(PROJECT_DIR)/../../vendor/mapbox-gl-native/vendor/mapbox-base/extras/expected-lite/include" "$(PROJECT_DIR)/../../vendor/mapbox-gl-native/vendor/polylabel/include" "$(PROJECT_DIR)/../../platform/darwin/include"
+HEADER_SEARCH_PATHS = $(inherited)
+HEADER_SEARCH_PATHS = $(HEADER_SEARCH_PATHS) "$(PROJECT_DIR)/../../platform/darwin/include"
+
+HEADER_SEARCH_PATHS = $(HEADER_SEARCH_PATHS) "$(PROJECT_DIR)/../../Carthage/Build/iOS/MBGLCore.framework/include"
+FRAMEWORK_SEARCH_PATHS = $(inherited) "$(PROJECT_DIR)/../../Carthage/Build/iOS/"
+
 
 LD_GENERATE_MAP_FILE = YES
 
-LIBRARY_SEARCH_PATHS = $(inherited) $(PROJECT_DIR) $(PROJECT_DIR)/vendor/mapbox-accounts-ios
+LIBRARY_SEARCH_PATHS = $(inherited) $(PROJECT_DIR)
 
 OTHER_CFLAGS = $(inherited) -fvisibility=hidden
 OTHER_CPLUSPLUSFLAGS = $(inherited) -fvisibility=hidden -fcxx-modules
 OTHER_SWIFT_FLAGS = -warnings-as-errors
 
+SUPPORTS_MACCATALYST = NO
+TARGETED_DEVICE_FAMILY = 1,2
+
 // User defined
 BITCODE_GENERATION_MODE = bitcode 
 CURRENT_COMMIT_HASH = deadbeef
-CURRENT_SEMANTIC_VERSION = 1.0.0
-CURRENT_SHORT_VERSION = 1.0
+CURRENT_SEMANTIC_VERSION = 0.0.0
+CURRENT_SHORT_VERSION = 0.0
 
 // TODO:
 CLANG_USE_OPTIMIZATION_PROFILE = NO

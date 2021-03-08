@@ -10,8 +10,12 @@
 
 #import "NSValue+MGLAdditions.h"
 
+#if TARGET_OS_IPHONE || TARGET_OS_SIMULATOR
+    #import "MGLMapboxEvents.h"
+#endif
+
 #include <mbgl/map/map_options.hpp>
-#include <mbgl/storage/default_file_source.hpp>
+#include <mbgl/storage/database_file_source.hpp>
 
 const MGLExceptionName MGLInvalidOfflinePackException = @"MGLInvalidOfflinePackException";
 
@@ -38,14 +42,14 @@ const MGLExceptionName MGLInvalidOfflinePackException = @"MGLInvalidOfflinePackE
 @interface MGLShapeOfflineRegion () <MGLOfflineRegion_Private, MGLShapeOfflineRegion_Private>
 @end
 
-class MBGLOfflineRegionObserver : public mbgl::OfflineRegionObserver {
+class MBGLOfflineDownloadObserver : public mbgl::OfflineDownloadObserver {
 public:
-    MBGLOfflineRegionObserver(MGLOfflinePack *pack_) : pack(pack_) {}
+    MBGLOfflineDownloadObserver(MGLOfflinePack *pack_) : pack(pack_) {}
 
-    void statusChanged(mbgl::OfflineRegionStatus status) override;
+    void statusChanged(const mbgl::OfflineDownloadStatus &status) override;
     void responseError(mbgl::Response::Error error) override;
     void mapboxTileCountLimitExceeded(uint64_t limit) override;
-
+    
 private:
     __weak MGLOfflinePack *pack = nullptr;
 };
@@ -59,7 +63,7 @@ private:
 
 @implementation MGLOfflinePack {
     BOOL _isSuspending;
-    std::shared_ptr<mbgl::DefaultFileSource> _mbglFileSource;
+    std::shared_ptr<mbgl::DatabaseFileSource> _mbglDatabaseFileSource;
 }
 
 - (instancetype)init {
@@ -76,8 +80,8 @@ private:
         _mbglOfflineRegion = region;
         _state = MGLOfflinePackStateUnknown;
 
-        _mbglFileSource = [[MGLOfflineStorage sharedOfflineStorage] mbglFileSource];
-        _mbglFileSource->setOfflineRegionObserver(*_mbglOfflineRegion, std::make_unique<MBGLOfflineRegionObserver>(self));
+        _mbglDatabaseFileSource = [[MGLOfflineStorage sharedOfflineStorage] mbglDatabaseFileSource];
+        _mbglDatabaseFileSource->setOfflineRegionObserver(*_mbglOfflineRegion, std::make_unique<MBGLOfflineDownloadObserver>(self));
     }
     return self;
 }
@@ -89,19 +93,15 @@ private:
 - (id <MGLOfflineRegion>)region {
     MGLAssertOfflinePackIsValid();
 
-    const mbgl::OfflineRegionDefinition &regionDefinition = _mbglOfflineRegion->getDefinition();
+    const mbgl::OfflineDownloadParameters &downloadParameters = _mbglOfflineRegion->getDefinition();
     MGLAssert([MGLTilePyramidOfflineRegion conformsToProtocol:@protocol(MGLOfflineRegion_Private)], @"MGLTilePyramidOfflineRegion should conform to MGLOfflineRegion_Private.");
     MGLAssert([MGLShapeOfflineRegion conformsToProtocol:@protocol(MGLOfflineRegion_Private)], @"MGLShapeOfflineRegion should conform to MGLOfflineRegion_Private.");
     
+    id<MGLOfflineRegion> region = downloadParameters.isGeometryDefined() ?
+        [[MGLShapeOfflineRegion alloc] initWithOfflineDownloadParameters:downloadParameters] :
+        [[MGLTilePyramidOfflineRegion alloc] initWithOfflineDownloadParameters:downloadParameters];
+    return region;
     
-    
-    return regionDefinition.match(
-                           [&] (const mbgl::OfflineTilePyramidRegionDefinition def){
-                               return (id <MGLOfflineRegion>)[[MGLTilePyramidOfflineRegion alloc] initWithOfflineRegionDefinition:def];
-                           },
-                           [&] (const mbgl::OfflineGeometryRegionDefinition& def){
-                               return (id <MGLOfflineRegion>)[[MGLShapeOfflineRegion alloc] initWithOfflineRegionDefinition:def];
-                           });
 }
 
 - (NSData *)context {
@@ -111,13 +111,59 @@ private:
     return [NSData dataWithBytes:&metadata[0] length:metadata.size()];
 }
 
+- (void)setContext:(NSData *)context completionHandler:(void (^_Nullable)(NSError * _Nullable error))completion {
+    MGLAssertOfflinePackIsValid();
+    
+    mbgl::OfflineRegionMetadata metadata(context.length);
+    [context getBytes:&metadata[0] length:metadata.size()];
+    
+    [self willChangeValueForKey:@"context"];
+    __weak MGLOfflinePack *weakSelf = self;
+    _mbglDatabaseFileSource->updateOfflineMetadata(_mbglOfflineRegion->getID(), metadata, [&, completion, weakSelf](mbgl::expected<mbgl::OfflineRegionMetadata, std::exception_ptr> mbglOfflineRegionMetadata) {
+        NSError *error;
+        if (!mbglOfflineRegionMetadata) {
+            NSString *errorDescription = @(mbgl::util::toString(mbglOfflineRegionMetadata.error()).c_str());
+            error = [NSError errorWithDomain:MGLErrorDomain code:MGLErrorCodeModifyingOfflineStorageFailed userInfo:errorDescription ? @{
+                NSLocalizedDescriptionKey: errorDescription,
+            } : nil];
+#if TARGET_OS_IPHONE || TARGET_OS_SIMULATOR
+            [[MMEEventsManager sharedManager] reportError:error];
+#endif
+        }
+        dispatch_async(dispatch_get_main_queue(), [&, completion, weakSelf, error](void) {
+            [weakSelf reloadWithCompletionHandler:^(NSError * _Nullable reloadingError) {
+                MGLOfflinePack *strongSelf = weakSelf;
+                [strongSelf didChangeValueForKey:@"context"];
+                if (completion) {
+                    completion(error ?: reloadingError);
+                }
+            }];
+        });
+    });
+}
+
+- (void)reloadWithCompletionHandler:(void (^)(NSError * _Nullable error))completion {
+    auto regionID = _mbglOfflineRegion->getID();
+    MGLOfflineStorage *sharedOfflineStorage = [MGLOfflineStorage sharedOfflineStorage];
+    __weak MGLOfflinePack *weakSelf = self;
+    [sharedOfflineStorage getPacksWithCompletionHandler:^(NSArray<MGLOfflinePack *> *packs, __unused NSError * _Nullable error) {
+        for (MGLOfflinePack *pack in packs) {
+            if (pack.mbglOfflineRegion->getID() == regionID) {
+                weakSelf.mbglOfflineRegion = pack.mbglOfflineRegion;
+                break;
+            }
+        }
+        completion(error);
+    }];
+}
+
 - (void)resume {
     MGLLogInfo(@"Resuming pack download.");
     MGLAssertOfflinePackIsValid();
 
     self.state = MGLOfflinePackStateActive;
 
-    _mbglFileSource->setOfflineRegionDownloadState(*_mbglOfflineRegion, mbgl::OfflineRegionDownloadState::Active);
+    _mbglDatabaseFileSource->setOfflineRegionDownloadState(*_mbglOfflineRegion, mbgl::OfflineRegionDownloadState::Active);
 }
 
 - (void)suspend {
@@ -129,7 +175,7 @@ private:
         _isSuspending = YES;
     }
 
-    _mbglFileSource->setOfflineRegionDownloadState(*_mbglOfflineRegion, mbgl::OfflineRegionDownloadState::Inactive);
+    _mbglDatabaseFileSource->setOfflineRegionDownloadState(*_mbglOfflineRegion, mbgl::OfflineRegionDownloadState::Inactive);
 }
 
 - (void)invalidate {
@@ -140,7 +186,7 @@ private:
     @synchronized (self) {
         self.state = MGLOfflinePackStateInvalid;
         if (self.mbglOfflineRegion) {
-            _mbglFileSource->setOfflineRegionObserver(*self.mbglOfflineRegion, nullptr);
+            _mbglDatabaseFileSource->setOfflineRegionObserver(*self.mbglOfflineRegion, nullptr);
         }
         self.mbglOfflineRegion = nil;
     }
@@ -169,18 +215,18 @@ private:
     MGLAssertOfflinePackIsValid();
 
     __weak MGLOfflinePack *weakSelf = self;
-    _mbglFileSource->getOfflineRegionStatus(*_mbglOfflineRegion, [&, weakSelf](mbgl::expected<mbgl::OfflineRegionStatus, std::exception_ptr> status) {
+    _mbglDatabaseFileSource->getOfflineRegionStatus(*_mbglOfflineRegion, [&, weakSelf](mbgl::expected<mbgl::OfflineDownloadStatus, std::exception_ptr> status) {
         if (status) {
-            mbgl::OfflineRegionStatus checkedStatus = *status;
+            mbgl::OfflineDownloadStatus checkedStatus = *status;
             dispatch_async(dispatch_get_main_queue(), ^{
                 MGLOfflinePack *strongSelf = weakSelf;
-                [strongSelf offlineRegionStatusDidChange:checkedStatus];
+                [strongSelf OfflineDownloadStatusDidChange:checkedStatus];
             });
         }
     });
 }
 
-- (void)offlineRegionStatusDidChange:(mbgl::OfflineRegionStatus)status {
+- (void)OfflineDownloadStatusDidChange:(mbgl::OfflineDownloadStatus)status {
     MGLAssert(_state != MGLOfflinePackStateInvalid, @"Cannot change update progress of an invalid offline pack.");
 
     switch (status.downloadState) {
@@ -260,21 +306,21 @@ NSError *MGLErrorFromResponseError(mbgl::Response::Error error) {
 
 @end
 
-void MBGLOfflineRegionObserver::statusChanged(mbgl::OfflineRegionStatus status) {
+void MBGLOfflineDownloadObserver::statusChanged(const mbgl::OfflineDownloadStatus &status) {
     __weak MGLOfflinePack *weakPack = pack;
     dispatch_async(dispatch_get_main_queue(), ^{
-        [weakPack offlineRegionStatusDidChange:status];
+        [weakPack OfflineDownloadStatusDidChange:status];
     });
 }
 
-void MBGLOfflineRegionObserver::responseError(mbgl::Response::Error error) {
+void MBGLOfflineDownloadObserver::responseError(mbgl::Response::Error error) {
     __weak MGLOfflinePack *weakPack = pack;
     dispatch_async(dispatch_get_main_queue(), ^{
         [weakPack didReceiveError:MGLErrorFromResponseError(error)];
     });
 }
 
-void MBGLOfflineRegionObserver::mapboxTileCountLimitExceeded(uint64_t limit) {
+void MBGLOfflineDownloadObserver::mapboxTileCountLimitExceeded(uint64_t limit) {
     __weak MGLOfflinePack *weakPack = pack;
     dispatch_async(dispatch_get_main_queue(), ^{
         [weakPack didReceiveMaximumAllowedMapboxTiles:limit];

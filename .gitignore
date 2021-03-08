@@ -14,7 +14,6 @@ xcuserdata
 /platform/node/test/diff
 /mason_packages
 /build
-/pkg
 /next/build
 /lib
 /test/node_modules
@@ -50,3 +49,5 @@ mapbox-gl-native.code-workspace
 /scripts/generate-file-lists.list
 /scripts/generate-shaders.list
 /scripts/generate-style-code.list
+*.patch
+Carthage

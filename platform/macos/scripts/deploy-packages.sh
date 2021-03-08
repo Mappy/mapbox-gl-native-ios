@@ -75,7 +75,7 @@ publish() {
 }
 
 export GITHUB_USER=mapbox
-export GITHUB_REPO=mapbox-gl-native
+export GITHUB_REPO=mapbox-gl-native-ios
 export BUILDTYPE=Release
 
 VERSION_TAG=${VERSION_TAG:-''}
@@ -124,7 +124,7 @@ if [[ ${#} -eq 3 &&  $3 == "-g" ]]; then
     GITHUB_RELEASE=true
 fi
 
-make clean && make distclean
+npm install --ignore-scripts
 mkdir -p ${BINARY_DIRECTORY}
 
 if [[ "${GITHUB_RELEASE}" == true ]]; then

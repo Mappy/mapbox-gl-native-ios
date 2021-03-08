@@ -57,7 +57,6 @@
         [self bringSubviewToFront:view];
     }
 }
-
 #pragma mark UIAccessibility methods
 
 - (UIAccessibilityTraits)accessibilityTraits {

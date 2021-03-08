@@ -79,6 +79,52 @@
 @implementation NSComparisonPredicate (MGLExpressionAdditions)
 
 - (id)mgl_jsonExpressionObject {
+    switch (self.comparisonPredicateModifier) {
+        case NSDirectPredicateModifier:
+            break;
+            
+        case NSAllPredicateModifier:
+            // “ALL x != y” is logically equivalent to “NOT y IN x”.
+            if (self.predicateOperatorType == NSNotEqualToPredicateOperatorType) {
+                // https://github.com/mapbox/mapbox-gl-js/issues/9339
+                if (self.options) {
+                    [NSException raise:NSInvalidArgumentException format:@"NSComparisonPredicateOptions not supported for “ALL … !=” comparisons."];
+                }
+                
+                NSPredicate *directPredicate = [NSComparisonPredicate predicateWithLeftExpression:self.rightExpression
+                                                                                  rightExpression:self.leftExpression
+                                                                                         modifier:NSDirectPredicateModifier
+                                                                                             type:NSInPredicateOperatorType
+                                                                                          options:self.options];
+                NSPredicate *invertedPredicate = [NSCompoundPredicate notPredicateWithSubpredicate:directPredicate];
+                return invertedPredicate.mgl_jsonExpressionObject;
+            } else {
+                [NSException raise:NSInvalidArgumentException format:@"“ALL” is only supported for the “!=” operator."];
+            }
+            
+        case NSAnyPredicateModifier:
+            // “ANY x = y” is logically equivalent to “y IN x”.
+            if (self.predicateOperatorType == NSEqualToPredicateOperatorType) {
+                // https://github.com/mapbox/mapbox-gl-js/issues/9339
+                if (self.options) {
+                    [NSException raise:NSInvalidArgumentException format:@"NSComparisonPredicateOptions not supported for “ANY … =” comparisons."];
+                }
+                
+                NSPredicate *directPredicate = [NSComparisonPredicate predicateWithLeftExpression:self.rightExpression
+                                                                                  rightExpression:self.leftExpression
+                                                                                         modifier:NSDirectPredicateModifier
+                                                                                             type:NSInPredicateOperatorType
+                                                                                          options:self.options];
+                return directPredicate.mgl_jsonExpressionObject;
+            } else {
+                [NSException raise:NSInvalidArgumentException format:@"“ANY” or “SOME” is only supported for the “=” operator."];
+            }
+            
+        default:
+            [NSException raise:NSInvalidArgumentException
+                        format:@"NSComparisonPredicateModifier:%lu is not supported.", (unsigned long)self.comparisonPredicateModifier];
+    }
+    
     NSString *op;
     switch (self.predicateOperatorType) {
         case NSLessThanPredicateOperatorType:
@@ -115,14 +161,27 @@
             return @[op, leftHandPredicate.mgl_jsonExpressionObject, rightHandPredicate.mgl_jsonExpressionObject];
         }
         case NSInPredicateOperatorType: {
-            
-            NSExpression *matchExpression = [NSExpression expressionForFunction:@"MGL_MATCH"
-                                                                      arguments:@[self.leftExpression,
-                                                                                  self.rightExpression,
-                                                                                  [NSExpression expressionForConstantValue:@YES],
-                                                                                  [NSExpression expressionForConstantValue:@NO]]];
-
-            return matchExpression.mgl_jsonExpressionObject;
+            if (self.leftExpression.expressionType == NSEvaluatedObjectExpressionType) {
+                return @[@"within", self.rightExpression.mgl_jsonExpressionObject];
+            }
+            // An “in” expression comparing two string literals is unfortunately
+            // misinterpreted as a legacy “in” filter due to ambiguity. Wrap one
+            // argument in a “literal” expression to force an expression.
+            // https://github.com/mapbox/mapbox-gl-js/issues/9373#issuecomment-594537077
+            if (self.leftExpression.expressionType == NSConstantValueExpressionType &&
+                self.rightExpression.expressionType == NSConstantValueExpressionType &&
+                [self.leftExpression.constantValue isKindOfClass:[NSString class]] &&
+                [self.rightExpression.constantValue isKindOfClass:[NSString class]]) {
+                NSExpression *rightLiteralExpression = [NSExpression expressionWithFormat:@"MGL_FUNCTION('literal', %@)", self.rightExpression];
+                NSPredicate *literalPredicate = [NSComparisonPredicate predicateWithLeftExpression:self.leftExpression
+                                                                                   rightExpression:rightLiteralExpression
+                                                                                          modifier:NSDirectPredicateModifier
+                                                                                              type:NSInPredicateOperatorType
+                                                                                           options:self.options];
+                return literalPredicate.mgl_jsonExpressionObject;
+            }
+            op = @"in";
+            break;
         }
         case NSContainsPredicateOperatorType: {
             NSPredicate *inPredicate = [NSComparisonPredicate predicateWithLeftExpression:self.rightExpression

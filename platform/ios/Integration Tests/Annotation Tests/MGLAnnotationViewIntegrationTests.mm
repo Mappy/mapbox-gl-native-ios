@@ -70,7 +70,7 @@ static const CGPoint kAnnotationRelativeScale = { 0.05f, 0.125f };
     
     XCTAssert(self.mapView.annotations.count == 0);
     
-    NSString * const MGLTestAnnotationReuseIdentifer = @"MGLTestAnnotationReuseIdentifer";
+    NSString * const MGLTestAnnotationReuseIdentifier = @"MGLTestAnnotationReuseIdentifier";
     CGSize size = self.mapView.bounds.size;
     CGSize annotationSize = CGSizeMake(floor(size.width*kAnnotationRelativeScale.x), floor(size.height*kAnnotationRelativeScale.y));
     
@@ -81,7 +81,7 @@ static const CGPoint kAnnotationRelativeScale = { 0.05f, 0.125f };
         }
         
         // No dequeue
-        MGLAnnotationView *annotationView = [[MGLAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:MGLTestAnnotationReuseIdentifer];
+        MGLAnnotationView *annotationView = [[MGLAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:MGLTestAnnotationReuseIdentifier];
         annotationView.bounds             = (CGRect){ .origin = CGPointZero, .size = annotationSize };
         annotationView.backgroundColor    = UIColor.redColor;
         annotationView.enabled            = YES;
@@ -132,7 +132,15 @@ static const CGPoint kAnnotationRelativeScale = { 0.05f, 0.125f };
     // Animated selection takes MGLAnimationDuration (0.3 seconds), so wait a little
     // longer. We don't need to wait as long if we're not animated (but we do
     // want the runloop to tick over)
+
+#if TARGET_OS_SIMULATOR
+    // Something is amiss with dispatch_async & XCTest on simulators in a recent
+    // iOS SDK release.
+    // TODO: Add issue
+    [self waitForExpectations:@[selectionCompleted] timeout:animateSelection ? 0.4: 0.1];
+#else
     [self waitForExpectations:@[selectionCompleted] timeout:animateSelection ? 0.4: 0.05];
+#endif
 
     UIView *annotationViewAfterSelection =  [self.mapView viewForAnnotation:point];
     CLLocationCoordinate2D mapCenterAfterSelection = self.mapView.centerCoordinate;
@@ -359,7 +367,7 @@ static const CGPoint kAnnotationRelativeScale = { 0.05f, 0.125f };
 
         //  Coord                   showsCallout  impl margins?   moveIntoView    expectMapToPan    calloutOnScreen
         {   {offset, 0.5f},         YES,          YES,            YES,            YES,              YES },
-        {   {1.0 - offset, 0.5f},   YES,          YES,            YES,            YES,              YES },
+        {   {(CGFloat)(1.0 - offset), 0.5f},   YES,          YES,            YES,            YES,              YES },
 
         PAN_TEST_TERMINATOR
     };
@@ -420,7 +428,7 @@ static const CGPoint kAnnotationRelativeScale = { 0.05f, 0.125f };
 
 - (void)internalTestSelectingAnnotationWithCenterOffsetWithOffset:(CGVector)offset edgeInsets:(UIEdgeInsets)edgeInsets {
 
-    NSString * const MGLTestAnnotationReuseIdentifer = @"MGLTestAnnotationReuseIdentifer";
+    NSString * const MGLTestAnnotationReuseIdentifier = @"MGLTestAnnotationReuseIdentifier";
 
     self.mapView.contentInset = edgeInsets;
     CGSize size = self.mapView.bounds.size;
@@ -434,7 +442,7 @@ static const CGPoint kAnnotationRelativeScale = { 0.05f, 0.125f };
         }
 
         // No dequeue
-        MGLAnnotationView *annotationView = [[MGLAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:MGLTestAnnotationReuseIdentifer];
+        MGLAnnotationView *annotationView = [[MGLAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:MGLTestAnnotationReuseIdentifier];
         annotationView.bounds             = (CGRect){ .origin = CGPointZero, .size = annotationSize };
         annotationView.backgroundColor    = UIColor.redColor;
         annotationView.enabled            = YES;
@@ -684,7 +692,7 @@ static const CGPoint kAnnotationRelativeScale = { 0.05f, 0.125f };
                            block:^(id<XCTActivity>  _Nonnull activity)
      {
          
-         NSString * const MGLTestAnnotationReuseIdentifer = @"MGLTestAnnotationReuseIdentifer";
+         NSString * const MGLTestAnnotationReuseIdentifier = @"MGLTestAnnotationReuseIdentifier";
          
          CGSize annotationSize = CGSizeMake(40.0, 40.0);
          
@@ -695,7 +703,7 @@ static const CGPoint kAnnotationRelativeScale = { 0.05f, 0.125f };
              }
              
              // No dequeue
-             MGLAnnotationView *annotationView = [[MGLAnnotationView alloc] initWithAnnotation:annotation2 reuseIdentifier:MGLTestAnnotationReuseIdentifer];
+             MGLAnnotationView *annotationView = [[MGLAnnotationView alloc] initWithAnnotation:annotation2 reuseIdentifier:MGLTestAnnotationReuseIdentifier];
              annotationView.bounds             = (CGRect){ .origin = CGPointZero, .size = annotationSize };
              annotationView.backgroundColor    = UIColor.redColor;
              annotationView.enabled            = YES;
@@ -805,8 +813,7 @@ static const CGPoint kAnnotationRelativeScale = { 0.05f, 0.125f };
     self.renderFinishedExpectation = [self expectationWithDescription:@"Map view should be rendered"];
     XCTestExpectation *timerExpired = [self expectationWithDescription:@"Timer expires"];
 
-    // Wait 1/2 second
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(NSEC_PER_SEC >> 1)), dispatch_get_main_queue(), ^{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         [timerExpired fulfill];
     });
 

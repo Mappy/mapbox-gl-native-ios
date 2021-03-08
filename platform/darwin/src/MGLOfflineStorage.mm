@@ -11,6 +11,7 @@
 #import "NSValue+MGLAdditions.h"
 #import "NSDate+MGLAdditions.h"
 #import "MGLLoggingConfiguration_Private.h"
+#import "MGLNetworkConfiguration_Private.h"
 
 #if TARGET_OS_IPHONE || TARGET_OS_SIMULATOR
 #import <MapboxMobileEvents/MapboxMobileEvents.h>
@@ -19,7 +20,7 @@
 
 #include <mbgl/actor/actor.hpp>
 #include <mbgl/actor/scheduler.hpp>
-#include <mbgl/storage/default_file_source.hpp>
+#include <mbgl/storage/file_source_manager.hpp>
 #include <mbgl/storage/resource_options.hpp>
 #include <mbgl/storage/resource_transform.hpp>
 #include <mbgl/util/chrono.hpp>
@@ -28,6 +29,7 @@
 
 #include <memory>
 
+static NSString * const MGLOfflineStorageDatabasePathInfoDictionaryKey = @"MGLOfflineStorageDatabasePath";
 static NSString * const MGLOfflineStorageFileName = @"cache.db";
 static NSString * const MGLOfflineStorageFileName3_2_0_beta_1 = @"offline.db";
 
@@ -45,13 +47,15 @@ const MGLExceptionName MGLUnsupportedRegionTypeException = @"MGLUnsupportedRegio
 @interface MGLOfflineStorage ()
 
 @property (nonatomic, strong, readwrite) NSMutableArray<MGLOfflinePack *> *packs;
-@property (nonatomic) std::shared_ptr<mbgl::DefaultFileSource> mbglFileSource;
-@property (nonatomic) std::string mbglCachePath;
+@property (nonatomic) std::shared_ptr<mbgl::DatabaseFileSource> mbglDatabaseFileSource;
+@property (nonatomic) std::shared_ptr<mbgl::FileSource> mbglOnlineFileSource;
+@property (nonatomic) std::shared_ptr<mbgl::FileSource> mbglFileSource;
 @property (nonatomic, getter=isPaused) BOOL paused;
 @end
 
 @implementation MGLOfflineStorage {
-    std::unique_ptr<mbgl::Actor<mbgl::ResourceTransform>> _mbglResourceTransform;
+    NSURL *_databaseURL;
+    std::unique_ptr<mbgl::Actor<mbgl::ResourceTransform::TransformCallback>> _mbglResourceTransform;
 }
 
 + (instancetype)sharedOfflineStorage {
@@ -66,6 +70,13 @@ const MGLExceptionName MGLUnsupportedRegionTypeException = @"MGLUnsupportedRegio
         [sharedOfflineStorage reloadPacks];
     });
 
+    // Always ensure the MGLNativeNetworkManager delegate is setup. Calling
+    // `resetNativeNetworkManagerDelegate` is not necessary here, since the shared
+    // manager already calls it.
+    //
+    // TODO: Consider only calling this for testing?
+    [MGLNetworkConfiguration sharedManager];
+
     return sharedOfflineStorage;
 }
 
@@ -74,7 +85,9 @@ const MGLExceptionName MGLUnsupportedRegionTypeException = @"MGLUnsupportedRegio
     if (self.isPaused) {
         return;
     }
-    _mbglFileSource->pause();
+
+    _mbglOnlineFileSource->pause();
+    _mbglDatabaseFileSource->pause();
     self.paused = YES;
 }
 
@@ -82,7 +95,9 @@ const MGLExceptionName MGLUnsupportedRegionTypeException = @"MGLUnsupportedRegio
     if (!self.isPaused) {
         return;
     }
-    _mbglFileSource->resume();
+
+    _mbglOnlineFileSource->resume();
+    _mbglDatabaseFileSource->resume();
     self.paused = NO;
 }
 #endif
@@ -91,7 +106,7 @@ const MGLExceptionName MGLUnsupportedRegionTypeException = @"MGLUnsupportedRegio
     MGLLogDebug(@"Setting delegate: %@", newValue);
     _delegate = newValue;
     if ([self.delegate respondsToSelector:@selector(offlineStorage:URLForResourceOfKind:withURL:)]) {
-        _mbglResourceTransform = std::make_unique<mbgl::Actor<mbgl::ResourceTransform>>(*mbgl::Scheduler::GetCurrent(), [offlineStorage = self](auto kind_, const std::string& url_) -> std::string {
+        _mbglResourceTransform = std::make_unique<mbgl::Actor<mbgl::ResourceTransform::TransformCallback>>(mbgl::Scheduler::GetCurrent(), [offlineStorage = self](auto kind_, const std::string& url_, mbgl::ResourceTransform::FinishedCallback cb) {
             NSURL* url =
             [NSURL URLWithString:[[NSString alloc] initWithBytes:url_.data()
                                                           length:url_.length()
@@ -127,108 +142,33 @@ const MGLExceptionName MGLUnsupportedRegionTypeException = @"MGLUnsupportedRegio
             url = [offlineStorage.delegate offlineStorage:offlineStorage
                                      URLForResourceOfKind:kind
                                                   withURL:url];
-            return url.absoluteString.UTF8String;
+            cb(url.absoluteString.UTF8String);
         });
 
-        _mbglFileSource->setResourceTransform(_mbglResourceTransform->self());
+        _mbglOnlineFileSource->setResourceTransform({[actorRef = _mbglResourceTransform->self()](auto kind_, const std::string& url_, mbgl::ResourceTransform::FinishedCallback cb_){
+            actorRef.invoke(&mbgl::ResourceTransform::TransformCallback::operator(), kind_, url_, std::move(cb_));
+        }});
     } else {
         _mbglResourceTransform.reset();
-        _mbglFileSource->setResourceTransform({});
+        _mbglOnlineFileSource->setResourceTransform({});
     }
-}
-
-/**
- Returns the file URL to the offline cache, with the option to omit the private
- subdirectory for legacy (v3.2.0 - v3.2.3) migration purposes.
-
- The cache is located in a directory specific to the application, so that packs
- downloaded by other applications don’t count toward this application’s limits.
-
- The cache is located at:
- ~/Library/Application Support/tld.app.bundle.id/.mapbox/cache.db
-
- The subdirectory-less cache was located at:
- ~/Library/Application Support/tld.app.bundle.id/cache.db
- */
-+ (NSURL *)cacheURLIncludingSubdirectory:(BOOL)useSubdirectory {
-    NSURL *cacheDirectoryURL = [[NSFileManager defaultManager] URLForDirectory:NSApplicationSupportDirectory
-                                                                      inDomain:NSUserDomainMask
-                                                             appropriateForURL:nil
-                                                                        create:YES
-                                                                         error:nil];
-    NSString *bundleIdentifier = [NSBundle mgl_applicationBundleIdentifier];
-    if (!bundleIdentifier) {
-        // There’s no main bundle identifier when running in a unit test bundle.
-        bundleIdentifier = [[NSUUID UUID] UUIDString];
-    }
-    cacheDirectoryURL = [cacheDirectoryURL URLByAppendingPathComponent:bundleIdentifier];
-    if (useSubdirectory) {
-        cacheDirectoryURL = [cacheDirectoryURL URLByAppendingPathComponent:@".mapbox"];
-    }
-    [[NSFileManager defaultManager] createDirectoryAtURL:cacheDirectoryURL
-                             withIntermediateDirectories:YES
-                                              attributes:nil
-                                                   error:nil];
-    if (useSubdirectory) {
-        // Avoid backing up the offline cache onto iCloud, because it can be
-        // redownloaded. Ideally, we’d even put the ambient cache in Caches, so
-        // it can be reclaimed by the system when disk space runs low. But
-        // unfortunately it has to live in the same file as offline resources.
-        [cacheDirectoryURL setResourceValue:@YES forKey:NSURLIsExcludedFromBackupKey error:NULL];
-    }
-    return [cacheDirectoryURL URLByAppendingPathComponent:MGLOfflineStorageFileName];
-}
-
-/**
- Returns the absolute path to the location where v3.2.0-beta.1 placed the
- offline cache.
- */
-+ (NSString *)legacyCachePath {
-#if TARGET_OS_IPHONE || TARGET_OS_SIMULATOR
-    // ~/Documents/offline.db
-    NSArray *legacyPaths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString *legacyCachePath = [legacyPaths.firstObject stringByAppendingPathComponent:MGLOfflineStorageFileName3_2_0_beta_1];
-#elif TARGET_OS_MAC
-    // ~/Library/Caches/tld.app.bundle.id/offline.db
-    NSString *bundleIdentifier = [NSBundle mgl_applicationBundleIdentifier];
-    NSURL *legacyCacheDirectoryURL = [[NSFileManager defaultManager] URLForDirectory:NSCachesDirectory
-                                                                            inDomain:NSUserDomainMask
-                                                                   appropriateForURL:nil
-                                                                              create:NO
-                                                                               error:nil];
-    legacyCacheDirectoryURL = [legacyCacheDirectoryURL URLByAppendingPathComponent:bundleIdentifier];
-    NSURL *legacyCacheURL = [legacyCacheDirectoryURL URLByAppendingPathComponent:MGLOfflineStorageFileName3_2_0_beta_1];
-    NSString *legacyCachePath = legacyCacheURL ? legacyCacheURL.path : @"";
-#endif
-    return legacyCachePath;
 }
 
 - (instancetype)init {
+    // Ensure network configuration & appropriate delegate prior to starting the
+    // run loop. Calling `resetNativeNetworkManagerDelegate` is not necessary here,
+    // since the shared manager already calls it.
+    [MGLNetworkConfiguration sharedManager];
+
     MGLInitializeRunLoop();
 
     if (self = [super init]) {
-        NSURL *cacheURL = [[self class] cacheURLIncludingSubdirectory:YES];
-        NSString *cachePath = cacheURL.path ?: @"";
-
-        // Move the offline cache from v3.2.0-beta.1 to a location that can also
-        // be used for ambient caching.
-        if (![[NSFileManager defaultManager] fileExistsAtPath:cachePath]) {
-            NSString *legacyCachePath = [[self class] legacyCachePath];
-            [[NSFileManager defaultManager] moveItemAtPath:legacyCachePath toPath:cachePath error:NULL];
-        }
-
-        // Move the offline file cache from v3.2.x path to a subdirectory that
-        // can be reliably excluded from backups.
-        if (![[NSFileManager defaultManager] fileExistsAtPath:cachePath]) {
-            NSURL *subdirectorylessCacheURL = [[self class] cacheURLIncludingSubdirectory:NO];
-            [[NSFileManager defaultManager] moveItemAtPath:subdirectorylessCacheURL.path toPath:cachePath error:NULL];
-        }
-
-        _mbglCachePath = cachePath.UTF8String;
         mbgl::ResourceOptions options;
-        options.withCachePath(_mbglCachePath)
+        options.withCachePath(self.databasePath.UTF8String)
                .withAssetPath([NSBundle mainBundle].resourceURL.path.UTF8String);
-        _mbglFileSource = std::static_pointer_cast<mbgl::DefaultFileSource>(mbgl::FileSource::getSharedFileSource(options));
+        _mbglFileSource = mbgl::FileSourceManager::get()->getFileSource(mbgl::FileSourceType::ResourceLoader, options);
+        _mbglOnlineFileSource = mbgl::FileSourceManager::get()->getFileSource(mbgl::FileSourceType::Network, options);
+        _mbglDatabaseFileSource = std::static_pointer_cast<mbgl::DatabaseFileSource>(std::shared_ptr<mbgl::FileSource>(mbgl::FileSourceManager::get()->getFileSource(mbgl::FileSourceType::Database, options)));
 
         // Observe for changes to the API base URL (and find out the current one).
         [[MGLAccountManager sharedManager] addObserver:self
@@ -262,21 +202,126 @@ const MGLExceptionName MGLUnsupportedRegionTypeException = @"MGLUnsupportedRegio
     if ([keyPath isEqualToString:@"accessToken"] && object == [MGLAccountManager sharedManager]) {
         NSString *accessToken = change[NSKeyValueChangeNewKey];
         if (![accessToken isKindOfClass:[NSNull class]]) {
-            _mbglFileSource->setAccessToken(accessToken.UTF8String);
+            _mbglOnlineFileSource->setProperty(mbgl::ACCESS_TOKEN_KEY, accessToken.UTF8String);
         }
     } else if ([keyPath isEqualToString:@"apiBaseURL"] && object == [MGLAccountManager sharedManager]) {
         NSURL *apiBaseURL = change[NSKeyValueChangeNewKey];
         if ([apiBaseURL isKindOfClass:[NSNull class]]) {
-            _mbglFileSource->setAPIBaseURL(mbgl::util::API_BASE_URL);
+            _mbglOnlineFileSource->setProperty(mbgl::API_BASE_URL_KEY, mbgl::util::API_BASE_URL);
         } else {
-            _mbglFileSource->setAPIBaseURL(apiBaseURL.absoluteString.UTF8String);
+            _mbglOnlineFileSource->setProperty(mbgl::API_BASE_URL_KEY, apiBaseURL.absoluteString.UTF8String);
         }
     } else {
         [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
     }
 }
 
-#pragma mark Offline merge methods
+#pragma mark Database management methods
+
+- (NSString *)databasePath {
+    return self.databaseURL.path;
+}
+
+- (NSURL *)databaseURL {
+    if (!_databaseURL) {
+        NSString *customPath = [NSBundle.mainBundle objectForInfoDictionaryKey:MGLOfflineStorageDatabasePathInfoDictionaryKey];
+        if ([customPath isKindOfClass:[NSString class]]) {
+            _databaseURL = [NSURL fileURLWithPath:customPath.stringByStandardizingPath isDirectory:NO relativeToURL:NSBundle.mainBundle.resourceURL];
+            
+            NSURL *directoryURL = _databaseURL.URLByDeletingLastPathComponent;
+            [NSFileManager.defaultManager createDirectoryAtURL:directoryURL
+                                   withIntermediateDirectories:YES
+                                                    attributes:nil
+                                                         error:nil];
+        } else {
+            _databaseURL = [[self class] defaultDatabaseURLIncludingSubdirectory:YES];
+        }
+        NSString *databasePath = self.databasePath;
+        NSAssert(databasePath, @"Offline pack database URL “%@” is not a valid file URL.", _databaseURL);
+        
+        // Move the offline database from v3.2.0-beta.1 to a location that can
+        // also be used for ambient caching.
+        if (![[NSFileManager defaultManager] fileExistsAtPath:databasePath]) {
+            NSString *legacyDatabasePath = [[self class] legacyDatabasePath];
+            [[NSFileManager defaultManager] moveItemAtPath:legacyDatabasePath toPath:databasePath error:NULL];
+        }
+        
+        // Move the offline database from v3.2.x path to a subdirectory that can
+        // be reliably excluded from backups.
+        if (![[NSFileManager defaultManager] fileExistsAtPath:databasePath]) {
+            NSURL *subdirectorylessDatabaseURL = [[self class] defaultDatabaseURLIncludingSubdirectory:NO];
+            [[NSFileManager defaultManager] moveItemAtPath:subdirectorylessDatabaseURL.path toPath:databasePath error:NULL];
+        }
+    }
+    return _databaseURL;
+}
+
+/**
+ Returns the default file URL to the offline pack database, with the option to
+ omit the private subdirectory for legacy (v3.2.0–v3.2.3) migration purposes.
+
+ The database is located in a directory specific to the application, so that
+ packs downloaded by other applications don’t count toward this application’s
+ limits.
+
+ The database is located at:
+ ~/Library/Application Support/tld.app.bundle.id/.mapbox/cache.db
+
+ The subdirectory-less database was located at:
+ ~/Library/Application Support/tld.app.bundle.id/cache.db
+ */
++ (NSURL *)defaultDatabaseURLIncludingSubdirectory:(BOOL)useSubdirectory {
+    NSURL *databaseDirectoryURL = [[NSFileManager defaultManager] URLForDirectory:NSApplicationSupportDirectory
+                                                                         inDomain:NSUserDomainMask
+                                                                appropriateForURL:nil
+                                                                           create:YES
+                                                                            error:nil];
+    NSString *bundleIdentifier = [NSBundle mgl_applicationBundleIdentifier];
+    if (!bundleIdentifier) {
+        // There’s no main bundle identifier when running in a unit test bundle.
+        bundleIdentifier = [[NSUUID UUID] UUIDString];
+    }
+    databaseDirectoryURL = [databaseDirectoryURL URLByAppendingPathComponent:bundleIdentifier];
+    if (useSubdirectory) {
+        databaseDirectoryURL = [databaseDirectoryURL URLByAppendingPathComponent:@".mapbox"];
+    }
+    [[NSFileManager defaultManager] createDirectoryAtURL:databaseDirectoryURL
+                             withIntermediateDirectories:YES
+                                              attributes:nil
+                                                   error:nil];
+    if (useSubdirectory) {
+        // Avoid backing up the database onto iCloud, because it can be
+        // redownloaded. Ideally, we’d even put the ambient cache in Caches, so
+        // it can be reclaimed by the system when disk space runs low. But
+        // unfortunately it has to live in the same file as offline resources.
+        [databaseDirectoryURL setResourceValue:@YES forKey:NSURLIsExcludedFromBackupKey error:NULL];
+    }
+    return [databaseDirectoryURL URLByAppendingPathComponent:MGLOfflineStorageFileName];
+}
+
+/**
+ Returns the absolute path to the location where v3.2.0-beta.1 placed the
+ offline pack database.
+ */
++ (NSString *)legacyDatabasePath {
+#if TARGET_OS_IPHONE || TARGET_OS_SIMULATOR
+    // ~/Documents/offline.db
+    NSArray *legacyPaths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *legacyDatabasePath = [legacyPaths.firstObject stringByAppendingPathComponent:MGLOfflineStorageFileName3_2_0_beta_1];
+#elif TARGET_OS_MAC
+    // ~/Library/Caches/tld.app.bundle.id/offline.db
+    NSString *bundleIdentifier = [NSBundle mgl_applicationBundleIdentifier];
+    NSURL *legacyDatabaseDirectoryURL = [[NSFileManager defaultManager] URLForDirectory:NSCachesDirectory
+                                                                               inDomain:NSUserDomainMask
+                                                                      appropriateForURL:nil
+                                                                                 create:NO
+                                                                                  error:nil];
+    legacyDatabaseDirectoryURL = [legacyDatabaseDirectoryURL URLByAppendingPathComponent:bundleIdentifier];
+    NSURL *legacyDatabaseURL = [legacyDatabaseDirectoryURL URLByAppendingPathComponent:MGLOfflineStorageFileName3_2_0_beta_1];
+    NSString *legacyDatabasePath = legacyDatabaseURL ? legacyDatabaseURL.path : @"";
+#endif
+    return legacyDatabasePath;
+}
 
 - (void)addContentsOfFile:(NSString *)filePath withCompletionHandler:(MGLBatchedOfflinePackAdditionCompletionHandler)completion {
     MGLLogDebug(@"Adding contentsOfFile: %@ completionHandler: %@", filePath, completion);
@@ -335,7 +380,7 @@ const MGLExceptionName MGLUnsupportedRegionTypeException = @"MGLUnsupportedRegio
 }
 
 - (void)_addContentsOfFile:(NSString *)filePath withCompletionHandler:(void (^)(NSArray<MGLOfflinePack *> * _Nullable packs, NSError * _Nullable error))completion {
-    _mbglFileSource->mergeOfflineRegions(std::string(static_cast<const char *>([filePath UTF8String])), [&, completion, filePath](mbgl::expected<mbgl::OfflineRegions, std::exception_ptr> result) {
+    _mbglDatabaseFileSource->mergeOfflineRegions(std::string(static_cast<const char *>([filePath UTF8String])), [&, completion, filePath](mbgl::expected<mbgl::OfflineRegions, std::exception_ptr> result) {
         NSError *error;
         NSMutableArray *packs;
         if (!result) {
@@ -400,7 +445,7 @@ const MGLExceptionName MGLUnsupportedRegionTypeException = @"MGLUnsupportedRegio
     const mbgl::OfflineRegionDefinition regionDefinition = [(id <MGLOfflineRegion_Private>)region offlineRegionDefinition];
     mbgl::OfflineRegionMetadata metadata(context.length);
     [context getBytes:&metadata[0] length:metadata.size()];
-    _mbglFileSource->createOfflineRegion(regionDefinition, metadata, [&, completion](mbgl::expected<mbgl::OfflineRegion, std::exception_ptr> mbglOfflineRegion) {
+    _mbglDatabaseFileSource->createOfflineRegion(regionDefinition, metadata, [&, completion](mbgl::expected<mbgl::OfflineRegion, std::exception_ptr> mbglOfflineRegion) {
         NSError *error;
         if (!mbglOfflineRegion) {
             NSString *errorDescription = @(mbgl::util::toString(mbglOfflineRegion.error()).c_str());
@@ -441,7 +486,7 @@ const MGLExceptionName MGLUnsupportedRegionTypeException = @"MGLUnsupportedRegio
         return;
     }
     
-    _mbglFileSource->deleteOfflineRegion(std::move(*mbglOfflineRegion), [&, completion](std::exception_ptr exception) {
+    _mbglDatabaseFileSource->deleteOfflineRegion(std::move(*mbglOfflineRegion), [&, completion](std::exception_ptr exception) {
         NSError *error;
         if (exception) {
             error = [NSError errorWithDomain:MGLErrorDomain code:MGLErrorCodeModifyingOfflineStorageFailed userInfo:@{
@@ -468,7 +513,7 @@ const MGLExceptionName MGLUnsupportedRegionTypeException = @"MGLUnsupportedRegio
         return;
     }
 
-    _mbglFileSource->invalidateOfflineRegion(region, [&](std::exception_ptr exception) {
+    _mbglDatabaseFileSource->invalidateOfflineRegion(region, [&](std::exception_ptr exception) {
         if (exception) {
             error = [NSError errorWithDomain:MGLErrorDomain code:MGLErrorCodeModifyingOfflineStorageFailed userInfo:@{
                 NSLocalizedDescriptionKey: @(mbgl::util::toString(exception).c_str()),
@@ -496,7 +541,7 @@ const MGLExceptionName MGLUnsupportedRegionTypeException = @"MGLUnsupportedRegio
 }
 
 - (void)getPacksWithCompletionHandler:(void (^)(NSArray<MGLOfflinePack *> *packs, NSError * _Nullable error))completion {
-    _mbglFileSource->listOfflineRegions([&, completion](mbgl::expected<mbgl::OfflineRegions, std::exception_ptr> result) {
+    _mbglDatabaseFileSource->listOfflineRegions([&, completion](mbgl::expected<mbgl::OfflineRegions, std::exception_ptr> result) {
         NSError *error;
         NSMutableArray *packs;
         if (!result) {
@@ -524,13 +569,13 @@ const MGLExceptionName MGLUnsupportedRegionTypeException = @"MGLUnsupportedRegio
 
 - (void)setMaximumAllowedMapboxTiles:(uint64_t)maximumCount {
     MGLLogDebug(@"Setting maximumAllowedMapboxTiles: %lu", (unsigned long)maximumCount);
-    _mbglFileSource->setOfflineMapboxTileCountLimit(maximumCount);
+    _mbglDatabaseFileSource->setOfflineMapboxTileCountLimit(maximumCount);
 }
 
-#pragma mark - Ambient Cache management
+#pragma mark - Ambient cache management
 
 - (void)setMaximumAmbientCacheSize:(NSUInteger)cacheSize withCompletionHandler:(void (^)(NSError  * _Nullable))completion {
-    _mbglFileSource->setMaximumAmbientCacheSize(cacheSize, [&, completion](std::exception_ptr exception) {
+    _mbglDatabaseFileSource->setMaximumAmbientCacheSize(cacheSize, [&, completion](std::exception_ptr exception) {
         NSError *error;
         if (completion) {
             if (exception) {
@@ -549,7 +594,7 @@ const MGLExceptionName MGLUnsupportedRegionTypeException = @"MGLUnsupportedRegio
 }
 
 - (void)invalidateAmbientCacheWithCompletionHandler:(void (^)(NSError *_Nullable))completion {
-    _mbglFileSource->invalidateAmbientCache([&, completion](std::exception_ptr exception){
+    _mbglDatabaseFileSource->invalidateAmbientCache([&, completion](std::exception_ptr exception){
         NSError *error;
         if (completion) {
             if (exception) {
@@ -569,7 +614,7 @@ const MGLExceptionName MGLUnsupportedRegionTypeException = @"MGLUnsupportedRegio
 }
 
 - (void)clearAmbientCacheWithCompletionHandler:(void (^)(NSError *_Nullable error))completion {
-    _mbglFileSource->clearAmbientCache([&, completion](std::exception_ptr exception){
+    _mbglDatabaseFileSource->clearAmbientCache([&, completion](std::exception_ptr exception){
         NSError *error;
         if (completion) {
             if (exception) {
@@ -588,7 +633,7 @@ const MGLExceptionName MGLUnsupportedRegionTypeException = @"MGLUnsupportedRegio
 }
 
 - (void)resetDatabaseWithCompletionHandler:(void (^)(NSError *_Nullable error))completion {
-    _mbglFileSource->resetDatabase([&, completion](std::exception_ptr exception) {
+    _mbglDatabaseFileSource->resetDatabase([&, completion](std::exception_ptr exception) {
         NSError *error;
         if (completion) {
             if (exception) {
@@ -608,17 +653,16 @@ const MGLExceptionName MGLUnsupportedRegionTypeException = @"MGLUnsupportedRegio
 #pragma mark -
 
 - (unsigned long long)countOfBytesCompleted {
-    NSURL *cacheURL = [[self class] cacheURLIncludingSubdirectory:YES];
-    NSString *cachePath = cacheURL.path;
-    if (!cachePath) {
-        return 0;
-    }
-
-    NSDictionary *attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:cachePath error:NULL];
+    NSDictionary *attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:self.databasePath error:NULL];
     return attributes.fileSize;
 }
 
 - (void)preloadData:(NSData *)data forURL:(NSURL *)url modificationDate:(nullable NSDate *)modified expirationDate:(nullable NSDate *)expires eTag:(nullable NSString *)eTag mustRevalidate:(BOOL)mustRevalidate {
+    [self preloadData:data forURL:url modificationDate:modified expirationDate:expires eTag:eTag mustRevalidate:mustRevalidate completionHandler:nil];
+}
+
+- (void)preloadData:(NSData *)data forURL:(NSURL *)url modificationDate:(nullable NSDate *)modified expirationDate:(nullable NSDate *)expires eTag:(nullable NSString *)eTag mustRevalidate:(BOOL)mustRevalidate
+    completionHandler:(nullable MGLOfflinePreloadDataCompletionHandler)completion {
     mbgl::Resource resource(mbgl::Resource::Kind::Unknown, url.absoluteString.UTF8String);
     mbgl::Response response;
     response.data = std::make_shared<std::string>(static_cast<const char*>(data.bytes), data.length);
@@ -635,8 +679,16 @@ const MGLExceptionName MGLUnsupportedRegionTypeException = @"MGLUnsupportedRegio
     if (expires) {
         response.expires = mbgl::Timestamp() + std::chrono::duration_cast<mbgl::Seconds>(MGLDurationFromTimeInterval(expires.timeIntervalSince1970));
     }
-    
-    _mbglFileSource->put(resource, response);
+
+    std::function<void()> callback;
+
+    if (completion) {
+        callback = [completion, url] {
+            dispatch_async(dispatch_get_main_queue(), [completion, url] { completion(url, nil); });
+        };
+    }
+
+    _mbglDatabaseFileSource->forward(resource, response, callback);
 }
 
 - (void)putResourceWithUrl:(NSURL *)url data:(NSData *)data modified:(nullable NSDate *)modified expires:(nullable NSDate *)expires etag:(nullable NSString *)etag mustRevalidate:(BOOL)mustRevalidate {

@@ -1,5 +1,6 @@
 #import "MGLFoundation_Private.h"
 #import "MGLGeometry_Private.h"
+#import "MGLShape_Private.h"
 #import "NSExpression+MGLPrivateAdditions.h"
 
 #import "MGLTypes.h"
@@ -76,6 +77,7 @@ const MGLExpressionInterpolationMode MGLExpressionInterpolationModeCubicBezier =
     INSTALL_METHOD(mgl_atan:);
     INSTALL_METHOD(mgl_tan:);
     INSTALL_METHOD(mgl_log2:);
+    INSTALL_METHOD(mgl_distanceFrom:);
     INSTALL_METHOD(mgl_attributed:);
     
     // Install functions that resemble control structures, taking arbitrary
@@ -159,6 +161,15 @@ const MGLExpressionInterpolationMode MGLExpressionInterpolationModeCubicBezier =
  */
 - (NSNumber *)mgl_log2:(NSNumber *)number {
     return @(log2(number.doubleValue));
+}
+
+/**
+ Returns a straight-line distance from the given shape to the evaluated feature.
+ */
+- (NSNumber *)mgl_distanceFrom:(id)object {
+    [NSException raise:NSInvalidArgumentException
+                format:@"Shape distance expressions lack underlying Objective-C implementations."];
+    return nil;
 }
 
 /**
@@ -307,7 +318,7 @@ const MGLExpressionInterpolationMode MGLExpressionInterpolationModeCubicBezier =
             return { (int64_t)number.longLongValue };
         }
     } else if ([value isKindOfClass:[MGLColor class]]) {
-        auto hexString = [(MGLColor *)value mgl_color].stringify();
+        auto hexString = [(MGLColor *)value mgl_colorForPremultipliedValue].stringify();
         return { hexString };
     } else if (value && value != [NSNull null]) {
         [NSException raise:NSInvalidArgumentException
@@ -480,7 +491,7 @@ const MGLExpressionInterpolationMode MGLExpressionInterpolationModeCubicBezier =
 @implementation MGLColor (MGLExpressionAdditions)
 
 - (id)mgl_jsonExpressionObject {
-    auto color = [self mgl_color];
+    auto color = [self mgl_colorForPremultipliedValue];
     if (color.a == 1) {
         return @[@"rgb", @(color.r * 255), @(color.g * 255), @(color.b * 255)];
     }
@@ -535,6 +546,14 @@ const MGLExpressionInterpolationMode MGLExpressionInterpolationModeCubicBezier =
     [NSException raise:NSInvalidArgumentException
                 format:@"Has expressions lack underlying Objective-C implementations."];
     return nil;
+}
+
+@end
+
+@implementation MGLShape (MGLExpressionAdditions)
+
+- (id)mgl_jsonExpressionObject {
+    return self.geoJSONDictionary;
 }
 
 @end
@@ -647,6 +666,7 @@ NSArray *MGLSubexpressionsWithJSONObjects(NSArray *objects) {
             @"floor": @"floor:",
             @"ceil": @"ceiling:",
             @"^": @"raise:toPower:",
+            @"distance": @"mgl_distanceFrom:",
             @"upcase": @"uppercase:",
             @"downcase": @"lowercase:",
             @"let": @"MGL_LET",
@@ -659,11 +679,24 @@ NSArray *MGLSubexpressionsWithJSONObjects(NSArray *objects) {
     if ([object isKindOfClass:[NSString class]] ||
         [object isKindOfClass:[NSNumber class]] ||
         [object isKindOfClass:[NSValue class]] ||
-        [object isKindOfClass:[MGLColor class]]) {
+        [object isKindOfClass:[MGLColor class]] ||
+        [object isKindOfClass:[MGLShape class]]) {
         return [NSExpression expressionForConstantValue:object];
     }
     
     if ([object isKindOfClass:[NSDictionary class]]) {
+        if (object[@"type"]) {
+            NSError *error;
+            NSData *shapeData = [NSJSONSerialization dataWithJSONObject:object options:0 error:&error];
+            MGLShape *shape;
+            if (shapeData && !error) {
+                shape = [MGLShape shapeWithData:shapeData encoding:NSUTF8StringEncoding error:&error];
+            }
+            if (shape && !error) {
+                return [NSExpression expressionForConstantValue:shape];
+            }
+        }
+        
         NSMutableDictionary *dictionary = [NSMutableDictionary dictionaryWithCapacity:[object count]];
         [object enumerateKeysAndObjectsUsingBlock:^(id _Nonnull key, id _Nonnull obj, BOOL * _Nonnull stop) {
             dictionary[key] = [NSExpression expressionWithMGLJSONObject:obj];
@@ -948,6 +981,7 @@ NSArray *MGLSubexpressionsWithJSONObjects(NSArray *objects) {
             @"mgl_atan:" : @"atan",
             @"mgl_tan:" : @"tan",
             @"mgl_log2:" : @"log2",
+            @"mgl_distanceFrom:": @"distance",
             // Vararg aftermarket expressions need to be declared with an explicit and implicit first argument.
             @"MGL_LET": @"let",
             @"MGL_LET:": @"let",
@@ -997,7 +1031,7 @@ NSArray *MGLSubexpressionsWithJSONObjects(NSArray *objects) {
                 return @[@"literal", collection];
             }
             if ([constantValue isKindOfClass:[MGLColor class]]) {
-                auto color = [constantValue mgl_color];
+                auto color = [constantValue mgl_colorForPremultipliedValue];
                 if (color.a == 1) {
                     return @[@"rgb", @(color.r * 255), @(color.g * 255), @(color.b * 255)];
                 }
@@ -1030,6 +1064,10 @@ NSArray *MGLSubexpressionsWithJSONObjects(NSArray *objects) {
                     
                 } 
                 return @[jsonObject, attributedDictionary];
+            }
+            if ([constantValue isKindOfClass:[MGLShape class]]) {
+                MGLShape *shape = (MGLShape *)constantValue;
+                return shape.geoJSONDictionary;
             }
             return self.constantValue;
         }

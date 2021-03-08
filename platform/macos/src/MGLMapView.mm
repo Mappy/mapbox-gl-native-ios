@@ -29,7 +29,6 @@
 #import <mbgl/style/style.hpp>
 #import <mbgl/annotation/annotation.hpp>
 #import <mbgl/map/camera.hpp>
-#import <mbgl/storage/reachability.h>
 #import <mbgl/style/image.hpp>
 #import <mbgl/renderer/renderer.hpp>
 #import <mbgl/storage/network_status.hpp>
@@ -56,7 +55,9 @@
 #import "NSColor+MGLAdditions.h"
 #import "NSImage+MGLAdditions.h"
 #import "NSPredicate+MGLPrivateAdditions.h"
+#import "MGLNetworkConfiguration_Private.h"
 #import "MGLLoggingConfiguration_Private.h"
+#import "MGLReachability.h"
 
 class MGLAnnotationContext;
 
@@ -153,7 +154,7 @@ public:
 
 @implementation MGLMapView {
     /// Cross-platform map view controller.
-    mbgl::Map *_mbglMap;
+    std::unique_ptr<mbgl::Map> _mbglMap;
     std::unique_ptr<MGLMapViewImpl> _mbglView;
     std::unique_ptr<MGLRenderFrontend> _rendererFrontend;
 
@@ -258,6 +259,8 @@ public:
 }
 
 - (void)commonInit {
+    [MGLNetworkConfiguration sharedManager];
+
     _isTargetingInterfaceBuilder = NSProcessInfo.processInfo.mgl_isInterfaceBuilderDesignablesAgent;
 
     // Set up cross-platform controllers and resources.
@@ -276,7 +279,8 @@ public:
 
     MGLRendererConfiguration *config = [MGLRendererConfiguration currentConfiguration];
 
-    auto renderer = std::make_unique<mbgl::Renderer>(_mbglView->getRendererBackend(), config.scaleFactor, config.localFontFamilyName);
+    auto localFontFamilyName = config.localFontFamilyName ? std::string(config.localFontFamilyName.UTF8String) : nullptr;
+    auto renderer = std::make_unique<mbgl::Renderer>(_mbglView->getRendererBackend(), config.scaleFactor, localFontFamilyName);
     BOOL enableCrossSourceCollisions = !config.perSourceCollisions;
     _rendererFrontend = std::make_unique<MGLRenderFrontend>(std::move(renderer), self, _mbglView->getRendererBackend(), true);
 
@@ -289,10 +293,10 @@ public:
               .withCrossSourceCollisions(enableCrossSourceCollisions);
 
     mbgl::ResourceOptions resourceOptions;
-    resourceOptions.withCachePath([[MGLOfflineStorage sharedOfflineStorage] mbglCachePath])
+    resourceOptions.withCachePath(MGLOfflineStorage.sharedOfflineStorage.databasePath.UTF8String)
                    .withAssetPath([NSBundle mainBundle].resourceURL.path.UTF8String);
 
-    _mbglMap = new mbgl::Map(*_rendererFrontend, *_mbglView, mapOptions, resourceOptions);
+    _mbglMap = std::make_unique<mbgl::Map>(*_rendererFrontend, *_mbglView, mapOptions, resourceOptions);
 
     // Notify map object when network reachability status changes.
     _reachability = [MGLReachability reachabilityForInternetConnection];
@@ -536,10 +540,7 @@ public:
     // Removing the annotations unregisters any outstanding KVO observers.
     [self removeAnnotations:self.annotations];
 
-    if (_mbglMap) {
-        delete _mbglMap;
-        _mbglMap = nullptr;
-    }
+    _mbglMap.reset();
     _mbglView.reset();
 }
 
@@ -657,10 +658,6 @@ public:
 - (void)setPrefetchesTiles:(BOOL)prefetchesTiles
 {
     _mbglMap->setPrefetchZoomDelta(prefetchesTiles ? mbgl::util::DEFAULT_PREFETCH_ZOOM_DELTA : 0);
-}
-
-- (mbgl::Map *)mbglMap {
-    return _mbglMap;
 }
 
 - (mbgl::Renderer *)renderer {
@@ -959,7 +956,7 @@ public:
         return;
     }
 
-    self.style = [[MGLStyle alloc] initWithRawStyle:&_mbglMap->getStyle() mapView:self];
+    self.style = [[MGLStyle alloc] initWithRawStyle:&_mbglMap->getStyle() stylable:self];
     if ([self.delegate respondsToSelector:@selector(mapView:didFinishLoadingStyle:)])
     {
         [self.delegate mapView:self didFinishLoadingStyle:self.style];
@@ -1173,6 +1170,24 @@ public:
     [self setDirection:*_mbglMap->getCameraOptions().bearing + delta animated:animated];
 }
 
+- (CGFloat)minimumPitch {
+    return *_mbglMap->getBounds().minPitch;
+}
+
+- (void)setMinimumPitch:(CGFloat)minimumPitch {
+    MGLLogDebug(@"Setting minimumPitch: %f", minimumPitch);
+    _mbglMap->setBounds(mbgl::BoundOptions().withMinPitch(minimumPitch));
+}
+
+- (CGFloat)maximumPitch {
+    return *_mbglMap->getBounds().maxPitch;
+}
+
+- (void)setMaximumPitch:(CGFloat)maximumPitch {
+    MGLLogDebug(@"Setting maximumPitch: %f", maximumPitch);
+    _mbglMap->setBounds(mbgl::BoundOptions().withMaxPitch(maximumPitch));
+}
+
 + (NSSet<NSString *> *)keyPathsForValuesAffectingCamera {
     return [NSSet setWithObjects:@"latitude", @"longitude", @"centerCoordinate", @"zoomLevel", @"direction", nil];
 }
@@ -1333,7 +1348,9 @@ public:
     
     MGLMapCamera *camera = [self cameraForCameraOptions:cameraOptions];
     if ([self.camera isEqualToMapCamera:camera]) {
-        completion();
+        if (completion) {
+            completion();
+        }
         return;
     }
 

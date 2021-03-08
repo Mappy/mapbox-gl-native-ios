@@ -70,7 +70,7 @@ NSArray<id <MGLAnnotation>> *MBXFlattenedShapes(NSArray<id <MGLAnnotation>> *sha
 
 @end
 
-@interface MapDocument () <NSWindowDelegate, NSSharingServicePickerDelegate, NSMenuDelegate, NSSplitViewDelegate, MGLMapViewDelegate, MGLComputedShapeSourceDataSource>
+@interface MapDocument () <NSWindowDelegate, NSSharingServicePickerDelegate, NSMenuDelegate, NSSplitViewDelegate, MGLMapViewDelegate, MGLMapSnapshotterDelegate, MGLComputedShapeSourceDataSource>
 
 @property (weak) IBOutlet NSArrayController *styleLayersArrayController;
 @property (weak) IBOutlet NSTableView *styleLayersTableView;
@@ -254,6 +254,7 @@ NSArray<id <MGLAnnotation>> *MBXFlattenedShapes(NSArray<id <MGLAnnotation>> *sha
     // Create and start the snapshotter
     __weak __typeof__(self) weakSelf = self;
     _snapshotter = [[MGLMapSnapshotter alloc] initWithOptions:options];
+    _snapshotter.delegate = self;
     [_snapshotter startWithCompletionHandler:^(MGLMapSnapshot *snapshot, NSError *error) {
         __typeof__(self) strongSelf = weakSelf;
         if (!strongSelf) {
@@ -1012,9 +1013,9 @@ NSArray<id <MGLAnnotation>> *MBXFlattenedShapes(NSArray<id <MGLAnnotation>> *sha
 
     MGLSource *streetsSource = [self.mapView.style sourceWithIdentifier:@"composite"];
     if (streetsSource) {
-    NSImage *image = [NSImage imageNamed:NSImageNameIChatTheaterTemplate];
-    [self.mapView.style setImage:image forName:NSImageNameIChatTheaterTemplate];
-
+        NSImage *image = [NSImage imageNamed:NSImageNameIChatTheaterTemplate];
+        [self.mapView.style setImage:image forName:NSImageNameIChatTheaterTemplate];
+        
         MGLSymbolStyleLayer *theaterLayer = [[MGLSymbolStyleLayer alloc] initWithIdentifier:@"theaters" source:streetsSource];
         theaterLayer.sourceLayerIdentifier = @"poi_label";
         theaterLayer.predicate = [NSPredicate predicateWithFormat:@"maki == 'theatre'"];
@@ -1026,6 +1027,23 @@ NSArray<id <MGLAnnotation>> *MBXFlattenedShapes(NSArray<id <MGLAnnotation>> *sha
             @20.0: [NSColor blackColor],
         }];
         [self.mapView.style addLayer:theaterLayer];
+        
+        NSImage *ohio = [NSImage imageNamed:@"ohio"];
+        [self.mapView.style setImage:ohio forName:@"ohio"];
+        
+        MGLSymbolStyleLayer *ohioLayer = [[MGLSymbolStyleLayer alloc] initWithIdentifier:@"ohio" source:streetsSource];
+        ohioLayer.sourceLayerIdentifier = @"road";
+        ohioLayer.predicate = [NSPredicate predicateWithFormat:@"shield = 'circle-white' and iso_3166_2 = 'US-OH'"];
+        ohioLayer.symbolPlacement = [NSExpression expressionForConstantValue:@"line"];
+        ohioLayer.text = [NSExpression expressionForKeyPath:@"ref"];
+        ohioLayer.textFontNames = [NSExpression expressionWithFormat:@"{'DIN Offc Pro Bold', 'Arial Unicode MS Bold'}"];
+        ohioLayer.textFontSize = [NSExpression expressionForConstantValue:@10];
+        ohioLayer.textRotationAlignment = [NSExpression expressionForConstantValue:@"viewport"];
+        ohioLayer.iconImageName = [NSExpression expressionForConstantValue:@"ohio"];
+        ohioLayer.iconTextFit = [NSExpression expressionForConstantValue:@"both"];
+        ohioLayer.iconTextFitPadding = [NSExpression expressionForConstantValue:[NSValue valueWithEdgeInsets:NSEdgeInsetsMake(1, 2, 1, 3)]];
+        ohioLayer.iconRotationAlignment = [NSExpression expressionForConstantValue:@"viewport"];
+        [self.mapView.style addLayer:ohioLayer];
     }
 
     NSURL *imageURL = [NSURL URLWithString:@"https://www.mapbox.com/mapbox-gl-js/assets/radar.gif"];
@@ -1038,6 +1056,22 @@ NSArray<id <MGLAnnotation>> *MBXFlattenedShapes(NSArray<id <MGLAnnotation>> *sha
 
     MGLRasterStyleLayer * imageLayer = [[MGLRasterStyleLayer alloc] initWithIdentifier:@"radar-layer" source:imageSource];
     [self.mapView.style addLayer:imageLayer];
+    
+    MGLCircleStyleLayer *ucLayer = [[MGLCircleStyleLayer alloc] initWithIdentifier:@"uc" source:streetsSource];
+    ucLayer.sourceLayerIdentifier = @"poi_label";
+    ucLayer.predicate = [NSPredicate predicateWithFormat:@"$geometryType = 'Point'"];
+    CLLocationCoordinate2D ucCoordinates[] = {
+        { .latitude = 39.1279, .longitude = -84.5209 },
+        { .latitude = 39.1273, .longitude = -84.5112 },
+        { .latitude = 39.1355, .longitude = -84.5102 },
+        { .latitude = 39.1360, .longitude = -84.5212 },
+        { .latitude = 39.1279, .longitude = -84.5209 },
+    };
+    MGLPolygon *uc = [MGLPolygon polygonWithCoordinates:ucCoordinates count:sizeof(ucCoordinates) / sizeof(ucCoordinates[0])];
+    ucLayer.circleOpacity = [NSExpression expressionWithFormat:@"TERNARY(SELF IN %@, 1, 0)", uc];
+    ucLayer.circleRadius = [NSExpression expressionForConstantValue:@5];
+    ucLayer.circleColor = [NSExpression expressionForConstantValue:NSColor.redColor];
+    [self.mapView.style addLayer:ucLayer];
 }
 
 - (IBAction)dropPin:(NSMenuItem *)sender {
@@ -1443,6 +1477,27 @@ NSArray<id <MGLAnnotation>> *MBXFlattenedShapes(NSArray<id <MGLAnnotation>> *sha
 
 - (CGFloat)mapView:(MGLMapView *)mapView alphaForShapeAnnotation:(MGLShape *)annotation {
     return 0.8;
+}
+
+#pragma mark MGLMapSnapshotterDelegate methods
+
+- (void)mapSnapshotter:(MGLMapSnapshotter *)snapshotter didFinishLoadingStyle:(MGLStyle *)style {
+    [style localizeLabelsIntoLocale:_isLocalizingLabels ? nil : [NSLocale localeWithLocaleIdentifier:@"mul"]];
+    
+    // Layers hidden in the sidebar should be hidden in the snapshot too.
+    NSMutableArray<NSString *> *hiddenLayerIdentifiers = [NSMutableArray array];
+    for (MGLStyleLayer *layer in self.mapView.style.layers) {
+        if (!layer.visible) {
+            [hiddenLayerIdentifiers addObject:layer.identifier];
+        }
+    }
+    
+    NSSet <NSString *> *hiddenLayerIdentifierSet = [NSSet setWithArray:hiddenLayerIdentifiers];
+    for (MGLStyleLayer *layer in style.layers) {
+        if ([hiddenLayerIdentifierSet containsObject:layer.identifier]) {
+            layer.visible = NO;
+        }
+    }
 }
 
 #pragma mark - MGLComputedShapeSourceDataSource

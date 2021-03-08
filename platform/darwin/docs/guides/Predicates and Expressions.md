@@ -55,6 +55,25 @@ The following aggregate operators are supported:
 `NSInPredicateOperatorType`       | `key IN { 'iOS', 'macOS', 'tvOS', 'watchOS' }`
 `NSContainsPredicateOperatorType` | `{ 'iOS', 'macOS', 'tvOS', 'watchOS' } CONTAINS key`
 
+You can use the `IN` and `CONTAINS` operators to test whether a value appears in a collection, whether a string is a substring of a larger string, or whether the evaluated feature (`SELF`) lies within a given `MGLShape` or `MGLFeature`. For example, to show one delicious local chain of sandwich shops, but not similarly named steakhouses and pizzerias:
+
+```objc
+MGLPolygon *cincinnati = [MGLPolygon polygonWithCoordinates:cincinnatiCoordinates count:sizeof(cincinnatiCoordinates) / sizeof(cincinnatiCoordinates[0])];
+deliLayer.predicate = [NSPredicate predicateWithFormat:@"class = 'food_and_drink' AND name CONTAINS 'Izzy' AND SELF IN %@", cincinnati];
+```
+
+```swift
+let cincinnati = MGLPolygon(coordinates: &cincinnatiCoordinates, count: UInt(cincinnatiCoordinates.count))
+deliLayer.predicate = NSPredicate(format: "class = 'food_and_drink' AND name CONTAINS 'Izzy' AND SELF IN %@", cincinnati)
+```
+
+The following combinations of comparison operators and modifiers are supported:
+
+`NSComparisonPredicateModifier` | `NSPredicateOperatorType`           | Format string syntax
+--------------------------------|-------------------------------------|---------------------
+`NSAllPredicateModifier`        | `NSNotEqualToPredicateOperatorType` | `ALL haystack != needle`
+`NSAnyPredicateModifier`        | `NSEqualToPredicateOperatorType`    | `ANY haystack = needle`<br />`SOME haystack = needle`
+
 The following comparison predicate options are supported for comparison and
 aggregate operators that are used in the predicate:
 
@@ -65,7 +84,9 @@ aggregate operators that are used in the predicate:
 
 Other comparison predicate options are unsupported, namely `l`
 (for locale sensitivity) and `n` (for normalization). A comparison is
-locale-sensitive as long as it is case- or diacritic-insensitive.
+locale-sensitive as long as it is case- or diacritic-insensitive. Comparison
+predicate options are not supported in conjunction with comparison modifiers
+like `ALL` and `ANY`.
 
 ### Operands
 
@@ -517,6 +538,21 @@ Returns the tangent of the number.
 
 This function corresponds to the
 [`tan`](https://www.mapbox.com/mapbox-gl-js/style-spec/#expressions-tan)
+operator in the Mapbox Style Specification.
+
+### `mgl_distanceFrom:`
+
+<dl>
+<dt>Selector:</dt>
+<dd><code>mgl_distanceFrom:</code></dd>
+<dt>Format string syntax:</dt>
+<dd><code>mgl_distanceFrom(%@)</code> with an <code>MGLShape</code></dd>
+</dl>
+
+Returns the straight-line distance from the evaluated object to the given shape.
+
+This function corresponds to the
+[`distance`](https://docs.mapbox.com/mapbox-gl-js/style-spec/expressions/#distance)
 operator in the Mapbox Style Specification.
 
 ### `mgl_coalesce:`
